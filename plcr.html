@@ -353,10 +353,20 @@
     // Check login status
     async function checkLogin(){
       try{
+        // إعطاء وقت إضافي لتحميل الجلسة
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const session=sessionStorage.getItem('tanktools_session');
-        if(!session){showAccess();return}
+        console.log('Checking session:', session ? 'Found' : 'Not found');
+        
+        if(!session){
+          console.log('No session found, redirecting to login');
+          showAccess();
+          return;
+        }
         
         currentUser=JSON.parse(session);
+        console.log('User loaded:', currentUser.username);
         
         // Initialize permissions manager if available
         if (window.PermissionsManager) {
@@ -369,14 +379,18 @@
         } else {
           initApp();
         }
-      }catch{
+      }catch(error){
+        console.log('Login check error:', error);
         showAccess();
       }
     }
 
     function showAccess(){
-      document.getElementById('mainContent').style.display='none';
-      document.getElementById('accessDenied').style.display='flex';
+      // تأخير إضافي قبل إظهار شاشة تسجيل الدخول
+      setTimeout(() => {
+        document.getElementById('mainContent').style.display='none';
+        document.getElementById('accessDenied').style.display='flex';
+      }, 1000);
     }
 
     window.goToLogin=()=>{
@@ -754,7 +768,7 @@
     
     // Initialize everything on page load
     window.addEventListener('load',()=>{
-      setTimeout(checkLogin, 100);
+      setTimeout(checkLogin, 1000); // زيادة التأخير لإعطاء وقت أكثر لتحميل الجلسة
     });
   </script>
 </body>
