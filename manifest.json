@@ -1,0 +1,169 @@
+{
+  "name": "Tank Tools - KNPC System",
+  "short_name": "Tank Tools",
+  "description": "Kuwait National Petroleum Company - Tank Management System by Fahad 17877",
+  "version": "3.0.0",
+  "start_url": "/login.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#003366",
+  "background_color": "#003366",
+  "lang": "en",
+  "dir": "ltr",
+  
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  
+  "screenshots": [
+    {
+      "src": "screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tank Tools Dashboard"
+    },
+    {
+      "src": "screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tank Tools Mobile"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "name": "PBCR & WASHERY",
+      "short_name": "PBCR",
+      "description": "Tank level calculations and flow rates",
+      "url": "/index.html",
+      "icons": [
+        {
+          "src": "icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "PLCR Calculator", 
+      "short_name": "PLCR",
+      "description": "Convert levels to barrels and metric tons",
+      "url": "/plcr.html",
+      "icons": [
+        {
+          "src": "icon.png",
+          "sizes": "96x96", 
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "NMOGAS Blender",
+      "short_name": "NMOGAS", 
+      "description": "Calculate blending rates and loops",
+      "url": "/NMOGASBL.html",
+      "icons": [
+        {
+          "src": "icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Admin Dashboard",
+      "short_name": "Dashboard",
+      "description": "System management and monitoring", 
+      "url": "/dashboard.html",
+      "icons": [
+        {
+          "src": "icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+
+  "categories": [
+    "business",
+    "productivity", 
+    "utilities",
+    "finance"
+  ],
+
+  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9",
+
+  "prefer_related_applications": false,
+
+  "protocol_handlers": [
+    {
+      "protocol": "web+tanktools",
+      "url": "/login.html?action=%s"
+    }
+  ],
+
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/json": [".json"]
+      }
+    }
+  ],
+
+  "share_target": {
+    "action": "/",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["text/csv", "application/json"]
+        }
+      ]
+    }
+  },
+
+  "id": "tanktools-knpc-app",
+  "handle_links": "preferred"
+}

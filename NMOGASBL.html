@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NMOGAS Blender</title>
+  <link href="icon.png" rel="icon" type="image/png"/>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#003366">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;color:white;font-family:Arial,sans-serif;padding:10px;text-align:center;min-height:100vh}
+    .nav-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:rgba(0,0,0,0.5);border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
+    .nav-logo{font-size:24px;font-weight:bold;color:white}
+    .nav-links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .nav-link{color:white;text-decoration:none;padding:8px 16px;border-radius:8px;transition:all 0.3s ease;background:rgba(255,255,255,0.1);font-weight:500;border:1px solid rgba(255,255,255,0.2)}
+    .nav-link:hover{background:rgba(255,255,255,0.2);transform:translateY(-1px)}
+    .nav-link.active{background:rgba(255,255,255,0.3);font-weight:bold;border:1px solid rgba(255,255,255,0.4)}
+    .nav-admin{background:linear-gradient(45deg,#FFD700,#FFA500);color:#003366;font-weight:bold;border-radius:8px;padding:8px 16px;text-decoration:none;transition:all 0.3s ease;border:1px solid #FFA500;font-size:inherit}
+    .nav-admin:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,215,0,0.3)}
+    .nav-user{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.1);padding:5px 15px;border-radius:20px;backdrop-filter:blur(10px)}
+    .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(45deg,#4CAF50,#45a049);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px}
+    .logout-btn{background:rgba(255,0,0,0.2);border:1px solid rgba(255,0,0,0.5);color:white;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:12px;transition:all 0.3s ease}
+    .font-controls{display:flex;gap:5px;margin-right:10px}
+    .font-btn{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:14px;font-weight:bold;transition:all 0.3s ease;min-width:30px}
+    .font-btn:hover{background:rgba(255,255,255,0.3);transform:translateY(-1px)}
+    h2{font-size:1.2rem;margin:10px 0}
+    input,select{background:rgba(255,255,255,0.9);border-radius:8px;border:none;color:#003366;box-shadow:0 2px 5px rgba(0,0,0,0.3);font-size:12px;margin:2px;padding:4px;max-width:100px}
+    label{font-weight:bold;margin:5px;font-size:14px}
+    .table-container{width:100%;max-width:100%;overflow-x:auto;margin:10px auto;background:rgba(0,0,0,0.2);border-radius:10px;padding:5px}
+    table{margin:auto;background:rgba(255,255,255,0.9);color:#003366;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden;font-size:11px;box-shadow:0 2px 8px rgba(0,0,0,0.3);width:98%;min-width:300px;table-layout:fixed}
+    th,td{padding:6px 4px;border-bottom:1px solid #003366;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    th{background:#003366;color:white;font-weight:bold;font-size:11px}
+    th:nth-child(1),td:nth-child(1){width:10%}
+    th:nth-child(2),td:nth-child(2){width:10%}
+    th:nth-child(3),td:nth-child(3){width:11%}
+    th:nth-child(4),td:nth-child(4){width:20%}
+    th:nth-child(5),td:nth-child(5){width:20%}
+    th:nth-child(6),td:nth-child(6){width:8%}
+    th:nth-child(7),td:nth-child(7){width:8%}
+    th:nth-child(8),td:nth-child(8){width:13%}
+    select{font-size:10px;padding:3px}
+    .ok{background:#e0ffe0;font-weight:bold;color:#060}
+    .error{background:#ffe0e0;font-weight:bold;color:#900}
+    .off{background:#f0f0f0;font-weight:bold;color:#777}
+    footer{margin-top:20px;color:#ccc;text-align:center;font-size:12px}
+    .whatsapp-link{color:#25D366;text-decoration:none;font-weight:bold;transition:all 0.3s ease;cursor:pointer}
+    .whatsapp-link:hover{color:#128C7E;text-shadow:0 0 5px rgba(37,211,102,0.5);transform:scale(1.05)}
+    .action-button{position:fixed;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.3);border:none;font-size:18px;color:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;top:10px;right:10px}
+    .dark-mode{background:linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url('background.jpg')!important}
+    .dark-mode table{background:rgba(40,40,60,0.85)!important;color:#eee!important}
+    .dark-mode td{border-bottom:1px solid #555!important;color:#eee!important}
+    .dark-mode input,.dark-mode select{background:rgba(50,50,70,0.9)!important;color:#eee!important}
+    .dark-mode .ok{background:#205020!important;color:#8f8!important}
+    .dark-mode .error{background:#502020!important;color:#f88!important}
+    .dark-mode .off{background:#404040!important;color:#aaa!important}
+    .dark-mode #totalPercentDisplay{color:#fff!important}
+    .access-denied{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url('background.jpg');background-size:cover;background-position:center;display:flex;justify-content:center;align-items:center;z-index:9999}
+    .access-denied-content{text-align:center;background:rgba(255,255,255,0.1);padding:40px;border-radius:20px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2)}
+    .access-denied-icon{font-size:5rem;color:#f44336;margin-bottom:20px}
+    .access-denied-title{font-size:2rem;color:#f44336;margin-bottom:15px}
+    .access-denied-text{font-size:1.2rem;margin-bottom:20px;opacity:0.8}
+    .login-btn{padding:12px 25px;background:linear-gradient(45deg,#4CAF50,#45a049);color:white;border:none;border-radius:10px;cursor:pointer;font-size:16px;transition:all 0.3s ease;margin:5px}
+    .security-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;backdrop-filter:blur(5px)}
+    .security-modal.show{display:flex;justify-content:center;align-items:center}
+    .security-modal-content{background:rgba(255,255,255,0.95);padding:30px;border-radius:15px;max-width:500px;width:90%;color:#003366;text-align:center;animation:modalSlideIn 0.5s ease}
+    @keyframes modalSlideIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+    .security-icon{font-size:3rem;margin-bottom:15px}
+    .security-title{font-size:1.5rem;margin-bottom:15px;font-weight:bold}
+    .security-text{margin-bottom:20px;line-height:1.5}
+    .attempt-counter{background:rgba(255,193,7,0.2);border:1px solid rgba(255,193,7,0.5);color:#f57c00;padding:10px;border-radius:8px;margin:15px 0;font-weight:bold}
+    .security-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+    .modal-btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:500;transition:all 0.3s ease}
+    .modal-btn-primary{background:#4CAF50;color:white}
+    .modal-btn-secondary{background:#2196F3;color:white}
+    .modal-btn-danger{background:#f44336;color:white}
+    .modal-btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.3)}
+    @media (max-width:440px){
+      input[type="number"]{width:40px;padding:4px 2px}
+      .table-container{padding:2px}
+      table{font-size:10px;width:99%}
+      th,td{padding:4px 2px}
+      select{font-size:9px;padding:2px;width:90%}
+      th:nth-child(1),td:nth-child(1){width:9%}
+      th:nth-child(2),td:nth-child(2){width:8%}
+      th:nth-child(3),td:nth-child(3){width:11%}
+      th:nth-child(4),td:nth-child(4){width:19%}
+      th:nth-child(5),td:nth-child(5){width:19%}
+      th:nth-child(6),td:nth-child(6){width:8%}
+      th:nth-child(7),td:nth-child(7){width:8%}
+      th:nth-child(8),td:nth-child(8){width:18%}
+      .nav-bar{flex-direction:column;gap:15px;padding:15px}
+      .nav-links{order:1;justify-content:center;width:100%}
+      .nav-user{order:2;width:100%;justify-content:space-between}
+      .nav-link{padding:10px 15px;font-size:14px}
+      .nav-admin{padding:10px 15px;font-size:14px;display:inline-flex;align-items:center}
+      .security-buttons{flex-direction:column}
+      .modal-btn{width:100%}
+    }
+    @media (max-height:500px){.nav-bar{padding:4px}h2{margin:5px 0;font-size:1rem}label{display:inline-block}}
+  </style>
+</head>
+<body>
+  <!-- Security Modal -->
+  <div id="securityModal" class="security-modal">
+    <div class="security-modal-content">
+      <div class="security-icon" id="securityIcon">⚠️</div>
+      <div class="security-title" id="securityTitle">Security Warning</div>
+      <div class="security-text" id="securityText">We detected you trying to access developer tools.</div>
+      <div class="attempt-counter" id="attemptCounter">Attempts: <span id="attemptCount">1</span>/3</div>
+      <div class="security-buttons">
+        <button class="modal-btn modal-btn-primary" onclick="acknowledgeWarning()">I Understand</button>
+        <button class="modal-btn modal-btn-secondary" onclick="resetPage()">Reset Page</button>
+        <button class="modal-btn modal-btn-danger" onclick="learnMore()">Learn More</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Access Denied -->
+  <div id="accessDenied" class="access-denied" style="display:none">
+    <div class="access-denied-content">
+      <div class="access-denied-icon">🔒</div>
+      <div class="access-denied-title">Login Required</div>
+      <div class="access-denied-text">You need to login to access NMOGAS Blender.<br>Please login with your KNPC credentials.</div>
+      <button class="login-btn" onclick="goToLogin()">Go to Login</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="mainContent">
+    <div class="nav-bar">
+      <div class="nav-logo">Tank Tools</div>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">PBCR</a>
+        <a class="nav-link" href="plcr.html">PLCR</a>
+        <a class="nav-link active" href="NMOGASBL.html">NMOGAS</a>
+        <a class="nav-link" href="live-tanks.html" id="liveTanksLink" style="display:none">🔴 Live Tanks</a>
+        <a class="nav-admin" href="dashboard.html" id="adminLink" style="display:none">🔐 Dashboard</a>
+      </div>
+      <div class="nav-user" id="navUser">
+        <div class="font-controls">
+          <button class="font-btn" onclick="decreaseFontSize()" title="تصغير الخط">-</button>
+          <button class="font-btn" onclick="increaseFontSize()" title="تكبير الخط">+</button>
+        </div>
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div id="userName">User</div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <h2>NMOGAS Blender</h2>
+
+    <div style="margin:10px 0">
+      <label>Total Rate (m³/hr): <input type="number" id="totalRate" value="1350" min="0" /></label>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr><th>LOOP</th><th>%</th><th>Rate</th><th>Tank</th><th>Pump</th><th>Min</th><th>Max</th><th>Status</th></tr>
+          <tr><th>Total %</th><th id="totalPercentDisplay" colspan="7" style="background:#eef;color:#003366">0%</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
+
+    <footer>
+      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.2
+      <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
+    </footer>
+  </div>
+
+  <script>
+    // 🔒 Smart Security System - iPhone Optimized  
+    (function(){
+      let attempts=0,modalOpen=false,isTyping=false,typingTimer=null;
+      
+      function initSecurity(){
+        // Enhanced iPhone detection and typing tracking
+        const isIPhone=/iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        // Multiple event listeners for comprehensive input tracking
+        ['focusin','focus','input','keydown','keyup','touchstart'].forEach(eventType=>{
+          document.addEventListener(eventType,e=>{
+            if(e.target.matches('input,textarea,select')){
+              isTyping=true;
+              clearTimeout(typingTimer);
+              typingTimer=setTimeout(()=>isTyping=false,isIPhone?1500:800);
+            }
+          },true);
+        });
+        
+        // Additional safety for form interactions
+        document.addEventListener('change',e=>{
+          if(e.target.matches('input,textarea,select')){
+            isTyping=true;
+            clearTimeout(typingTimer);
+            typingTimer=setTimeout(()=>isTyping=false,1000);
+          }
+        });
+        
+        // Enhanced event blocking when typing
+        document.addEventListener('contextmenu',e=>{
+          if(isTyping||e.target.matches('input,textarea,select')||e.target.closest('input,textarea,select'))return;
+          handleViolation('context-menu')(e);
+        });
+        
+        document.addEventListener('selectstart',e=>{
+          if(isTyping||e.target.matches('input,textarea,select')||e.target.closest('input,textarea,select'))return;
+          handleViolation('text-selection')(e);
+        });
+        
+        document.addEventListener('keydown',e=>{
+          if(isTyping||e.target.matches('input,textarea,select')||e.target.closest('input,textarea,select'))return;
+          const dangerous=[(e.ctrlKey&&e.key==='u'),(e.ctrlKey&&e.key==='s'),(e.ctrlKey&&e.shiftKey&&e.key==='I'),(e.key==='F12'),(e.ctrlKey&&e.shiftKey&&e.key==='C'),(e.ctrlKey&&e.shiftKey&&e.key==='J')];
+          if(dangerous.some(c=>c))handleViolation('keyboard-shortcut')(e);
+        });
+        
+        // DevTools detection with typing check
+        let devOpen=false;
+        setInterval(()=>{
+          if(isTyping)return;
+          const threshold=160,wDiff=window.outerWidth-window.innerWidth,hDiff=window.outerHeight-window.innerHeight;
+          if(wDiff>threshold||hDiff>threshold){
+            if(!devOpen){devOpen=true;setTimeout(()=>{if(!isTyping)handleViolation('devtools-detected')()},500)}
+          }else{devOpen=false}
+        },isIPhone?5000:3000);
+      }
+      function handleViolation(type){
+        return function(e){
+          if(e&&e.preventDefault)e.preventDefault();
+          attempts++;
+          if(attempts===1)showWarning('first');
+          else if(attempts===2)showWarning('second');
+          else if(attempts>=3)showWarning('final');
+          return false
+        }
+      }
+      function showWarning(level){
+        if(modalOpen)return;
+        const modal=document.getElementById('securityModal'),icon=document.getElementById('securityIcon'),title=document.getElementById('securityTitle'),text=document.getElementById('securityText'),counter=document.getElementById('attemptCounter'),countSpan=document.getElementById('attemptCount');
+        modalOpen=true;countSpan.textContent=attempts;
+        if(level==='first'){
+          icon.textContent='👀';title.textContent='Security Notice';
+          text.innerHTML='<p>We noticed you tried to access developer tools on NMOGAS Blender.</p><p><strong>If this was accidental:</strong> No problem! Click "I Understand" to continue.</p><p><strong>Note:</strong> This system manages critical blending operations for loops 720-727.</p>';
+          counter.style.background='rgba(33,150,243,0.2)';counter.style.borderColor='rgba(33,150,243,0.5)';counter.style.color='#2196F3'
+        }else if(level==='second'){
+          icon.textContent='⚠️';title.textContent='Security Warning';
+          text.innerHTML='<p><strong>Second attempt detected on NMOGAS Blender.</strong></p><p>This system contains sensitive blending data:</p><ul style="text-align:left;margin:10px 0"><li>Critical loop management (720-727)</li><li>Tank and pump configurations</li><li>Flow rate calculations</li><li>KNPC operational parameters</li></ul><p>One more attempt will activate security measures.</p>';
+          counter.style.background='rgba(255,193,7,0.2)';counter.style.borderColor='rgba(255,193,7,0.5)';counter.style.color='#ffc107'
+        }else{
+          icon.textContent='🚫';title.textContent='NMOGAS Security Lock';
+          text.innerHTML='<p><strong>Maximum attempts exceeded on NMOGAS Blender.</strong></p><p>Enhanced monitoring activated for:</p><ul style="text-align:left;margin:10px 0"><li>Blending operation protection</li><li>Loop configuration security</li><li>Critical infrastructure data</li><li>KNPC process integrity</li></ul><p>Use "Reset Page" to continue normally.</p>';
+          counter.style.background='rgba(244,67,54,0.2)';counter.style.borderColor='rgba(244,67,54,0.5)';counter.style.color='#f44336';
+          setTimeout(()=>{if(attempts>=3)implementRestrictions()},5000)
+        }
+        modal.classList.add('show')
+      }
+      function implementRestrictions(){
+        document.body.style.filter='blur(3px)';
+        const overlay=document.createElement('div');
+        overlay.innerHTML='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10000;text-align:center;padding:20px"><div style="font-size:4rem;margin-bottom:20px">🔧</div><h2 style="color:#FFD700;margin-bottom:15px">NMOGAS Blender Protected</h2><p style="margin-bottom:30px;max-width:500px;line-height:1.5">Security monitoring active for critical blending operations and loop management systems.</p><button onclick="window.location.reload()" style="padding:12px 24px;background:#FFD700;color:#003366;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold">🔄 Reset Blender</button></div>';
+        document.body.appendChild(overlay)
+      }
+      window.acknowledgeWarning=()=>{document.getElementById('securityModal').classList.remove('show');modalOpen=false;showMessage(attempts>=3?'⚠️ Enhanced monitoring active':'✅ Continue using NMOGAS normally','success')};
+      window.resetPage=()=>window.location.reload();
+      window.learnMore=()=>{showMessage('🔒 NMOGAS protects critical blending operations and KNPC loop configurations. Contact Fahad - 17877 for support.','info');document.getElementById('securityModal').classList.remove('show');modalOpen=false};
+      initSecurity()
+    })();
+
+    // NMOGAS Application - Compact Version
+    const WHATSAPP_NUMBER="96555222550";
+    let currentUser=null;
+    
+    // Blending data (compressed)
+    const blendingData={"720":[{tank:"TK-61-275",pump:"P-61-309 A/B",min:133.8,max:446,tankShort:"275",pumpShort:"309"},{tank:"TK-61-277",pump:"P-61-309 A/B",min:133.8,max:446,tankShort:"277",pumpShort:"309"}],"721":[{tank:"TK-61-276",pump:"P-61-310",min:107.1,max:357,tankShort:"276",pumpShort:"310"}],"722":[{tank:"TK-61-221/254",pump:"P-61-308 A/B",min:231.6,max:772,tankShort:"221/254",pumpShort:"308"}],"723":[{tank:"TK-61-272",pump:"P-61-113 B",min:70.5,max:235,tankShort:"272",pumpShort:"113 B"},{tank:"TK-61-273",pump:"P-61-113 B",min:70.5,max:235,tankShort:"273",pumpShort:"113 B"},{tank:"TK-61-274",pump:"P-61-113 B",min:70.5,max:235,tankShort:"274",pumpShort:"113 B"},{tank:"TK-61-275",pump:"P-61-113 B",min:70.5,max:235,tankShort:"275",pumpShort:"113 B"},{tank:"TK-61-277",pump:"P-61-113 B",min:70.5,max:235,tankShort:"277",pumpShort:"113 B"},{tank:"TK-61-272",pump:"P-61-115",min:65.1,max:150,tankShort:"272",pumpShort:"115"},{tank:"TK-61-273",pump:"P-61-115",min:65.1,max:150,tankShort:"273",pumpShort:"115"},{tank:"TK-61-274",pump:"P-61-115",min:65.1,max:150,tankShort:"274",pumpShort:"115"}],"724":[{tank:"TK-61-274",pump:"P-61-173 A/B",min:122.4,max:180,tankShort:"274",pumpShort:"173"},{tank:"TK-61-277",pump:"P-61-173 A/B",min:122.4,max:180,tankShort:"277",pumpShort:"173"},{tank:"TK-61-278",pump:"P-61-173 A/B",min:122.4,max:180,tankShort:"278",pumpShort:"173"},{tank:"TK-61-279",pump:"P-61-173 A/B",min:122.4,max:180,tankShort:"279",pumpShort:"173"}],"725":[{tank:"TK-61-272",pump:"P-61-118 A/B",min:34.5,max:115,tankShort:"272",pumpShort:"118"},{tank:"TK-61-273",pump:"P-61-118 A/B",min:34.5,max:115,tankShort:"273",pumpShort:"118"},{tank:"TK-61-274",pump:"P-61-118 A/B",min:34.5,max:115,tankShort:"274",pumpShort:"118"},{tank:"TK-61-274",pump:"P-61-172 A/B",min:26.1,max:87,tankShort:"274",pumpShort:"172"},{tank:"TK-61-277",pump:"P-61-172 A/B",min:26.1,max:87,tankShort:"277",pumpShort:"172"},{tank:"TK-61-278",pump:"P-61-172 A/B",min:26.1,max:87,tankShort:"278",pumpShort:"172"},{tank:"TK-61-279",pump:"P-61-172 A/B",min:26.1,max:87,tankShort:"279",pumpShort:"172"}],"726":[{tank:"V-61-301/2",pump:"P-61-305 A/B",min:60,max:200,tankShort:"301/2",pumpShort:"305"}],"727":[{tank:"TK-61-303/4",pump:"P-61-307 A/B",min:185.1,max:617,tankShort:"303/4",pumpShort:"307"}]};
+
+    // Core Functions
+    window.addEventListener('load',()=>checkLoginStatus());
+    
+    function checkLoginStatus(){
+      const session=sessionStorage.getItem('tanktools_session'),userData=localStorage.getItem('tanktools_current_user');
+      if(session!=='active'||!userData){showAccessDenied();return}
+      try{currentUser=JSON.parse(userData);initializeApp();logActivity('nmogas_accessed',currentUser.username)}catch{showAccessDenied()}
+    }
+    
+    function showAccessDenied(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
+    
+    window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','NMOGASBL.html');window.location.href='login.html'};
+    
+    function initializeApp(){
+      document.getElementById('mainContent').style.display='block';
+      document.getElementById('accessDenied').style.display='none';
+      loadUserInfo();initializeBlender();setupDarkMode();loadDataFromLocalStorage()
+    }
+    
+    function loadUserInfo(){
+      if(!currentUser)return;
+      
+      const userNameElement = document.getElementById('userName');
+      const userAvatarElement = document.getElementById('userAvatar');
+      const adminLinkElement = document.getElementById('adminLink');
+      const liveTanksLinkElement = document.getElementById('liveTanksLink');
+      
+      if(userNameElement) {
+        userNameElement.textContent = currentUser.username;
+      }
+      
+      if(userAvatarElement) {
+        userAvatarElement.textContent = (currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
+      }
+      
+      if(adminLinkElement && (currentUser.username==='fam030'||currentUser.role==='admin')) {
+        adminLinkElement.style.display='inline-block';
+      }
+      
+      // Show Live Tanks link for allowed roles
+      const allowedRoles = ["admin", "panel_operator", "supervisor", "section_head", "operator", "planning"];
+      if(liveTanksLinkElement && allowedRoles.includes(currentUser.role)) {
+        liveTanksLinkElement.style.display='inline-block';
+      }
+    }
+    
+    window.logout=()=>{logActivity('user_logout',currentUser.username);sessionStorage.removeItem('tanktools_session');localStorage.removeItem('tanktools_current_user');window.location.href='login.html'};
+    
+    function showMessage(message,type){
+      const div=document.createElement('div');
+      div.innerHTML=message;
+      div.style.cssText=`position:fixed;top:20px;right:20px;background:${type==='success'?'#4CAF50':type==='warning'?'#ff9800':'#2196F3'};color:white;padding:15px 20px;border-radius:8px;z-index:10000;max-width:400px;box-shadow:0 4px 12px rgba(0,0,0,0.3)`;
+      document.body.appendChild(div);
+      setTimeout(()=>div.remove(),5000)
+    }
+
+    function initializeBlender(){
+      const body=document.getElementById("tableBody");
+      Object.keys(blendingData).sort().forEach(loopId=>body.appendChild(createRow(loopId)));
+      document.getElementById("totalRate").addEventListener("input",()=>{
+        document.querySelectorAll("#tableBody tr").forEach(row=>{
+          const percentInput=row.querySelector(".percent"),event=new Event('input',{bubbles:true});
+          percentInput.dispatchEvent(event)
+        })
+      })
+    }
+
+    function createRow(loopId){
+      const row=document.createElement("tr");row.dataset.loop=loopId;
+      const loopCell=document.createElement("td");loopCell.textContent=loopId;row.appendChild(loopCell);
+      const percentCell=document.createElement("td"),percentInput=document.createElement("input");
+      percentInput.type="number";percentInput.value=0;percentInput.min=0;percentInput.max=100;percentInput.className="percent";percentInput.style.width="90%";
+      percentCell.appendChild(percentInput);row.appendChild(percentCell);
+      const rateCell=document.createElement("td");rateCell.className="rateCell";rateCell.textContent="-";row.appendChild(rateCell);
+      const tankCell=document.createElement("td"),tankSelect=document.createElement("select");tankSelect.style.width="95%";
+      const tanks=[...new Set(blendingData[loopId].map(e=>({value:e.tank,text:e.tankShort})))];
+      tanks.forEach(tank=>{const opt=document.createElement("option");opt.value=tank.value;opt.textContent=tank.text;tankSelect.appendChild(opt)});
+      tankCell.appendChild(tankSelect);row.appendChild(tankCell);
+      const pumpCell=document.createElement("td"),pumpSelect=document.createElement("select");pumpSelect.style.width="95%";
+      pumpCell.appendChild(pumpSelect);row.appendChild(pumpCell);
+      const minCell=document.createElement("td");minCell.className="minCell";row.appendChild(minCell);
+      const maxCell=document.createElement("td");maxCell.className="maxCell";row.appendChild(maxCell);
+      const statusCell=document.createElement("td");statusCell.className="statusCell";row.appendChild(statusCell);
+      function updatePumpOptions(){
+        const selectedTank=tankSelect.value,pumps=blendingData[loopId].filter(e=>e.tank===selectedTank);
+        pumpSelect.innerHTML="";
+        pumps.forEach((p,i)=>{const opt=document.createElement("option");opt.value=i;opt.textContent=p.pumpShort;pumpSelect.appendChild(opt)});
+        updateStatus()
+      }
+      function updateStatus(){
+        const total=parseFloat(document.getElementById("totalRate").value)||0,percent=parseFloat(percentInput.value)||0,loopRate=+(total*percent/100).toFixed(2);
+        rateCell.textContent=loopRate;
+        if(percent===0){minCell.textContent="-";maxCell.textContent="-";statusCell.textContent="O/C";statusCell.className="statusCell off"}
+        else{
+          const selectedTank=tankSelect.value,pumpIndex=pumpSelect.value,validPumps=blendingData[loopId].filter(e=>e.tank===selectedTank),selectedPump=validPumps[pumpIndex];
+          if(selectedPump){
+            minCell.textContent=selectedPump.min;maxCell.textContent=selectedPump.max;
+            if(loopRate>=selectedPump.min&&loopRate<=selectedPump.max){statusCell.textContent="OK";statusCell.className="statusCell ok"}
+            else{statusCell.textContent="Out of range";statusCell.className="statusCell error"}
+          }else{minCell.textContent="-";maxCell.textContent="-";statusCell.textContent="-";statusCell.className="statusCell"}
+        }
+        updateTotalPercentDisplay()
+      }
+      percentInput.addEventListener("input",()=>{updateStatus();saveDataToLocalStorage();logActivity('nmogas_calculation',currentUser.username)});
+      tankSelect.addEventListener("change",()=>{updatePumpOptions();saveDataToLocalStorage()});
+      pumpSelect.addEventListener("change",()=>{updateStatus();saveDataToLocalStorage()});
+      updatePumpOptions();return row
+    }
+
+    function updateTotalPercentDisplay(){
+      const percentInputs=document.querySelectorAll(".percent");
+      let totalPercent=0;
+      percentInputs.forEach(input=>totalPercent+=parseFloat(input.value)||0);
+      const display=document.getElementById("totalPercentDisplay");
+      if(display){
+        display.textContent=totalPercent.toFixed(1)+"%";
+        if(totalPercent>100){display.style.backgroundColor="#ffe0e0";display.style.color="#d00"}
+        else if(totalPercent<100){display.style.backgroundColor="#eef";display.style.color="#003366"}
+        else{display.style.backgroundColor="#e0ffe0";display.style.color="#060"}
+      }
+    }
+
+    function saveDataToLocalStorage(){
+      const data={totalRate:document.getElementById("totalRate").value,rows:[]};
+      document.querySelectorAll("#tableBody tr").forEach(row=>{
+        const loopId=row.dataset.loop,percent=row.querySelector(".percent").value,tankSelect=row.querySelector("select:nth-of-type(1)"),pumpSelect=row.querySelector("select:nth-of-type(2)");
+        data.rows.push({loopId,percent,tankIndex:tankSelect.selectedIndex,pumpIndex:pumpSelect.selectedIndex})
+      });
+      localStorage.setItem('nmogasData',JSON.stringify(data))
+    }
+
+    function loadDataFromLocalStorage(){
+      const savedData=localStorage.getItem('nmogasData');
+      if(savedData){
+        const data=JSON.parse(savedData);
+        document.getElementById("totalRate").value=data.totalRate||1350;
+        if(data.rows&&data.rows.length>0){
+          const rows=document.querySelectorAll("#tableBody tr");
+          data.rows.forEach((rowData,index)=>{
+            if(index<rows.length){
+              const row=rows[index],percentInput=row.querySelector(".percent"),tankSelect=row.querySelector("select:nth-of-type(1)");
+              percentInput.value=rowData.percent||0;
+              if(tankSelect.options.length>rowData.tankIndex){
+                tankSelect.selectedIndex=rowData.tankIndex||0;
+                const event=new Event('change');tankSelect.dispatchEvent(event);
+                const pumpSelect=row.querySelector("select:nth-of-type(2)");
+                if(pumpSelect.options.length>rowData.pumpIndex)pumpSelect.selectedIndex=rowData.pumpIndex||0
+              }
+              const inputEvent=new Event('input',{bubbles:true});percentInput.dispatchEvent(inputEvent)
+            }
+          })
+        }
+        updateTotalPercentDisplay()
+      }
+    }
+
+    function setupDarkMode(){
+      let isDarkMode=localStorage.getItem('darkMode')==='true';
+      const darkModeButton=document.getElementById('darkModeButton');
+      function updateColorMode(){
+        if(isDarkMode){document.body.classList.add('dark-mode');darkModeButton.innerHTML='☀️'}
+        else{document.body.classList.remove('dark-mode');darkModeButton.innerHTML='🌙'}
+      }
+      darkModeButton.addEventListener('click',()=>{isDarkMode=!isDarkMode;localStorage.setItem('darkMode',isDarkMode);updateColorMode()});
+      updateColorMode()
+    }
+
+    window.openWhatsApp=()=>{
+      const message="مرحبا، أتواصل معك من خلال تطبيق NMOGAS Blender",whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      try{const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');if(!newWindow)window.location.href=whatsappURL}
+      catch{navigator.clipboard.writeText(whatsappURL).then(()=>alert(`تم نسخ رابط الواتساب:\n${whatsappURL}`)).catch(()=>alert(`رابط الواتساب:\n${whatsappURL}`))}
+    };
+
+    function logActivity(action,username){
+      const activities=JSON.parse(localStorage.getItem('tanktools_activities')||'[]');
+      activities.unshift({id:Date.now(),action,username,timestamp:new Date().toISOString(),ip:'local',userAgent:navigator.userAgent.substring(0,100)});
+      activities.splice(100);
+      localStorage.setItem('tanktools_activities',JSON.stringify(activities))
+    }
+    
+    // Auto-save and PWA
+    let saveTimeout;
+    const autoSave=()=>{clearTimeout(saveTimeout);saveTimeout=setTimeout(saveDataToLocalStorage,2000)};
+    document.getElementById("totalRate").addEventListener("input",autoSave);
+    if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));
+    
+    // Font size control functions
+    let currentFontSize = parseInt(localStorage.getItem('tanktools_font_size_nmogas') || '12');
+    
+    function increaseFontSize() {
+      if (currentFontSize < 20) {
+        currentFontSize += 2;
+        applyFontSize();
+        localStorage.setItem('tanktools_font_size_nmogas', currentFontSize);
+        showFontMessage(`📈 Font size increased to ${currentFontSize}px`);
+      }
+    }
+    
+    function decreaseFontSize() {
+      if (currentFontSize > 8) {
+        currentFontSize -= 2;
+        applyFontSize();
+        localStorage.setItem('tanktools_font_size_nmogas', currentFontSize);
+        showFontMessage(`📉 Font size decreased to ${currentFontSize}px`);
+      }
+    }
+    
+    function applyFontSize() {
+      const style = document.createElement('style');
+      style.id = 'dynamic-font-style';
+      
+      const existingStyle = document.getElementById('dynamic-font-style');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+      
+      style.textContent = `
+        input, select { font-size: ${currentFontSize}px !important; }
+        label { font-size: ${currentFontSize + 2}px !important; }
+        table { font-size: ${currentFontSize}px !important; }
+        th { font-size: ${currentFontSize}px !important; }
+        h2 { font-size: ${currentFontSize + 8}px !important; }
+        th, td { padding: ${Math.max(4, currentFontSize/2)}px ${Math.max(2, currentFontSize/3)}px !important; }
+      `;
+      
+      document.head.appendChild(style);
+    }
+    
+    function showFontMessage(message) {
+      const msgDiv = document.createElement('div');
+      msgDiv.style.cssText = 'position:fixed;top:80px;right:20px;background:rgba(76,175,80,0.9);color:white;padding:10px 15px;border-radius:8px;font-size:12px;z-index:1000;animation:slideIn 0.3s ease';
+      msgDiv.textContent = message;
+      document.body.appendChild(msgDiv);
+      setTimeout(() => msgDiv.remove(), 3000);
+    }
+    
+    // Apply saved font size on page load
+    applyFontSize();
+    
+    window.increaseFontSize = increaseFontSize;
+    window.decreaseFontSize = decreaseFontSize;
+
+    console.log('%c🔒 NMOGAS BLENDER - UPDATED VERSION','color:red;font-size:16px;font-weight:bold');
+    console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
+  </script>
+</body>
+</html>
