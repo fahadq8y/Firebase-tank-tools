@@ -356,17 +356,22 @@
         // إعطاء وقت إضافي لتحميل الجلسة
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        const session=sessionStorage.getItem('tanktools_session');
-        console.log('Checking session:', session ? 'Found' : 'Not found');
+        // فحص الجلسة النشطة
+        const session = sessionStorage.getItem('tanktools_session');
+        const userData = localStorage.getItem('tanktools_current_user');
         
-        if(!session){
-          console.log('No session found, redirecting to login');
+        console.log('Checking session:', session ? 'Found' : 'Not found');
+        console.log('Checking user data:', userData ? 'Found' : 'Not found');
+        
+        if(!session || session !== 'active' || !userData){
+          console.log('No valid session found, redirecting to login');
           showAccess();
           return;
         }
         
-        currentUser=JSON.parse(session);
-        console.log('User loaded:', currentUser.username);
+        // تحليل بيانات المستخدم
+        currentUser = JSON.parse(userData);
+        console.log('User loaded:', currentUser);
         
         // Initialize permissions manager if available
         if (window.PermissionsManager) {
@@ -421,6 +426,7 @@
 
     window.logout=()=>{
       sessionStorage.removeItem('tanktools_session');
+      localStorage.removeItem('tanktools_current_user');
       window.location.href='login.html';
     };
     
