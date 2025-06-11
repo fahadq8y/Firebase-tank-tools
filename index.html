@@ -226,9 +226,14 @@ let tanks={};
 let products={};
 
 window.addEventListener('load',()=>{
-  setTimeout(checkLogin,100);
-  loadTankDataFromFirebase();
-  loadProductsFromFirebase();
+  setTimeout(() => {
+    checkLogin();
+    // Load data after a short delay to ensure Firebase is ready
+    setTimeout(() => {
+      loadTankDataFromFirebase();
+      loadProductsFromFirebase();
+    }, 1000);
+  }, 100);
 });
 
 function checkLogin(){
@@ -299,46 +304,61 @@ window.logout=()=>{
 
 window.loadTank=()=>{
   const id=document.getElementById("tankInput").value.trim();
+  
+  // Show loading message
+  document.getElementById("availablePumpable").innerText = "🔄 Loading tank data...";
+  
   if(tanks[id]){
     c=tanks[id].comment;
     m=tanks[id].min;
     x=tanks[id].max;
+    document.getElementById("availablePumpable").innerText = "✅ Tank data loaded";
   }else{
     c=m=x=0;
+    document.getElementById("availablePumpable").innerText = `❌ Tank ${id} not found in database`;
+    document.getElementById("currentUllage").innerText = `📊 Available tanks: ${Object.keys(tanks).length}`;
   }
-  calculate();
+  
+  setTimeout(calculate, 500);
 };
 
 // Load tank data from Firebase
 async function loadTankDataFromFirebase() {
   try {
-    console.log('🔄 Loading PBCR tank data from Firebase...');
+    // Show loading status
+    const statusDiv = document.getElementById("availablePumpable");
+    if (statusDiv) statusDiv.innerText = "🔄 Loading tank data from Firebase...";
     
     // Load PBCR tanks
     const pbcrSnapshot = await getDoc(doc(db, 'tankData', 'pbcr'));
     if (pbcrSnapshot.exists()) {
       const pbcrData = pbcrSnapshot.data();
       if (pbcrData.tanks) {
-        // Merge PBCR tanks into main tanks object
         Object.assign(tanks, pbcrData.tanks);
-        console.log('✅ PBCR tank data loaded:', Object.keys(pbcrData.tanks).length, 'tanks');
+        if (statusDiv) statusDiv.innerText = `✅ PBCR tanks loaded: ${Object.keys(pbcrData.tanks).length}`;
       }
     }
     
-    // Load PLCR tanks if needed for future use
+    // Load PLCR tanks
     const plcrSnapshot = await getDoc(doc(db, 'tankData', 'plcr'));
     if (plcrSnapshot.exists()) {
       const plcrData = plcrSnapshot.data();
       if (plcrData.tanks) {
-        // Merge PLCR tanks into main tanks object
         Object.assign(tanks, plcrData.tanks);
-        console.log('✅ PLCR tank data loaded:', Object.keys(plcrData.tanks).length, 'tanks');
+        if (statusDiv) statusDiv.innerText = `✅ Total tanks loaded: ${Object.keys(tanks).length}`;
       }
     }
     
-    console.log('✅ Total tanks loaded:', Object.keys(tanks).length);
+    // Clear status after 3 seconds
+    setTimeout(() => {
+      if (statusDiv && statusDiv.innerText.includes('loaded')) {
+        statusDiv.innerText = "";
+      }
+    }, 3000);
+    
   } catch (error) {
-    console.error('❌ Error loading tank data:', error);
+    const statusDiv = document.getElementById("availablePumpable");
+    if (statusDiv) statusDiv.innerText = `❌ Error loading data: ${error.message}`;
   }
 }
 
