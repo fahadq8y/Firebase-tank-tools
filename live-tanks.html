@@ -1378,7 +1378,7 @@
       console.log('📊 Calculating actual rate:', {
         currentLevel,
         previousLevel,
-        rateUnit
+        rateUnit: `"${rateUnit}"` // Show exact value with quotes
       });
       
       // Get time difference
@@ -1408,32 +1408,38 @@
       let actualRate = 0;
       
       // Calculate rate based on the selected unit
-      if (rateUnit === "mtr/hr") {
+      if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
         // Rate in meters per hour
         actualRate = levelDiff / timeDiffHours;
         console.log('📐 Calculated rate (mtr/hr):', actualRate);
-      } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
+      } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³" || rateUnit.toLowerCase().includes('m3')) {
         // Rate in cubic meters per hour
         // First calculate volume in barrels
         const volumeDiffBarrels = levelDiff * c;
         const rateBarrels = volumeDiffBarrels / timeDiffHours;
-        // Convert from barrels to m³ (1 barrel = 6.28 m³ approximately)
+        // Convert from barrels to m³ using correct conversion (barrels ÷ 6.28 = m³)
         actualRate = rateBarrels / 6.28;
         console.log('🧊 Volume in barrels:', volumeDiffBarrels);
         console.log('🧊 Rate in barrels:', rateBarrels);
-        console.log('🧊 Rate Unit detected:', rateUnit);
+        console.log('🧊 Rate Unit detected as m³:', rateUnit);
         console.log('🧊 Calculated rate (m³/hr):', actualRate);
+        console.log('🧊 Conversion: ', rateBarrels, '÷ 6.28 =', actualRate);
       } else {
         // Default: bbl/hr (barrels per hour)
         const volumeDiff = levelDiff * c;
         actualRate = volumeDiff / timeDiffHours;
         console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
+        console.log('🛢️ Rate unit defaulted to barrels for:', rateUnit);
       }
       
-      // Update rate field
-      document.getElementById('editRate').value = Math.round(actualRate);
+      // Update rate field with proper precision for m³
+      if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³" || rateUnit.toLowerCase().includes('m3')) {
+        document.getElementById('editRate').value = Math.round(actualRate * 10) / 10; // One decimal place for m³
+      } else {
+        document.getElementById('editRate').value = Math.round(actualRate); // Whole numbers for barrels/meters
+      }
       
-      console.log('✅ Rate updated to:', Math.round(actualRate), rateUnit);
+      console.log('✅ Rate updated to:', document.getElementById('editRate').value, rateUnit);
       
       // Recalculate finish time
       calculateEditTime();
