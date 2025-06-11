@@ -307,13 +307,34 @@ window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','index.html');
 function initApp(){
   document.getElementById('mainContent').style.display='block';
   document.getElementById('accessDenied').style.display='none';
-  loadUser();
-  loadTankData();
-  loadData();
-  setupDark();
   
-  // Apply UI restrictions based on permissions
-  window.permissionsManager.applyUIRestrictions();
+  // Wait for permissions to load before applying UI
+  setTimeout(() => {
+    loadUser();
+    loadTankData();
+    loadData();
+    setupDark();
+    
+    // Apply UI restrictions based on permissions
+    if (window.permissionsManager) {
+      window.permissionsManager.applyUIRestrictions();
+    }
+    
+    // Show Live Tanks button if user has permission
+    showLiveTanksButton();
+  }, 500);
+}
+
+function showLiveTanksButton() {
+  if (currentUser && window.permissionsManager) {
+    // Check if user has addToLiveTanks permission
+    if (window.permissionsManager.hasActionAccess('addToLiveTanks')) {
+      const liveTanksBtn = document.getElementById('liveTanksBtn');
+      if (liveTanksBtn) {
+        liveTanksBtn.style.display = 'inline-flex';
+      }
+    }
+  }
 }
 function loadUser(){
   if(!currentUser) {
@@ -326,7 +347,8 @@ function loadUser(){
   console.log('Full Name:', currentUser.fullName);
   
   const userNameElement = document.getElementById('userName');
-  const displayName = currentUser.fullName || currentUser.username;
+  // Use fullName first, then username, fallback to 'User'
+  const displayName = currentUser.fullName || currentUser.username || 'User';
   
   if(userNameElement) {
     userNameElement.textContent = displayName;
@@ -340,13 +362,21 @@ function loadUser(){
     avatarElement.textContent = displayName.charAt(0).toUpperCase();
   }
   
+  // Show admin link for admin users
   if(currentUser.username==='fam030'||currentUser.role==='admin') {
-    document.getElementById('adminLink').style.display='inline-block';
+    const adminLink = document.getElementById('adminLink');
+    if (adminLink) {
+      adminLink.style.display='inline-block';
+    }
   }
   
+  // Show live tanks link for authorized roles
   const roles=["admin","panel_operator","supervisor","section_head","operator","planning"];
   if(roles.includes(currentUser.role)) {
-    document.getElementById('liveTanksLink').style.display='inline-block';
+    const liveTanksLink = document.getElementById('liveTanksLink');
+    if (liveTanksLink) {
+      liveTanksLink.style.display='inline-block';
+    }
   }
 }
 window.logout=()=>{sessionStorage.removeItem('tanktools_session');localStorage.removeItem('tanktools_current_user');window.location.href='login.html'};
@@ -567,6 +597,37 @@ async function logPBCRCalculation(tankNumber, hours, minutes, finishTime, finish
     });
   } catch (error) {
     console.error('Error logging PBCR calculation:', error);
+  }
+}
+
+// Permission check functions
+function checkActionPermission(action) {
+  try {
+    if (!window.permissionsManager) {
+      console.log('❌ permissionsManager not available');
+      return false;
+    }
+    const hasPermission = window.permissionsManager.hasActionAccess(action);
+    console.log(`✅ Action permission check for ${action}:`, hasPermission);
+    return hasPermission;
+  } catch (error) {
+    console.error('Error checking action permission:', error);
+    return false;
+  }
+}
+
+function checkTankAccess(tankNumber, department) {
+  try {
+    if (!window.permissionsManager) {
+      console.log('❌ permissionsManager not available');
+      return false;
+    }
+    const hasAccess = window.permissionsManager.hasTankAccess(tankNumber, department);
+    console.log(`✅ Tank access check for ${tankNumber} in ${department}:`, hasAccess);
+    return hasAccess;
+  } catch (error) {
+    console.error('Error checking tank access:', error);
+    return false;
   }
 }
 
