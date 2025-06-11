@@ -499,6 +499,14 @@
       try {
         currentUser = JSON.parse(userData);
         
+        // Initialize permissions manager
+        if (!window.permissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+        }
+        
+        // Load user permissions
+        await window.permissionsManager.loadUserPermissions(currentUser.username);
+        
         // Check permissions before initializing
         const hasPermissions = await checkUserPermissions();
         if (!hasPermissions) {
@@ -1426,6 +1434,32 @@
       setTimeout(() => container.innerHTML = '', 7000);
     }
 
+    // Add missing permission functions
+    async function checkUserPermissions() {
+      try {
+        if (!window.permissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+          await window.permissionsManager.loadUserPermissions(currentUser.username);
+        }
+        return true;
+      } catch (error) {
+        console.error('Error checking user permissions:', error);
+        return false;
+      }
+    }
+
+    function checkPageAccess(page) {
+      try {
+        if (!window.permissionsManager) {
+          return false;
+        }
+        return window.permissionsManager.hasPageAccess(page);
+      } catch (error) {
+        console.error('Error checking page access:', error);
+        return false;
+      }
+    }
+
     // Logout
     function logout() {
       localStorage.removeItem('tanktools_current_user');
@@ -1526,7 +1560,7 @@
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
 
-    console.log('%c🔥 FIREBASE ADMIN DASHBOARD v4.1', 'color:orange;font-size:20px;font-weight:bold');
+    console.log('%c🔥 FIREBASE ADMIN DASHBOARD v4.3', 'color:orange;font-size:20px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877', 'color:green;font-size:16px');
     console.log('%cLive Tanks Access Control System', 'color:blue;font-size:14px');
   </script>

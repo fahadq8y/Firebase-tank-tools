@@ -174,7 +174,7 @@
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
 
     <footer>
-      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.1
+      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3
       <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
     </footer>
   </div>
@@ -290,7 +290,26 @@
     function checkLoginStatus(){
       const session=sessionStorage.getItem('tanktools_session'),userData=localStorage.getItem('tanktools_current_user');
       if(session!=='active'||!userData){showAccessDenied();return}
-      try{currentUser=JSON.parse(userData);initializeApp();logActivity('nmogas_accessed',currentUser.username)}catch{showAccessDenied()}
+      try{
+        currentUser=JSON.parse(userData);
+        
+        // Initialize permissions manager
+        if (!window.permissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+        }
+        
+        // Load user permissions and check access
+        window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
+          if (!window.permissionsManager.hasPageAccess('nmogas')) {
+            showAccessDenied();
+            return;
+          }
+          initializeApp();
+          logActivity('nmogas_accessed',currentUser.username);
+        }).catch(() => {
+          showAccessDenied();
+        });
+      }catch{showAccessDenied()}
     }
     
     function showAccessDenied(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}

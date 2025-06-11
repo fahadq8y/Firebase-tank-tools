@@ -613,6 +613,14 @@
             try {
                 currentUser = JSON.parse(userData);
                 
+                // Initialize permissions manager
+                if (!window.permissionsManager) {
+                    window.permissionsManager = new PermissionsManager();
+                }
+                
+                // Load user permissions
+                await window.permissionsManager.loadUserPermissions(currentUser.username);
+                
                 // Check permissions before initializing
                 const hasPermissions = await checkUserPermissions();
                 if (!hasPermissions) {
@@ -1115,6 +1123,32 @@
             setTimeout(() => {
                 statusDiv.style.display = 'none';
             }, 5000);
+        }
+
+        // Add missing permission functions
+        async function checkUserPermissions() {
+            try {
+                if (!window.permissionsManager) {
+                    window.permissionsManager = new PermissionsManager();
+                    await window.permissionsManager.loadUserPermissions(currentUser.username);
+                }
+                return true;
+            } catch (error) {
+                console.error('Error checking user permissions:', error);
+                return false;
+            }
+        }
+
+        function checkPageAccess(page) {
+            try {
+                if (!window.permissionsManager) {
+                    return false;
+                }
+                return window.permissionsManager.hasPageAccess(page);
+            } catch (error) {
+                console.error('Error checking page access:', error);
+                return false;
+            }
         }
 
         // Close modals when clicking outside

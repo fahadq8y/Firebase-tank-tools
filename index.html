@@ -252,6 +252,14 @@ async function checkLogin(){
     currentUser=JSON.parse(u);
     if(!currentUser||!currentUser.username){showAccess();return}
     
+    // Initialize permissions manager
+    if (!window.permissionsManager) {
+      window.permissionsManager = new PermissionsManager();
+    }
+    
+    // Load user permissions
+    await window.permissionsManager.loadUserPermissions(currentUser.username);
+    
     // Check permissions before initializing
     const hasPermissions = await checkUserPermissions();
     if (!hasPermissions) {
@@ -266,6 +274,33 @@ async function checkLogin(){
     
     initApp();
   }catch{showAccess()}
+}
+
+// Add missing permission functions
+async function checkUserPermissions() {
+  try {
+    if (!window.permissionsManager) {
+      window.permissionsManager = new PermissionsManager();
+      await window.permissionsManager.loadUserPermissions(currentUser.username);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error checking user permissions:', error);
+    return false;
+  }
+}
+
+function checkPageAccess(page) {
+  try {
+    if (!window.permissionsManager) {
+      return false;
+    }
+    return window.permissionsManager.hasPageAccess(page);
+  } catch (error) {
+    console.error('Error checking page access:', error);
+    return false;
+  }
+}
 }
 function showAccess(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
 window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','index.html');window.location.href='login.html'};
@@ -460,7 +495,7 @@ applyFontSize();
 window.increaseFontSize = increaseFontSize;
 window.decreaseFontSize = decreaseFontSize;
 
-console.log('%c🔥 PBCR Live Tanks Integration v4.2','color:green;font-size:16px;font-weight:bold');
+console.log('%c🔥 PBCR Live Tanks Integration v4.3','color:green;font-size:16px;font-weight:bold');
 
 // Calendar Help Function
 function showCalendarHelp() {
@@ -550,7 +585,7 @@ window.showTableHelp = showTableHelp;
 </script>
 
 <footer>
-  By <a href="#" class="whatsapp-link" onclick="window.open('https://wa.me/96555222550','_blank'); return false;">Fahad - 17877</a> – Version v4.1
+  By <a href="#" class="whatsapp-link" onclick="window.open('https://wa.me/96555222550','_blank'); return false;">Fahad - 17877</a> – Version v4.3
   <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
 </footer>
 
