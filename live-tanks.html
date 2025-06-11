@@ -3,10 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Tanks - KNPC Operations</title>
+  <title>Live Tanks</title>
   <link href="icon.png" rel="icon" type="image/png"/>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#003366">
+  <script type="module">
+    import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import{getFirestore,doc,getDoc,collection,getDocs,query,orderBy,where,updateDoc,deleteDoc,onSnapshot}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
+    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.collection=collection;window.getDocs=getDocs;window.query=query;window.orderBy=orderBy;window.where=where;window.updateDoc=updateDoc;window.deleteDoc=deleteDoc;window.onSnapshot=onSnapshot;
+  </script>
+  <script src="permissions.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;color:white;font-family:Arial,sans-serif;padding:20px;min-height:100vh}
@@ -2027,7 +2034,7 @@
       if (unsubscribe) unsubscribe();
     });
 
-    console.log('%c🔴 LIVE TANKS v4.2 - UPDATED TABLE DESIGN', 'color:red;font-size:16px;font-weight:bold');
+    console.log('%c🔴 LIVE TANKS v4.1 - UPDATED TABLE DESIGN', 'color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877', 'color:green;font-size:14px');
     console.log('%cProduct-based sorting with urgency indicators', 'color:blue;font-size:14px');
   </script>
