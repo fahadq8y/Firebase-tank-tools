@@ -70,7 +70,7 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <button class="login-btn" onclick="goToLogin()">Go to Login</button>
 </div>
 </div>
-<div id="mainContent">
+<div id="mainContent" style="display:none;">
 <div class="nav-bar">
 <div class="nav-logo">Tank Tools</div>
 <div class="nav-links">
@@ -246,11 +246,28 @@ async function loadTankData() {
 const products={"PBCR":["LSFO","EGO 10PPM","EGO 500PPM","RHN","PCNA","NMOGAS","OLMOGAS","ATK","ARDR","IC5","ISOM","SLOP"],"WASHERY":["MOGAS 98","MOGAS 95","MOGAS 91","GO","KERO","ATK","Slop"],"PLCR":["Heavy Oil","Light Product","Mixed Product","Refined Oil","Final Product","Blended Oil"]};
 window.addEventListener('load',()=>setTimeout(checkLogin,100));
 async function checkLogin(){
+  // Hide main content immediately until login is verified
+  document.getElementById('mainContent').style.display='none';
+  document.getElementById('accessDenied').style.display='none';
+  
   const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');
-  if(s!=='active'||!u){showAccess();return}
+  
+  // If no active session, redirect to login immediately
+  if(s!=='active'||!u){
+    console.log('❌ No active session found, redirecting to login');
+    sessionStorage.setItem('tanktools_redirect','index.html');
+    window.location.href='login.html';
+    return;
+  }
+  
   try{
     currentUser=JSON.parse(u);
-    if(!currentUser||!currentUser.username){showAccess();return}
+    if(!currentUser||!currentUser.username){
+      console.log('❌ Invalid user data, redirecting to login');
+      sessionStorage.setItem('tanktools_redirect','index.html');
+      window.location.href='login.html';
+      return;
+    }
     
     // Initialize permissions manager
     if (!window.permissionsManager) {
@@ -263,17 +280,25 @@ async function checkLogin(){
     // Check permissions before initializing
     const hasPermissions = await checkUserPermissions();
     if (!hasPermissions) {
+      console.log('❌ User permissions check failed');
       showAccess();
       return;
     }
     
     // Check page access
     if (!checkPageAccess('pbcr')) {
+      console.log('❌ No access to PBCR page');
+      showAccess();
       return;
     }
     
+    console.log('✅ Login verification successful');
     initApp();
-  }catch{showAccess()}
+  }catch(error){
+    console.error('❌ Error during login check:', error);
+    sessionStorage.setItem('tanktools_redirect','index.html');
+    window.location.href='login.html';
+  }
 }
 
 // Add missing permission functions
@@ -302,7 +327,16 @@ function checkPageAccess(page) {
   }
 }
 }
-function showAccess(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
+function showAccess(){
+  document.getElementById('mainContent').style.display='none';
+  document.getElementById('accessDenied').style.display='flex';
+  
+  // Auto redirect to login after 3 seconds
+  setTimeout(() => {
+    sessionStorage.setItem('tanktools_redirect','index.html');
+    window.location.href='login.html';
+  }, 3000);
+}
 window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','index.html');window.location.href='login.html'};
 function initApp(){
   document.getElementById('mainContent').style.display='block';
