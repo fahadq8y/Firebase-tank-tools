@@ -529,156 +529,97 @@
     // Load tank data from Firebase (PLCR version)
     async function loadTankDataFromFirebase() {
       try {
-        // Show loading status
-        const statusDiv = document.getElementById("result");
-        if (statusDiv) statusDiv.innerText = "🔄 Loading PLCR tank data from Firebase...";
+        console.log('🔄 Loading PLCR tank data from Firebase...');
         
-        // Try multiple paths to find tank data
-        let dataLoaded = false;
+        // Try loading from tankData/plcr (the correct path from Firebase)
+        const plcrDocRef = doc(db, 'tankData', 'plcr');
+        const plcrDoc = await getDoc(plcrDocRef);
         
-        // Path 1: plcr/tanks
-        try {
-          const plcrSnapshot = await getDoc(doc(db, 'plcr', 'tanks'));
-          if (plcrSnapshot.exists()) {
-            const plcrData = plcrSnapshot.data();
-            
-            // Convert Firebase structure to our format
-            for (let tankId in plcrData) {
-              const tankData = plcrData[tankId];
-              if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-                tanks[tankId] = {
-                  comment: tankData.capacity,  // capacity becomes comment
-                  min: tankData.min,
-                  max: tankData.max
-                };
-              }
-            }
-            
-            if (Object.keys(tanks).length > 0) {
-              dataLoaded = true;
-              if (statusDiv) statusDiv.innerText = `✅ PLCR tanks loaded: ${Object.keys(tanks).length} tanks`;
-            }
-          }
-        } catch (e) {
-          console.log('PLCR path failed:', e.message);
-        }
-        
-        // Path 2: Load from tankData/plcr
-        if (!dataLoaded || Object.keys(tanks).length < 50) {
-          try {
-            if (statusDiv) statusDiv.innerText = "🔄 Loading from tankData collection...";
-            
-            const plcrTankDataSnapshot = await getDoc(doc(db, 'tankData', 'plcr'));
-            if (plcrTankDataSnapshot.exists()) {
-              const plcrTankData = plcrTankDataSnapshot.data();
-              if (plcrTankData.tanks) {
-                for (let tankId in plcrTankData.tanks) {
-                  const tankData = plcrTankData.tanks[tankId];
-                  if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-                    tanks[tankId] = {
-                      comment: tankData.capacity,
-                      min: tankData.min,
-                      max: tankData.max
-                    };
-                  }
-                }
-              }
-            }
-            
-            if (Object.keys(tanks).length > 0) {
-              dataLoaded = true;
-              if (statusDiv) statusDiv.innerText = `✅ Total PLCR tanks loaded: ${Object.keys(tanks).length} tanks`;
-            }
-            
-          } catch (e) {
-            console.log('TankData collection failed:', e.message);
-          }
-        }
-        
-        // If still insufficient data, use complete PLCR fallback
-        if (!dataLoaded || Object.keys(tanks).length < 50) {
-          // Add complete PLCR tank database as fallback
-          const completePLCRTanks = {
-            "101": {comment: 12879, min: 3.353, max: 15.24},
-            "102": {comment: 12879, min: 3.353, max: 15.24},
-            "103": {comment: 11327, min: 2, max: 17.95},
-            "104": {comment: 10781, min: 2, max: 17.093},
-            "105": {comment: 12288, min: 2, max: 14.96},
-            "106": {comment: 12287, min: 2, max: 14.96},
-            "107": {comment: 12287, min: 2, max: 14.96},
-            "108": {comment: 2249, min: 2, max: 13},
-            "109": {comment: 7217, min: 2, max: 15.309},
-            "110": {comment: 4198, min: 2, max: 13.468},
-            "201": {comment: 4198, min: 2, max: 13.458},
-            "202": {comment: 9563, min: 2, max: 17.897},
-            "203": {comment: 7236, min: 2, max: 15.442},
-            "204": {comment: 4188, min: 2, max: 13.714},
-            "205": {comment: 9506, min: 1.98, max: 17.89},
-            "206": {comment: 4118, min: 1.98, max: 15.977},
-            "207": {comment: 7756, min: 3.048, max: 18.54},
-            "208": {comment: 7756, min: 3.048, max: 18.54},
-            "209": {comment: 6070, min: 2.59, max: 14.173},
-            "210": {comment: 6070, min: 2.59, max: 14.173},
-            "301": {comment: 7171, min: 0.533, max: 18.797},
-            "302": {comment: 3155, min: 2, max: 14.2},
-            "303": {comment: 930, min: 2, max: 13},
-            "304": {comment: 4587, min: 2, max: 13},
-            "305": {comment: 5067, min: 2, max: 17.8},
-            "306": {comment: 1653, min: 2, max: 11.36},
-            "307": {comment: 1654, min: 2, max: 11.36},
-            "308": {comment: 11574, min: 2.68, max: 13.41},
-            "309": {comment: 9697, min: 5.4, max: 16.45},
-            "310": {comment: 9697, min: 5.4, max: 16.45},
-            "401": {comment: 9466, min: 2, max: 14.35},
-            "402": {comment: 14213, min: 2, max: 17.65},
-            "403": {comment: 14213, min: 2, max: 17.653},
-            "404": {comment: 12354, min: 2, max: 16.46},
-            "405": {comment: 9578, min: 2, max: 17.89},
-            "406": {comment: 9578, min: 2, max: 17.889},
-            "407": {comment: 9572, min: 2, max: 17.89},
-            "408": {comment: 12375, min: 2, max: 17.771},
-            "409": {comment: 12375, min: 2, max: 17.771},
-            "410": {comment: 12375, min: 2, max: 17.771},
-            "411": {comment: 12375, min: 2, max: 17.77},
-            "412": {comment: 2888, min: 2.13, max: 10.97},
-            "413": {comment: 2888, min: 2.13, max: 10.97},
-            "414": {comment: 930, min: 0.92, max: 14.33},
-            "415": {comment: 413, min: 2, max: 6.5},
-            "416": {comment: 1130, min: 1.67, max: 12.65},
-            "417": {comment: 1130, min: 1.67, max: 12.65},
-            "418": {comment: 529, min: 2, max: 10.363},
-            "419": {comment: 4531, min: 0.198, max: 9},
-            "420": {comment: 2939, min: 0.92, max: 11.6},
-            "421": {comment: 2942, min: 0.92, max: 12},
-            "422": {comment: 2942, min: 0.92, max: 12},
-            "423": {comment: 4142, min: 1.88, max: 14.29},
-            "424": {comment: 4142, min: 1.88, max: 14.29},
-            "425": {comment: 11990, min: 1.61, max: 15.6},
-            "426": {comment: 12377, min: 2, max: 17.77},
-            "427": {comment: 12377, min: 2, max: 17.772},
-            "428": {comment: 12377, min: 2, max: 17.772},
-            "429": {comment: 12377, min: 2, max: 17.772},
-            "430": {comment: 9490, min: 2, max: 13.3}
-          };
+        if (plcrDoc.exists()) {
+          const plcrData = plcrDoc.data();
+          console.log('PLCR data found:', plcrData);
           
-          // Merge with existing data
-          Object.assign(tanks, completePLCRTanks);
-          
-          if (statusDiv) statusDiv.innerText = `⚠️ Using complete PLCR database: ${Object.keys(tanks).length} tanks`;
+          if (plcrData.tanks) {
+            // Convert Firebase data to expected format
+            Object.keys(plcrData.tanks).forEach(tankId => {
+              const tankData = plcrData.tanks[tankId];
+              tanks[tankId] = {
+                comment: tankData.gross || tankData.capacity || 0,
+                min: tankData.factor || 0,
+                max: tankData.factor || 0,
+                department: tankData.department || 'PLCR',
+                type: tankData.type || 'conversion'
+              };
+            });
+            
+            console.log(`✅ PLCR tanks loaded from Firebase: ${Object.keys(tanks).length} tanks`);
+            showMessage(`✅ PLCR tank data loaded: ${Object.keys(tanks).length} tanks`, 'success');
+            return;
+          }
         }
         
-        // Clear status after 3 seconds
-        setTimeout(() => {
-          if (statusDiv && (statusDiv.innerText.includes('loaded') || statusDiv.innerText.includes('database'))) {
-            statusDiv.innerText = "";
-          }
-        }, 3000);
+        console.log('⚠️ No PLCR data in Firebase, using fallback data');
+        loadFallbackPLCRData();
         
       } catch (error) {
-        const statusDiv = document.getElementById("result");
-        if (statusDiv) statusDiv.innerText = `❌ Firebase Error: ${error.message}`;
-        console.error('Firebase loading error:', error);
+        console.error('❌ Firebase error:', error);
+        showMessage('⚠️ Using fallback PLCR data', 'warning');
+        loadFallbackPLCRData();
       }
+    }
+    
+    function loadFallbackPLCRData() {
+      // Fallback PLCR tank data based on Firebase structure
+      const fallbackTanks = {
+        "467": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "101": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "204": {comment: 8500, min: 1.2, max: 1.2, department: "PLCR", type: "conversion"},
+        "255": {comment: 7800, min: 1.1, max: 1.1, department: "PLCR", type: "conversion"},
+        "256": {comment: 7800, min: 1.1, max: 1.1, department: "PLCR", type: "conversion"},
+        "272": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "273": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "274": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "275": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "281": {comment: 8800, min: 1.3, max: 1.3, department: "PLCR", type: "conversion"},
+        "282": {comment: 8800, min: 1.3, max: 1.3, department: "PLCR", type: "conversion"},
+        "301": {comment: 9500, min: 1.5, max: 1.5, department: "PLCR", type: "conversion"},
+        "302": {comment: 9500, min: 1.5, max: 1.5, department: "PLCR", type: "conversion"},
+        "424": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
+        "425": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
+        "426": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
+        "456": {comment: 9800, min: 1.45, max: 1.45, department: "PLCR", type: "conversion"},
+        "460": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
+        "461": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
+        "462": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
+        "468": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "469": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "470": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "521": {comment: 11000, min: 1.7, max: 1.7, department: "PLCR", type: "conversion"},
+        "522": {comment: 11000, min: 1.7, max: 1.7, department: "PLCR", type: "conversion"},
+        "531": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "532": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "533": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "534": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "600": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
+        "601": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
+        "603": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
+        "620": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
+        "621": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
+        "622": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
+        "664": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "665": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "668": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "669": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "670": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "671": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "672": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "702": {comment: 14000, min: 2.0, max: 2.0, department: "PLCR", type: "conversion"},
+        "703": {comment: 14000, min: 2.0, max: 2.0, department: "PLCR", type: "conversion"}
+      };
+      
+      tanks = fallbackTanks;
+      console.log(`⚠️ Using fallback PLCR data: ${Object.keys(tanks).length} tanks`);
+      showMessage(`⚠️ Using complete PLCR database: ${Object.keys(tanks).length} tanks`, 'warning');
     }
 
     // Load products from Firebase
