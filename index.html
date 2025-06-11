@@ -332,11 +332,26 @@ function checkPageAccess(page) {
 }
 
 function initApp(){
-  document.getElementById('mainContent').style.display='block';
-  document.getElementById('accessDenied').style.display='none';
+  console.log('🚀 Initializing app...');
+  
+  // Show main content
+  const mainContent = document.getElementById('mainContent');
+  if (mainContent) {
+    mainContent.style.display = 'block';
+    console.log('✅ Main content displayed');
+  } else {
+    console.error('❌ mainContent element not found!');
+  }
+  
+  // Hide access denied
+  const accessDenied = document.getElementById('accessDenied');
+  if (accessDenied) {
+    accessDenied.style.display = 'none';
+  }
   
   // Wait for permissions to load before applying UI
   setTimeout(() => {
+    console.log('⏰ Loading app components...');
     loadUser();
     loadTankData();
     loadData();
@@ -345,10 +360,12 @@ function initApp(){
     // Apply UI restrictions based on permissions
     if (window.permissionsManager) {
       window.permissionsManager.applyUIRestrictions();
+      console.log('✅ UI restrictions applied');
     }
     
     // Show Live Tanks button if user has permission
     showLiveTanksButton();
+    console.log('✅ App initialization complete');
   }, 500);
 }
 
