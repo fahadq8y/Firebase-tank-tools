@@ -359,11 +359,13 @@
       const liveTanksLinkElement = document.getElementById('liveTanksLink');
       
       if(userNameElement) {
-        userNameElement.textContent = currentUser.username;
+        // Use name first, then fullName, then username as fallback
+        userNameElement.textContent = currentUser.name || currentUser.fullName || currentUser.username || 'User';
       }
       
       if(userAvatarElement) {
-        userAvatarElement.textContent = (currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
+        const displayName = currentUser.name || currentUser.fullName || currentUser.username || 'User';
+        userAvatarElement.textContent = displayName.charAt(0).toUpperCase();
       }
       
       if(adminLinkElement && (currentUser.username==='fam030'||currentUser.role==='admin')) {
@@ -475,6 +477,190 @@
       localStorage.setItem('tanktools_activities',JSON.stringify(activities))
     }
     
+    // Load tank data from Firebase (PLCR version)
+    async function loadTankDataFromFirebase() {
+      try {
+        // Show loading status
+        const statusDiv = document.getElementById("result");
+        if (statusDiv) statusDiv.innerText = "🔄 Loading PLCR tank data from Firebase...";
+        
+        // Try multiple paths to find tank data
+        let dataLoaded = false;
+        
+        // Path 1: plcr/tanks
+        try {
+          const plcrSnapshot = await getDoc(doc(db, 'plcr', 'tanks'));
+          if (plcrSnapshot.exists()) {
+            const plcrData = plcrSnapshot.data();
+            
+            // Convert Firebase structure to our format
+            for (let tankId in plcrData) {
+              const tankData = plcrData[tankId];
+              if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+                tanks[tankId] = {
+                  comment: tankData.capacity,  // capacity becomes comment
+                  min: tankData.min,
+                  max: tankData.max
+                };
+              }
+            }
+            
+            if (Object.keys(tanks).length > 0) {
+              dataLoaded = true;
+              if (statusDiv) statusDiv.innerText = `✅ PLCR tanks loaded: ${Object.keys(tanks).length} tanks`;
+            }
+          }
+        } catch (e) {
+          console.log('PLCR path failed:', e.message);
+        }
+        
+        // Path 2: Load from tankData/plcr
+        if (!dataLoaded || Object.keys(tanks).length < 50) {
+          try {
+            if (statusDiv) statusDiv.innerText = "🔄 Loading from tankData collection...";
+            
+            const plcrTankDataSnapshot = await getDoc(doc(db, 'tankData', 'plcr'));
+            if (plcrTankDataSnapshot.exists()) {
+              const plcrTankData = plcrTankDataSnapshot.data();
+              if (plcrTankData.tanks) {
+                for (let tankId in plcrTankData.tanks) {
+                  const tankData = plcrTankData.tanks[tankId];
+                  if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+                    tanks[tankId] = {
+                      comment: tankData.capacity,
+                      min: tankData.min,
+                      max: tankData.max
+                    };
+                  }
+                }
+              }
+            }
+            
+            if (Object.keys(tanks).length > 0) {
+              dataLoaded = true;
+              if (statusDiv) statusDiv.innerText = `✅ Total PLCR tanks loaded: ${Object.keys(tanks).length} tanks`;
+            }
+            
+          } catch (e) {
+            console.log('TankData collection failed:', e.message);
+          }
+        }
+        
+        // If still insufficient data, use complete PLCR fallback
+        if (!dataLoaded || Object.keys(tanks).length < 50) {
+          // Add complete PLCR tank database as fallback
+          const completePLCRTanks = {
+            "101": {comment: 12879, min: 3.353, max: 15.24},
+            "102": {comment: 12879, min: 3.353, max: 15.24},
+            "103": {comment: 11327, min: 2, max: 17.95},
+            "104": {comment: 10781, min: 2, max: 17.093},
+            "105": {comment: 12288, min: 2, max: 14.96},
+            "106": {comment: 12287, min: 2, max: 14.96},
+            "107": {comment: 12287, min: 2, max: 14.96},
+            "108": {comment: 2249, min: 2, max: 13},
+            "109": {comment: 7217, min: 2, max: 15.309},
+            "110": {comment: 4198, min: 2, max: 13.468},
+            "201": {comment: 4198, min: 2, max: 13.458},
+            "202": {comment: 9563, min: 2, max: 17.897},
+            "203": {comment: 7236, min: 2, max: 15.442},
+            "204": {comment: 4188, min: 2, max: 13.714},
+            "205": {comment: 9506, min: 1.98, max: 17.89},
+            "206": {comment: 4118, min: 1.98, max: 15.977},
+            "207": {comment: 7756, min: 3.048, max: 18.54},
+            "208": {comment: 7756, min: 3.048, max: 18.54},
+            "209": {comment: 6070, min: 2.59, max: 14.173},
+            "210": {comment: 6070, min: 2.59, max: 14.173},
+            "301": {comment: 7171, min: 0.533, max: 18.797},
+            "302": {comment: 3155, min: 2, max: 14.2},
+            "303": {comment: 930, min: 2, max: 13},
+            "304": {comment: 4587, min: 2, max: 13},
+            "305": {comment: 5067, min: 2, max: 17.8},
+            "306": {comment: 1653, min: 2, max: 11.36},
+            "307": {comment: 1654, min: 2, max: 11.36},
+            "308": {comment: 11574, min: 2.68, max: 13.41},
+            "309": {comment: 9697, min: 5.4, max: 16.45},
+            "310": {comment: 9697, min: 5.4, max: 16.45},
+            "401": {comment: 9466, min: 2, max: 14.35},
+            "402": {comment: 14213, min: 2, max: 17.65},
+            "403": {comment: 14213, min: 2, max: 17.653},
+            "404": {comment: 12354, min: 2, max: 16.46},
+            "405": {comment: 9578, min: 2, max: 17.89},
+            "406": {comment: 9578, min: 2, max: 17.889},
+            "407": {comment: 9572, min: 2, max: 17.89},
+            "408": {comment: 12375, min: 2, max: 17.771},
+            "409": {comment: 12375, min: 2, max: 17.771},
+            "410": {comment: 12375, min: 2, max: 17.771},
+            "411": {comment: 12375, min: 2, max: 17.77},
+            "412": {comment: 2888, min: 2.13, max: 10.97},
+            "413": {comment: 2888, min: 2.13, max: 10.97},
+            "414": {comment: 930, min: 0.92, max: 14.33},
+            "415": {comment: 413, min: 2, max: 6.5},
+            "416": {comment: 1130, min: 1.67, max: 12.65},
+            "417": {comment: 1130, min: 1.67, max: 12.65},
+            "418": {comment: 529, min: 2, max: 10.363},
+            "419": {comment: 4531, min: 0.198, max: 9},
+            "420": {comment: 2939, min: 0.92, max: 11.6},
+            "421": {comment: 2942, min: 0.92, max: 12},
+            "422": {comment: 2942, min: 0.92, max: 12},
+            "423": {comment: 4142, min: 1.88, max: 14.29},
+            "424": {comment: 4142, min: 1.88, max: 14.29},
+            "425": {comment: 11990, min: 1.61, max: 15.6},
+            "426": {comment: 12377, min: 2, max: 17.77},
+            "427": {comment: 12377, min: 2, max: 17.772},
+            "428": {comment: 12377, min: 2, max: 17.772},
+            "429": {comment: 12377, min: 2, max: 17.772},
+            "430": {comment: 9490, min: 2, max: 13.3}
+          };
+          
+          // Merge with existing data
+          Object.assign(tanks, completePLCRTanks);
+          
+          if (statusDiv) statusDiv.innerText = `⚠️ Using complete PLCR database: ${Object.keys(tanks).length} tanks`;
+        }
+        
+        // Clear status after 3 seconds
+        setTimeout(() => {
+          if (statusDiv && (statusDiv.innerText.includes('loaded') || statusDiv.innerText.includes('database'))) {
+            statusDiv.innerText = "";
+          }
+        }, 3000);
+        
+      } catch (error) {
+        const statusDiv = document.getElementById("result");
+        if (statusDiv) statusDiv.innerText = `❌ Firebase Error: ${error.message}`;
+        console.error('Firebase loading error:', error);
+      }
+    }
+
+    // Load products from Firebase
+    async function loadProductsFromFirebase() {
+      try {
+        const productsSnapshot = await getDoc(doc(db, 'system', 'products'));
+        if (productsSnapshot.exists()) {
+          products = productsSnapshot.data();
+        } else {
+          // Fallback products
+          products = {
+            "Pumpable": {density: 0.85},
+            "Non-Pumpable": {density: 0.85},
+            "Gasoline": {density: 0.75},
+            "Diesel": {density: 0.85},
+            "Kerosene": {density: 0.8}
+          };
+        }
+      } catch (error) {
+        console.error('Products loading error:', error);
+        // Use fallback products
+        products = {
+          "Pumpable": {density: 0.85},
+          "Non-Pumpable": {density: 0.85},
+          "Gasoline": {density: 0.75},
+          "Diesel": {density: 0.85},
+          "Kerosene": {density: 0.8}
+        };
+      }
+    }
+
     // Auto-save and PWA
     document.addEventListener('input',e=>{if(e.target.matches('#tk,#value'))saveDataToLocalStorage()});
     if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));
@@ -536,6 +722,18 @@
 
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
+    
+    // Initialize everything on page load
+    window.addEventListener('load',()=>{
+      setTimeout(() => {
+        checkLogin();
+        loadTankDataFromFirebase();
+        loadProductsFromFirebase();
+        setupDarkMode();
+        applyFontSize();
+        loadDataFromLocalStorage();
+      }, 100);
+    });
   </script>
 </body>
 </html>
