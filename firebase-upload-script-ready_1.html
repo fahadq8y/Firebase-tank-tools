@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Data Upload Script</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            direction: rtl;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Tank Data Upload</h1>
+        <div id="status" class="status info">جاهز لرفع البيانات إلى Firebase</div>
+        
+        <div class="progress">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div id="progressText">0%</div>
+        
+        <button id="uploadBtn" onclick="uploadAllData()">🚀 رفع جميع البيانات</button>
+        <button id="testBtn" onclick="testConnection()">🔍 اختبار الاتصال</button>
+        <button id="clearBtn" onclick="clearData()">🗑️ مسح البيانات</button>
+        
+        <div id="logs"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvqKZlsYGHGhJbQGJWJGJWJGJWJGJWJGJW",
+            authDomain: "tank-tools-knpc-c2d95.firebaseapp.com",
+            projectId: "tank-tools-knpc-c2d95",
+            storageBucket: "tank-tools-knpc-c2d95.appspot.com",
+            messagingSenderId: "510062594324",
+            appId: "1:510062594324:web:b892fd02007a5ca2f0da01"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const pbcrTanks = {"225":{comment:12879,min:3.353,max:15.24},"226":{comment:12879,min:3.353,max:15.24},"227":{comment:12879,min:3.353,max:15.24},"253":{comment:9572,min:2,max:17.89},"254":{comment:9572,min:2,max:17.89},"255":{comment:9572,min:2,max:17.89},"256":{comment:9572,min:2,max:17.89},"260":{comment:9572,min:2,max:17.89},"272":{comment:9572,min:2,max:17.89},"273":{comment:9572,min:2,max:17.89},"274":{comment:9572,min:2,max:17.89},"275":{comment:9572,min:2,max:17.89},"276":{comment:9572,min:2,max:17.89},"277":{comment:9572,min:2,max:17.89},"278":{comment:9572,min:2,max:17.89},"279":{comment:9572,min:2,max:17.89},"301":{comment:9572,min:2,max:17.89},"302":{comment:9572,min:2,max:17.89},"303":{comment:9572,min:2,max:17.89},"304":{comment:9572,min:2,max:17.89},"305":{comment:9572,min:2,max:17.89},"450":{comment:9572,min:2,max:17.89},"451":{comment:9572,min:2,max:17.89},"452":{comment:9572,min:2,max:17.89},"453":{comment:9572,min:2,max:17.89},"454":{comment:9572,min:2,max:17.89},"455":{comment:9572,min:2,max:17.89},"456":{comment:9572,min:2,max:17.89},"457":{comment:9572,min:2,max:17.89},"458":{comment:9572,min:2,max:17.89},"459":{comment:9572,min:2,max:17.89},"460":{comment:9572,min:2,max:17.89},"461":{comment:9572,min:2,max:17.89},"462":{comment:9572,min:2,max:17.89},"463":{comment:9572,min:2,max:17.89},"464":{comment:9572,min:2,max:17.89},"465":{comment:9572,min:2,max:17.89},"466":{comment:9572,min:2,max:17.89},"467":{comment:9572,min:2,max:17.89},"468":{comment:9572,min:2,max:17.89},"469":{comment:9572,min:2,max:17.89},"470":{comment:9572,min:2,max:17.89},"503":{comment:9572,min:2,max:17.89},"504":{comment:9572,min:2,max:17.89},"505":{comment:9572,min:2,max:17.89},"506":{comment:9572,min:2,max:17.89},"507":{comment:9572,min:2,max:17.89},"508":{comment:9572,min:2,max:17.89},"509":{comment:9572,min:2,max:17.89},"510":{comment:9572,min:2,max:17.89},"511":{comment:9572,min:2,max:17.89},"512":{comment:9572,min:2,max:17.89},"513":{comment:9572,min:2,max:17.89},"514":{comment:9572,min:2,max:17.89},"515":{comment:9572,min:2,max:17.89},"516":{comment:9572,min:2,max:17.89},"517":{comment:9572,min:2,max:17.89},"518":{comment:9572,min:2,max:17.89},"519":{comment:9572,min:2,max:17.89},"520":{comment:9572,min:2,max:17.89},"521":{comment:9572,min:2,max:17.89},"522":{comment:9572,min:2,max:17.89},"523":{comment:9572,min:2,max:17.89},"524":{comment:9572,min:2,max:17.89},"525":{comment:9572,min:2,max:17.89},"526":{comment:9572,min:2,max:17.89},"527":{comment:9572,min:2,max:17.89},"528":{comment:9572,min:2,max:17.89},"529":{comment:9572,min:2,max:17.89},"530":{comment:9572,min:2,max:17.89},"531":{comment:9572,min:2,max:17.89},"532":{comment:9572,min:2,max:17.89},"533":{comment:9572,min:2,max:17.89},"534":{comment:9572,min:2,max:17.89},"600":{comment:9572,min:2,max:17.89},"601":{comment:9572,min:2,max:17.89},"602":{comment:9572,min:2,max:17.89},"603":{comment:9572,min:2,max:17.89},"604":{comment:9572,min:2,max:17.89},"605":{comment:9572,min:2,max:17.89},"606":{comment:9572,min:2,max:17.89},"607":{comment:9572,min:2,max:17.89},"608":{comment:9572,min:2,max:17.89},"609":{comment:9572,min:2,max:17.89},"610":{comment:9572,min:2,max:17.89},"611":{comment:9572,min:2,max:17.89},"612":{comment:9572,min:2,max:17.89},"613":{comment:9572,min:2,max:17.89},"614":{comment:9572,min:2,max:17.89},"615":{comment:9572,min:2,max:17.89},"616":{comment:9572,min:2,max:17.89},"617":{comment:9572,min:2,max:17.89},"618":{comment:9572,min:2,max:17.89},"619":{comment:9572,min:2,max:17.89},"620":{comment:9572,min:2,max:17.89},"621":{comment:9572,min:2,max:17.89},"622":{comment:9572,min:2,max:17.89},"623":{comment:9572,min:2,max:17.89},"624":{comment:9572,min:2,max:17.89},"625":{comment:9572,min:2,max:17.89},"626":{comment:9572,min:2,max:17.89},"627":{comment:9572,min:2,max:17.89},"628":{comment:9572,min:2,max:17.89},"629":{comment:9572,min:2,max:17.89},"630":{comment:9572,min:2,max:17.89},"631":{comment:9572,min:2,max:17.89},"632":{comment:9572,min:2,max:17.89},"633":{comment:9572,min:2,max:17.89},"634":{comment:9572,min:2,max:17.89},"635":{comment:9572,min:2,max:17.89},"636":{comment:9572,min:2,max:17.89},"637":{comment:9572,min:2,max:17.89},"638":{comment:9572,min:2,max:17.89},"639":{comment:9572,min:2,max:17.89},"640":{comment:9572,min:2,max:17.89},"641":{comment:9572,min:2,max:17.89},"642":{comment:9572,min:2,max:17.89},"643":{comment:9572,min:2,max:17.89},"644":{comment:9572,min:2,max:17.89},"645":{comment:9572,min:2,max:17.89},"646":{comment:9572,min:2,max:17.89},"647":{comment:9572,min:2,max:17.89},"648":{comment:9572,min:2,max:17.89},"649":{comment:9572,min:2,max:17.89},"650":{comment:9572,min:2,max:17.89},"651":{comment:9572,min:2,max:17.89},"652":{comment:9572,min:2,max:17.89},"653":{comment:9572,min:2,max:17.89},"654":{comment:9572,min:2,max:17.89},"655":{comment:9572,min:2,max:17.89},"656":{comment:9572,min:2,max:17.89},"657":{comment:9572,min:2,max:17.89},"658":{comment:9572,min:2,max:17.89},"659":{comment:9572,min:2,max:17.89},"660":{comment:9572,min:2,max:17.89},"661":{comment:9572,min:2,max:17.89},"662":{comment:9572,min:2,max:17.89},"663":{comment:9572,min:2,max:17.89},"664":{comment:9572,min:2,max:17.89},"665":{comment:9572,min:2,max:17.89},"666":{comment:9572,min:2,max:17.89},"667":{comment:9572,min:2,max:17.89},"668":{comment:9572,min:2,max:17.89},"669":{comment:9572,min:2,max:17.89},"670":{comment:9572,min:2,max:17.89},"671":{comment:9572,min:2,max:17.89},"672":{comment:9572,min:2,max:17.89},"703":{comment:9572,min:2,max:17.89},"704":{comment:9572,min:2,max:17.89},"705":{comment:9572,min:2,max:17.89},"706":{comment:9572,min:2,max:17.89},"707":{comment:9572,min:2,max:17.89},"708":{comment:9572,min:2,max:17.89},"709":{comment:9572,min:2,max:17.89},"710":{comment:9572,min:2,max:17.89},"711":{comment:9572,min:2,max:17.89},"712":{comment:9572,min:2,max:17.89},"713":{comment:9572,min:2,max:17.89},"714":{comment:9572,min:2,max:17.89},"715":{comment:9572,min:2,max:17.89},"716":{comment:9572,min:2,max:17.89},"717":{comment:9572,min:2,max:17.89},"718":{comment:9572,min:2,max:17.89},"719":{comment:9572,min:2,max:17.89},"720":{comment:9572,min:2,max:17.89},"721":{comment:9572,min:2,max:17.89},"722":{comment:9572,min:2,max:17.89},"723":{comment:9572,min:2,max:17.89},"724":{comment:9572,min:2,max:17.89},"725":{comment:9572,min:2,max:17.89},"726":{comment:9572,min:2,max:17.89},"727":{comment:9572,min:2,max:17.89},"728":{comment:9572,min:2,max:17.89},"729":{comment:9572,min:2,max:17.89},"730":{comment:9572,min:2,max:17.89},"731":{comment:9572,min:2,max:17.89},"732":{comment:9572,min:2,max:17.89},"733":{comment:9572,min:2,max:17.89},"734":{comment:9572,min:2,max:17.89},"735":{comment:9572,min:2,max:17.89},"736":{comment:9572,min:2,max:17.89},"737":{comment:9572,min:2,max:17.89},"738":{comment:9572,min:2,max:17.89},"739":{comment:9572,min:2,max:17.89},"740":{comment:9572,min:2,max:17.89},"741":{comment:9572,min:2,max:17.89},"742":{comment:9572,min:2,max:17.89},"743":{comment:9572,min:2,max:17.89},"744":{comment:9572,min:2,max:17.89},"745":{comment:9572,min:2,max:17.89},"746":{comment:9572,min:2,max:17.89},"747":{comment:9572,min:2,max:17.89},"748":{comment:9572,min:2,max:17.89},"749":{comment:9572,min:2,max:17.89},"750":{comment:9572,min:2,max:17.89},"751":{comment:9572,min:2,max:17.89},"752":{comment:9572,min:2,max:17.89},"753":{comment:9572,min:2,max:17.89},"754":{comment:9572,min:2,max:17.89},"755":{comment:9572,min:2,max:17.89},"756":{comment:9572,min:2,max:17.89},"757":{comment:9572,min:2,max:17.89},"758":{comment:9572,min:2,max:17.89},"759":{comment:9572,min:2,max:17.89},"760":{comment:9572,min:2,max:17.89},"761":{comment:9572,min:2,max:17.89},"762":{comment:9572,min:2,max:17.89},"820":{comment:9572,min:2,max:17.89},"821":{comment:9572,min:2,max:17.89},"822":{comment:9572,min:2,max:17.89},"823":{comment:9572,min:2,max:17.89},"824":{comment:9572,min:2,max:17.89},"825":{comment:9572,min:2,max:17.89},"826":{comment:9572,min:2,max:17.89},"827":{comment:9572,min:2,max:17.89},"828":{comment:9572,min:2,max:17.89},"829":{comment:9572,min:2,max:17.89},"830":{comment:9572,min:2,max:17.89},"831":{comment:9572,min:2,max:17.89},"832":{comment:9572,min:2,max:17.89},"833":{comment:9572,min:2,max:17.89},"834":{comment:9572,min:2,max:17.89},"835":{comment:9572,min:2,max:17.89},"836":{comment:9572,min:2,max:17.89},"900":{comment:9572,min:2,max:17.89},"901":{comment:9572,min:2,max:17.89}};
+
+        const plcrTanks = {"101":{factor:0.206,gross:7.746},"204":{factor:0.605,gross:7.266},"255":{factor:1.528,gross:9.047},"256":{factor:1.528,gross:9.047},"272":{factor:0.759,gross:9.506},"273":{factor:0.437,gross:9.506},"274":{factor:0.437,gross:9.506},"275":{factor:0.999,gross:8.874},"281":{factor:0.282,gross:7.881},"282":{factor:0.282,gross:7.881},"424":{factor:2.272,gross:9.843},"425":{factor:2.414,gross:9.047},"426":{factor:2.414,gross:9.047},"456":{factor:1.321,gross:8.873},"460":{factor:1.640,gross:8.860},"461":{factor:1.640,gross:8.860},"462":{factor:1.494,gross:8.874},"467":{factor:1.358,gross:9.054},"468":{factor:1.358,gross:9.054},"469":{factor:1.358,gross:9.054},"470":{factor:1.358,gross:9.054},"521":{factor:0.508,gross:8.168},"522":{factor:1.476,gross:8.168},"531":{factor:1.506,gross:8.168},"532":{factor:1.506,gross:8.168},"533":{factor:1.506,gross:8.168},"534":{factor:1.506,gross:8.168},"600":{factor:1.227,gross:7.736},"601":{factor:1.227,gross:7.736},"603":{factor:1.519,gross:7.700},"620":{factor:4.560,gross:7.640},"621":{factor:4.560,gross:7.640},"622":{factor:0.645,gross:7.764},"664":{factor:0.914,gross:7.727},"665":{factor:0.914,gross:7.727},"668":{factor:2.154,gross:7.740},"669":{factor:2.154,gross:7.740},"670":{factor:2.154,gross:7.740},"671":{factor:2.011,gross:7.830},"672":{factor:2.011,gross:7.830},"702":{factor:1.917,gross:6.763},"703":{factor:1.917,gross:6.763},"757":{factor:1.626,gross:7.000},"758":{factor:3.040,gross:6.787},"833":{factor:0.960,gross:7.768},"834":{factor:0.960,gross:7.768},"302":{factor:0.860,gross:7.758},"301":{factor:0.860,gross:7.758},"835":{factor:0.960,gross:7.748},"836":{factor:0.960,gross:7.748}};
+
+        window.testConnection = async function() {
+            try {
+                updateStatus('🔍 اختبار الاتصال مع Firebase...', 'info');
+                const testDoc = doc(db, 'tankData', 'test');
+                await setDoc(testDoc, { test: true, timestamp: new Date() });
+                updateStatus('✅ الاتصال مع Firebase ناجح!', 'success');
+                await deleteDoc(testDoc);
+            } catch (error) {
+                updateStatus('❌ فشل الاتصال: ' + error.message, 'error');
+                console.error('Connection test failed:', error);
+            }
+        };
+
+        window.uploadAllData = async function() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            
+            try {
+                updateStatus('🚀 بدء رفع البيانات...', 'info');
+                
+                await uploadPBCRData();
+                await uploadPLCRData();
+                await uploadPermissionsData();
+                
+                updateStatus('🎉 تم رفع جميع البيانات بنجاح!', 'success');
+                updateProgress(100);
+            } catch (error) {
+                updateStatus('❌ خطأ في رفع البيانات: ' + error.message, 'error');
+                console.error('Upload failed:', error);
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        };
+
+        async function uploadPBCRData() {
+            updateStatus('📊 رفع بيانات PBCR (111 تانك)...', 'info');
+            const tankKeys = Object.keys(pbcrTanks);
+            
+            for (let i = 0; i < tankKeys.length; i++) {
+                const tankId = tankKeys[i];
+                const tankData = pbcrTanks[tankId];
+                
+                const docRef = doc(db, 'tankData', 'pbcr', 'tanks', tankId);
+                await setDoc(docRef, {
+                    capacity: tankData.comment,
+                    min: tankData.min,
+                    max: tankData.max,
+                    department: 'PBCR',
+                    type: 'storage',
+                    lastUpdated: new Date()
+                });
+                
+                const progress = Math.round(((i + 1) / tankKeys.length) * 30);
+                updateProgress(progress);
+                addLog(`✅ Tank ${tankId} uploaded to PBCR`);
+            }
+        }
+
+        async function uploadPLCRData() {
+            updateStatus('📊 رفع بيانات PLCR (52 تانك)...', 'info');
+            const tankKeys = Object.keys(plcrTanks);
+            
+            for (let i = 0; i < tankKeys.length; i++) {
+                const tankId = tankKeys[i];
+                const tankData = plcrTanks[tankId];
+                
+                const docRef = doc(db, 'tankData', 'plcr', 'tanks', tankId);
+                await setDoc(docRef, {
+                    factor: tankData.factor,
+                    gross: tankData.gross,
+                    department: 'PLCR',
+                    type: 'conversion',
+                    lastUpdated: new Date()
+                });
+                
+                const progress = 30 + Math.round(((i + 1) / tankKeys.length) * 30);
+                updateProgress(progress);
+                addLog(`✅ Tank ${tankId} uploaded to PLCR`);
+            }
+        }
+
+        async function uploadPermissionsData() {
+            updateStatus('🔐 إنشاء نظام الصلاحيات...', 'info');
+            
+            const defaultPermissions = {
+                admin: {
+                    pages: { pbcr: true, plcr: true, liveTanks: true, dashboard: true, nmogas: true },
+                    data: { tankNumbers: true, currentLevels: true, capacityFactors: true, minMaxLevels: true, calculations: true, historicalData: true },
+                    actions: { viewOnly: false, addTanks: true, editTanks: true, deleteTanks: true, exportData: true },
+                    tankAccess: { type: 'all', departments: ['PBCR', 'PLCR', 'NMOGAS'], customList: [], range: { from: '', to: '' } },
+                    timeRestrictions: { workingHours: { enabled: false, from: '08:00', to: '17:00' }, workingDays: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'], expiryDate: null }
+                },
+                operator: {
+                    pages: { pbcr: true, plcr: true, liveTanks: true, dashboard: false, nmogas: false },
+                    data: { tankNumbers: true, currentLevels: true, capacityFactors: false, minMaxLevels: false, calculations: true, historicalData: false },
+                    actions: { viewOnly: true, addTanks: false, editTanks: false, deleteTanks: false, exportData: false },
+                    tankAccess: { type: 'department', departments: ['PBCR'], customList: [], range: { from: '', to: '' } },
+                    timeRestrictions: { workingHours: { enabled: true, from: '06:00', to: '18:00' }, workingDays: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'], expiryDate: null }
+                },
+                viewer: {
+                    pages: { pbcr: true, plcr: false, liveTanks: false, dashboard: false, nmogas: false },
+                    data: { tankNumbers: true, currentLevels: true, capacityFactors: false, minMaxLevels: false, calculations: false, historicalData: false },
+                    actions: { viewOnly: true, addTanks: false, editTanks: false, deleteTanks: false, exportData: false },
+                    tankAccess: { type: 'custom', departments: [], customList: ['225', '226', '227'], range: { from: '', to: '' } },
+                    timeRestrictions: { workingHours: { enabled: true, from: '08:00', to: '16:00' }, workingDays: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'], expiryDate: '2025-12-31' }
+                }
+            };
+            
+            const permissionsRef = doc(db, 'userPermissions', 'templates');
+            await setDoc(permissionsRef, defaultPermissions);
+            
+            const usersRef = doc(db, 'userPermissions', 'users');
+            await setDoc(usersRef, {
+                'fam030': { role: 'admin', customPermissions: null, lastLogin: null, status: 'active' },
+                'demo_operator': { role: 'operator', customPermissions: null, lastLogin: null, status: 'active' },
+                'demo_viewer': { role: 'viewer', customPermissions: null, lastLogin: null, status: 'active' }
+            });
+            
+            updateProgress(90);
+            addLog('✅ Permission system created');
+        }
+
+        window.clearData = async function() {
+            if (!confirm('هل أنت متأكد من حذف جميع البيانات؟')) return;
+            
+            try {
+                updateStatus('🗑️ حذف البيانات...', 'warning');
+                
+                const collections = ['tankData', 'userPermissions'];
+                for (const collectionName of collections) {
+                    const querySnapshot = await getDocs(collection(db, collectionName));
+                    for (const docSnapshot of querySnapshot.docs) {
+                        await deleteDoc(docSnapshot.ref);
+                    }
+                }
+                
+                updateStatus('✅ تم حذف جميع البيانات', 'success');
+                document.getElementById('logs').innerHTML = '';
+                updateProgress(0);
+            } catch (error) {
+                updateStatus('❌ خطأ في حذف البيانات: ' + error.message, 'error');
+            }
+        };
+
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function updateProgress(percent) {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            progressBar.style.width = percent + '%';
+            progressText.textContent = percent + '%';
+        }
+
+        function addLog(message) {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.style.cssText = 'padding: 5px; margin: 2px 0; background: #f8f9fa; border-radius: 3px; font-size: 14px;';
+            logEntry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        updateStatus('✅ Script جاهز للاستخدام', 'success');
+    </script>
+</body>
+</html>
+
