@@ -329,36 +329,77 @@ async function loadTankDataFromFirebase() {
     const statusDiv = document.getElementById("availablePumpable");
     if (statusDiv) statusDiv.innerText = "🔄 Loading tank data from Firebase...";
     
-    // Load PBCR tanks
-    const pbcrSnapshot = await getDoc(doc(db, 'tankData', 'pbcr'));
-    if (pbcrSnapshot.exists()) {
-      const pbcrData = pbcrSnapshot.data();
-      if (pbcrData.tanks) {
-        Object.assign(tanks, pbcrData.tanks);
-        if (statusDiv) statusDiv.innerText = `✅ PBCR tanks loaded: ${Object.keys(pbcrData.tanks).length}`;
+    // Load from tanks collection (the correct structure)
+    const tanksSnapshot = await getDoc(doc(db, 'tanks', 'tanks'));
+    if (tanksSnapshot.exists()) {
+      const tanksData = tanksSnapshot.data();
+      
+      // Convert Firebase structure to our format
+      for (let tankId in tanksData) {
+        const tankData = tanksData[tankId];
+        if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+          tanks[tankId] = {
+            comment: tankData.capacity,  // capacity becomes comment
+            min: tankData.min,
+            max: tankData.max
+          };
+        }
+      }
+      
+      if (statusDiv) statusDiv.innerText = `✅ Tanks loaded from Firebase: ${Object.keys(tanks).length}`;
+    } else {
+      // Try alternative path: pbcr collection
+      if (statusDiv) statusDiv.innerText = "🔄 Trying pbcr collection...";
+      
+      const pbcrSnapshot = await getDoc(doc(db, 'pbcr', 'tanks'));
+      if (pbcrSnapshot.exists()) {
+        const pbcrData = pbcrSnapshot.data();
+        
+        // Convert Firebase structure to our format
+        for (let tankId in pbcrData) {
+          const tankData = pbcrData[tankId];
+          if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+            tanks[tankId] = {
+              comment: tankData.capacity,  // capacity becomes comment
+              min: tankData.min,
+              max: tankData.max
+            };
+          }
+        }
+        
+        if (statusDiv) statusDiv.innerText = `✅ PBCR tanks loaded: ${Object.keys(tanks).length}`;
       }
     }
     
-    // Load PLCR tanks
-    const plcrSnapshot = await getDoc(doc(db, 'tankData', 'plcr'));
-    if (plcrSnapshot.exists()) {
-      const plcrData = plcrSnapshot.data();
-      if (plcrData.tanks) {
-        Object.assign(tanks, plcrData.tanks);
-        if (statusDiv) statusDiv.innerText = `✅ Total tanks loaded: ${Object.keys(tanks).length}`;
-      }
+    // If still no tanks, use fallback data
+    if (Object.keys(tanks).length === 0) {
+      tanks = {
+        "225": {comment: 12879, min: 3.353, max: 15.24},
+        "226": {comment: 12879, min: 3.353, max: 15.24},
+        "462": {comment: 12354, min: 2, max: 16.46},
+        "463": {comment: 9578, min: 2, max: 17.89}
+      };
+      if (statusDiv) statusDiv.innerText = `⚠️ Using fallback data: ${Object.keys(tanks).length} tanks`;
     }
     
     // Clear status after 3 seconds
     setTimeout(() => {
-      if (statusDiv && statusDiv.innerText.includes('loaded')) {
+      if (statusDiv && (statusDiv.innerText.includes('loaded') || statusDiv.innerText.includes('fallback'))) {
         statusDiv.innerText = "";
       }
     }, 3000);
     
   } catch (error) {
     const statusDiv = document.getElementById("availablePumpable");
-    if (statusDiv) statusDiv.innerText = `❌ Error loading data: ${error.message}`;
+    if (statusDiv) statusDiv.innerText = `❌ Error: ${error.message}`;
+    
+    // Use fallback data on error
+    tanks = {
+      "225": {comment: 12879, min: 3.353, max: 15.24},
+      "226": {comment: 12879, min: 3.353, max: 15.24},
+      "462": {comment: 12354, min: 2, max: 16.46},
+      "463": {comment: 9578, min: 2, max: 17.89}
+    };
   }
 }
 
