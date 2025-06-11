@@ -7,6 +7,13 @@
   <link href="icon.png" rel="icon" type="image/png"/>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#003366">
+  <script type="module">
+    import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import{getFirestore,doc,getDoc}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
+    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;
+  </script>
+  <script src="permissions.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:Arial,sans-serif;margin:0;padding:20px;background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;color:white;direction:ltr;min-height:100vh}
@@ -140,7 +147,7 @@
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
     
     <footer>
-      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.2
+      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.1
       <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
     </footer>
   </div>
@@ -243,20 +250,54 @@
       initSecurity()
     })();
 
-    // PLCR Application - Compact Version
+    // PLCR Application - Firebase Integrated
     const WHATSAPP_NUMBER="96555222550";
     let currentUser=null;
     
-    // Tank conversion data (compressed)
-    const tankConversions={"101":{factor:0.206,gross:7.746},"204":{factor:0.605,gross:7.266},"255":{factor:1.528,gross:9.047},"256":{factor:1.528,gross:9.047},"272":{factor:0.759,gross:9.506},"273":{factor:0.437,gross:9.506},"274":{factor:0.437,gross:9.506},"275":{factor:0.999,gross:8.874},"281":{factor:0.282,gross:7.881},"282":{factor:0.282,gross:7.881},"424":{factor:2.272,gross:9.843},"425":{factor:2.414,gross:9.047},"426":{factor:2.414,gross:9.047},"456":{factor:1.321,gross:8.873},"460":{factor:1.640,gross:8.860},"461":{factor:1.640,gross:8.860},"462":{factor:1.494,gross:8.874},"467":{factor:1.358,gross:9.054},"468":{factor:1.358,gross:9.054},"469":{factor:1.358,gross:9.054},"470":{factor:1.358,gross:9.054},"521":{factor:0.508,gross:8.168},"522":{factor:1.476,gross:8.168},"531":{factor:1.506,gross:8.168},"532":{factor:1.506,gross:8.168},"533":{factor:1.506,gross:8.168},"534":{factor:1.506,gross:8.168},"600":{factor:1.227,gross:7.736},"601":{factor:1.227,gross:7.736},"603":{factor:1.519,gross:7.700},"620":{factor:4.560,gross:7.640},"621":{factor:4.560,gross:7.640},"622":{factor:0.645,gross:7.764},"664":{factor:0.914,gross:7.727},"665":{factor:0.914,gross:7.727},"668":{factor:2.154,gross:7.740},"669":{factor:2.154,gross:7.740},"670":{factor:2.154,gross:7.740},"671":{factor:2.011,gross:7.830},"672":{factor:2.011,gross:7.830},"702":{factor:1.917,gross:6.763},"703":{factor:1.917,gross:6.763},"757":{factor:1.626,gross:7.000},"758":{factor:3.040,gross:6.787},"833":{factor:0.960,gross:7.768},"834":{factor:0.960,gross:7.768},"302":{factor:0.860,gross:7.758},"301":{factor:0.860,gross:7.758},"835":{factor:0.960,gross:7.748},"836":{factor:0.960,gross:7.748}};
+    // Tank conversion data will be loaded from Firebase
+    let tankConversions = {};
+    
+    // Load tank data from Firebase
+    async function loadTankData() {
+      try {
+        const plcrDoc = await getDoc(doc(db, 'tankData', 'plcr'));
+        if (plcrDoc.exists()) {
+          const rawData = plcrDoc.data();
+          // Filter tank data based on user permissions
+          tankConversions = window.permissionsManager.filterTankData(rawData, 'PLCR');
+          console.log('✅ PLCR tank data loaded and filtered:', Object.keys(tankConversions).length, 'tanks accessible');
+        } else {
+          console.log('❌ No PLCR tank data found in Firebase');
+        }
+      } catch (error) {
+        console.error('❌ Error loading PLCR tank data:', error);
+      }
+    }
 
     // Core Functions
     window.addEventListener('load',()=>checkLoginStatus());
     
-    function checkLoginStatus(){
+    async function checkLoginStatus(){
       const session=sessionStorage.getItem('tanktools_session'),userData=localStorage.getItem('tanktools_current_user');
       if(session!=='active'||!userData){showAccessDenied();return}
-      try{currentUser=JSON.parse(userData);initializeApp();logActivity('plcr_accessed',currentUser.username)}catch{showAccessDenied()}
+      try{
+        currentUser=JSON.parse(userData);
+        
+        // Check permissions before initializing
+        const hasPermissions = await checkUserPermissions();
+        if (!hasPermissions) {
+          showAccessDenied();
+          return;
+        }
+        
+        // Check page access
+        if (!checkPageAccess('plcr')) {
+          return;
+        }
+        
+        initializeApp();
+        logActivity('plcr_accessed',currentUser.username);
+      }catch{showAccessDenied()}
     }
     
     function showAccessDenied(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
@@ -266,7 +307,13 @@
     function initializeApp(){
       document.getElementById('mainContent').style.display='block';
       document.getElementById('accessDenied').style.display='none';
-      loadUserInfo();loadDataFromLocalStorage();setupDarkMode()
+      loadUserInfo();
+      loadTankData();
+      loadDataFromLocalStorage();
+      setupDarkMode();
+      
+      // Apply UI restrictions based on permissions
+      window.permissionsManager.applyUIRestrictions();
     }
     
     function loadUserInfo(){
@@ -317,6 +364,14 @@
 
     window.calculate=()=>{
       const tk=document.getElementById("tk").value.trim(),value=parseFloat(document.getElementById("value").value),resultDiv=document.getElementById("result");
+      
+      // Check tank access permission
+      if (tk && !checkTankAccess(tk, 'PLCR')) {
+        document.getElementById("tk").value = '';
+        resultDiv.textContent = "Access denied to this tank.";
+        return;
+      }
+      
       if(!tankConversions[tk]){resultDiv.textContent="Tank number not found in database.";return}
       const tank=tankConversions[tk],mode=modeSelect.value;
       let metricTon,barrels,level;
