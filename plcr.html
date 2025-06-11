@@ -350,36 +350,65 @@
       window.permissionsManager.applyUIRestrictions();
     }
     
-    function loadUserInfo(){
-      if(!currentUser)return;
-      
-      const userNameElement = document.getElementById('userName');
-      const userAvatarElement = document.getElementById('userAvatar');
-      const adminLinkElement = document.getElementById('adminLink');
-      const liveTanksLinkElement = document.getElementById('liveTanksLink');
-      
-      if(userNameElement) {
-        // Use name first, then fullName, then username as fallback
-        userNameElement.textContent = currentUser.name || currentUser.fullName || currentUser.username || 'User';
-      }
-      
-      if(userAvatarElement) {
-        const displayName = currentUser.name || currentUser.fullName || currentUser.username || 'User';
-        userAvatarElement.textContent = displayName.charAt(0).toUpperCase();
-      }
-      
-      if(adminLinkElement && (currentUser.username==='fam030'||currentUser.role==='admin')) {
-        adminLinkElement.style.display='inline-block';
-      }
-      
-      // Show Live Tanks link for allowed roles
-      const allowedRoles = ["admin", "panel_operator", "supervisor", "section_head", "operator", "planning"];
-      if(liveTanksLinkElement && allowedRoles.includes(currentUser.role)) {
-        liveTanksLinkElement.style.display='inline-block';
+    // Check login status
+    async function checkLogin(){
+      try{
+        const session=sessionStorage.getItem('tanktools_session');
+        if(!session){showAccess();return}
+        
+        currentUser=JSON.parse(session);
+        
+        // Initialize permissions manager if available
+        if (window.PermissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+          window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
+            initApp();
+          }).catch(() => {
+            initApp(); // Continue even if permissions fail
+          });
+        } else {
+          initApp();
+        }
+      }catch{
+        showAccess();
       }
     }
-    
-    window.logout=()=>{logActivity('user_logout',currentUser.username);sessionStorage.removeItem('tanktools_session');localStorage.removeItem('tanktools_current_user');window.location.href='login.html'};
+
+    function showAccess(){
+      document.getElementById('mainContent').style.display='none';
+      document.getElementById('accessDenied').style.display='flex';
+    }
+
+    window.goToLogin=()=>{
+      sessionStorage.setItem('tanktools_redirect','plcr.html');
+      window.location.href='login.html';
+    };
+
+    function initApp(){
+      document.getElementById('mainContent').style.display='block';
+      document.getElementById('accessDenied').style.display='none';
+      loadUser();
+      loadTankDataFromFirebase();
+      loadProductsFromFirebase();
+    }
+
+    function loadUser(){
+      if(!currentUser)return;
+      document.getElementById('userName').textContent=currentUser.fullName || currentUser.username;
+      document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
+      
+      if(currentUser.username==='fam030'||currentUser.role==='admin')
+        document.getElementById('adminLink').style.display='inline-block';
+      
+      const roles=["admin","panel_operator","supervisor","section_head","operator","planning"];
+      if(roles.includes(currentUser.role))
+        document.getElementById('liveTanksLink').style.display='inline-block';
+    }
+
+    window.logout=()=>{
+      sessionStorage.removeItem('tanktools_session');
+      window.location.href='login.html';
+    };
     
     function showMessage(message,type){
       const div=document.createElement('div');
@@ -725,14 +754,7 @@
     
     // Initialize everything on page load
     window.addEventListener('load',()=>{
-      setTimeout(() => {
-        checkLogin();
-        loadTankDataFromFirebase();
-        loadProductsFromFirebase();
-        setupDarkMode();
-        applyFontSize();
-        loadDataFromLocalStorage();
-      }, 100);
+      setTimeout(checkLogin, 100);
     });
   </script>
 </body>
