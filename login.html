@@ -183,7 +183,8 @@ window.signInWithEmailAndPassword = signInWithEmailAndPassword;
 window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
 window.sendPasswordResetEmail = sendPasswordResetEmail;
 
-console.log('🔥 Firebase initialized successfully with Authentication!');
+console.log('🔥 TANK TOOLS - FIREBASE AUTH SYSTEM');
+console.log('Developer: Fahad - 17877');
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -212,49 +213,33 @@ async function handleLogin(event) {
     showLoading('login', true);
     
     try {
-        // أولاً: التحقق من بيانات المستخدم في Firestore
-        const userDocRef = doc(db, 'users', username);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-            showMessage('❌ User not found. Please register first.', 'error');
-            return;
-        }
-        
-        const userData = userDoc.data();
-        console.log('User data found:', userData);
-        
-        // التحقق من كلمة المرور في Firestore
-        if (userData.password !== password) {
-            showMessage('❌ Invalid password', 'error');
-            await addActivity('failed_login_attempt', username);
-            return;
-        }
-        
-        // التحقق من تفعيل الحساب
-        if (!userData.isActive && username !== 'fam030') {
-            showMessage('⏳ Your account is pending admin approval.', 'warning');
-            setTimeout(() => {
-                const messageContainer = document.getElementById('messageContainer');
-                messageContainer.innerHTML += `<div class="message info show" style="margin-top: 10px;"><button class="btn btn-secondary" onclick="contactAdminForActivation('${username}', '${userData.fullName}')" style="width: 100%;">📱 Contact Admin for Activation</button></div>`;
-            }, 1000);
-            return;
-        }
-        
-        // محاولة تسجيل الدخول في Firebase Auth
+        // محاولة تسجيل الدخول في Firebase Auth فقط
+        // لا نتحقق من كلمة المرور في Firestore بعد الآن
         let userCredential;
         try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
         } catch (authError) {
-            // إذا فشل تسجيل الدخول، إنشاء حساب جديد في Firebase Auth
+            console.log('Login error:', authError.code);
+            
+            // إذا فشل تسجيل الدخول، إنشاء حساب جديد في Firebase Auth للمستخدمين الموجودين في Firestore
             if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
+                // التحقق من وجود المستخدم في Firestore أولاً
+                const userDocRef = doc(db, 'users', username);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    showMessage('❌ User not found. Please register first.', 'error');
+                    return;
+                }
+                
+                // إنشاء حساب جديد في Firebase Auth للمستخدم الموجود في Firestore
                 try {
                     userCredential = await createUserWithEmailAndPassword(auth, email, password);
                     console.log('✅ New Firebase Auth account created for existing user');
                 } catch (createError) {
                     if (createError.code === 'auth/email-already-in-use') {
                         // إذا كان الحساب موجود لكن كلمة المرور مختلفة
-                        showMessage('❌ Account exists with different password. Please reset password.', 'error');
+                        showMessage('❌ Account exists with different password. Please use the correct password or reset it.', 'error');
                         return;
                     }
                     throw createError;
@@ -264,14 +249,66 @@ async function handleLogin(event) {
             }
         }
         
-        // تحديث آخر تسجيل دخول
-        await updateDoc(userDocRef, {
-            lastLogin: serverTimestamp()
-        });
+        const user = userCredential.user;
+        
+        // بعد نجاح تسجيل الدخول في Firebase Auth، نتحقق من بيانات المستخدم في Firestore
+        const userDocRef = doc(db, 'users', username);
+        const userDoc = await getDoc(userDocRef);
+        
+        let userData;
+        if (!userDoc.exists()) {
+            // إنشاء بيانات للـ Admin إذا لم تكن موجودة
+            if (username === 'fam030') {
+                userData = {
+                    id: 1,
+                    username: 'fam030',
+                    fullName: 'Fahad Admin',
+                    email: 'fam030@knpc.com',
+                    role: 'admin',
+                    isActive: true,
+                    createdAt: serverTimestamp(),
+                    lastLogin: serverTimestamp(),
+                    firebaseUID: user.uid
+                };
+                await setDoc(userDocRef, userData);
+            } else {
+                // إنشاء بيانات للمستخدم العادي إذا لم تكن موجودة
+                userData = {
+                    id: Date.now(),
+                    username: username,
+                    fullName: username,
+                    email: email,
+                    role: 'user',
+                    isActive: true,
+                    createdAt: serverTimestamp(),
+                    lastLogin: serverTimestamp(),
+                    firebaseUID: user.uid
+                };
+                await setDoc(userDocRef, userData);
+            }
+        } else {
+            userData = userDoc.data();
+            
+            // التحقق من تفعيل الحساب
+            if (!userData.isActive && username !== 'fam030') {
+                showMessage('⏳ Your account is pending admin approval.', 'warning');
+                setTimeout(() => {
+                    const messageContainer = document.getElementById('messageContainer');
+                    messageContainer.innerHTML += `<div class="message info show" style="margin-top: 10px;"><button class="btn btn-secondary" onclick="contactAdminForActivation('${username}', '${userData.fullName || username}')" style="width: 100%;">📱 Contact Admin for Activation</button></div>`;
+                }, 1000);
+                return;
+            }
+            
+            // تحديث آخر تسجيل دخول
+            await updateDoc(userDocRef, {
+                lastLogin: serverTimestamp(),
+                firebaseUID: user.uid // تحديث UID إذا تغير
+            });
+        }
         
         // حفظ بيانات الجلسة
         const sessionUserData = {
-            uid: userCredential.user.uid,
+            uid: user.uid,
             id: userData.id || Date.now(),
             username: userData.username,
             fullName: userData.fullName,
@@ -372,13 +409,13 @@ async function handleRegister(event) {
         // إنشاء حساب في Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         
-        // إنشاء بيانات في Firestore
+        // إنشاء بيانات في Firestore - لا نخزن كلمة المرور بعد الآن
         const userData = {
             id: Date.now(),
             username: username,
             fullName: fullName,
             email: email,
-            password: password,
+            // لا نخزن كلمة المرور في Firestore بعد الآن
             role: 'user',
             isActive: false,
             createdAt: serverTimestamp(),
@@ -407,7 +444,7 @@ async function handleRegister(event) {
         }, 3000);
         
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Registration error:', error);
         let errorMessage = 'Registration failed';
         
         switch (error.code) {
@@ -415,7 +452,7 @@ async function handleRegister(event) {
                 errorMessage = 'Email already in use';
                 break;
             case 'auth/weak-password':
-                errorMessage = 'Password too weak';
+                errorMessage = 'Password is too weak';
                 break;
             default:
                 errorMessage = error.message;
@@ -441,14 +478,21 @@ async function handleForgotPassword(event) {
     
     try {
         await sendPasswordResetEmail(auth, email);
-        showMessage('✅ Reset email sent! Check your inbox.', 'success');
-        setTimeout(() => backToLogin(), 3000);
+        showMessage('✅ Password reset email sent', 'success');
+        
+        setTimeout(() => {
+            backToLogin();
+        }, 3000);
     } catch (error) {
-        console.error('Reset error:', error);
+        console.error('❌ Forgot password error:', error);
         let errorMessage = 'Failed to send reset email';
         
-        if (error.code === 'auth/user-not-found') {
-            errorMessage = 'No account found with this email';
+        switch (error.code) {
+            case 'auth/user-not-found':
+                errorMessage = 'No account found with this email';
+                break;
+            default:
+                errorMessage = error.message;
         }
         
         showMessage(`❌ ${errorMessage}`, 'error');
@@ -457,169 +501,151 @@ async function handleForgotPassword(event) {
     }
 }
 
-async function addActivity(action, username) {
+async function addActivity(type, username) {
     try {
-        await addDoc(collection(db, 'activities'), {
-            action: action,
+        const activityData = {
+            type: type,
             username: username,
-            timestamp: serverTimestamp(),
-            ip: 'client-side'
-        });
+            timestamp: serverTimestamp()
+        };
+        
+        const activityRef = collection(db, 'activities');
+        await addDoc(activityRef, activityData);
     } catch (error) {
         console.error('Failed to log activity:', error);
     }
 }
 
 function contactAdmin() {
-    const message = "Hello Admin, I need help with Tank Tools password reset.";
+    const message = `Hello Admin, I need help with my Tank Tools account. Please assist.`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
 }
 
 function contactAdminForActivation(username, fullName) {
-    const message = `Hello Admin, please activate my Tank Tools account: ${username} (${fullName})`;
+    const message = `Hello Admin, I just registered for Tank Tools with username: ${username} and name: ${fullName}. Please activate my account. Thank you!`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
 }
 
 function switchTab(tab) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
-    event.target.classList.add('active');
-    document.getElementById(tab + 'Form').classList.add('active');
-    clearMessages();
-}
-
-function switchTabDirect(tab) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
-    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
-    document.getElementById(tab + 'Form').classList.add('active');
-    clearMessages();
-}
-
-function showForgotPassword() {
-    document.getElementById('mainContainer').style.display = 'none';
-    document.getElementById('forgotContainer').classList.add('active');
-    clearMessages();
-}
-
-function backToLogin() {
-    document.getElementById('forgotContainer').classList.remove('active');
-    document.getElementById('mainContainer').style.display = 'block';
-    clearMessages();
-}
-
-function showLoading(form, show) {
-    const btn = document.getElementById(form + 'Btn');
-    const loading = document.getElementById(form + 'Loading');
-    if (show) {
-        btn.style.display = 'none';
-        loading.style.display = 'block';
-    } else {
-        btn.style.display = 'block';
-        loading.style.display = 'none';
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const forgotContainer = document.getElementById('forgotContainer');
+    const loginTab = document.querySelector('.tab:nth-child(1)');
+    const registerTab = document.querySelector('.tab:nth-child(2)');
+    
+    if (tab === 'login') {
+        loginForm.classList.add('active');
+        registerForm.classList.remove('active');
+        forgotContainer.classList.remove('active');
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+    } else if (tab === 'register') {
+        loginForm.classList.remove('active');
+        registerForm.classList.add('active');
+        forgotContainer.classList.remove('active');
+        loginTab.classList.remove('active');
+        registerTab.classList.add('active');
     }
 }
 
-function showMessage(message, type) {
-    const container = document.getElementById('messageContainer');
-    container.innerHTML = `<div class="message ${type}">${message}</div>`;
-    setTimeout(() => container.querySelector('.message').classList.add('show'), 100);
-    setTimeout(() => container.innerHTML = '', 7000);
+function switchTabDirect(tab) {
+    switchTab(tab);
 }
 
-function clearMessages() {
-    document.getElementById('messageContainer').innerHTML = '';
+function showForgotPassword() {
+    const mainContainer = document.getElementById('mainContainer');
+    const forgotContainer = document.getElementById('forgotContainer');
+    
+    mainContainer.style.display = 'none';
+    forgotContainer.classList.add('active');
 }
 
-function checkExistingSession() {
+function backToLogin() {
+    const mainContainer = document.getElementById('mainContainer');
+    const forgotContainer = document.getElementById('forgotContainer');
+    
+    mainContainer.style.display = 'block';
+    forgotContainer.classList.remove('active');
+    switchTab('login');
+}
+
+function showMessage(text, type) {
+    const messageContainer = document.getElementById('messageContainer');
+    messageContainer.innerHTML = `<div class="message ${type} show">${text}</div>`;
+    
+    setTimeout(() => {
+        const message = messageContainer.querySelector('.message');
+        if (message) {
+            message.classList.remove('show');
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 300);
+        }
+    }, 5000);
+}
+
+function showLoading(form, show) {
+    const loading = document.getElementById(`${form}Loading`);
+    if (loading) {
+        loading.style.display = show ? 'block' : 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     const session = sessionStorage.getItem('tanktools_session');
     const userData = localStorage.getItem('tanktools_current_user');
     
     if (session === 'active' && userData) {
-        try {
-            const user = JSON.parse(userData);
-            if (user && user.username && user.role) {
-                showMessage('✅ Active session found, redirecting...', 'success');
-                setTimeout(() => {
-                    const redirect = sessionStorage.getItem('tanktools_redirect');
-                    if (redirect) {
-                        sessionStorage.removeItem('tanktools_redirect');
-                        window.location.href = redirect;
-                    } else {
-                        const defaultUrl = user.role === 'admin' ? 'dashboard.html' : 'index.html';
-                        window.location.href = defaultUrl;
-                    }
-                }, 1000);
-                return;
-            }
-        } catch (error) {
-            sessionStorage.removeItem('tanktools_session');
-            localStorage.removeItem('tanktools_current_user');
-        }
-    }
-}
-
-function loadSavedCredentials() {
-    const saved = localStorage.getItem('tanktools_remember');
-    if (saved) {
-        try {
-            const data = JSON.parse(saved);
-            if (data.rememberMe) {
-                document.getElementById('loginUsername').value = data.username;
+        const user = JSON.parse(userData);
+        const defaultUrl = user.role === 'admin' ? 'dashboard.html' : 'index.html';
+        
+        setTimeout(() => {
+            window.location.href = defaultUrl;
+        }, 500);
+    } else {
+        const remember = localStorage.getItem('tanktools_remember');
+        if (remember) {
+            const rememberData = JSON.parse(remember);
+            if (rememberData.rememberMe) {
+                document.getElementById('loginUsername').value = rememberData.username;
                 document.getElementById('rememberMe').checked = true;
             }
-        } catch (error) {
-            console.log('Error loading saved credentials');
         }
     }
-}
+});
 
-// Password strength checker
-document.getElementById('password').addEventListener('input', function() {
+document.getElementById('password')?.addEventListener('input', function() {
     const password = this.value;
     const strengthBar = document.getElementById('strengthBar');
-    const strengthMsg = document.getElementById('passwordMsg');
+    
+    if (password.length === 0) {
+        strengthBar.className = 'password-strength-bar';
+        strengthBar.style.width = '0%';
+        return;
+    }
     
     let strength = 0;
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[0-9]/.test(password)) strength++;
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
     
-    const classes = ['strength-weak', 'strength-fair', 'strength-good', 'strength-strong'];
-    const messages = ['Weak', 'Fair', 'Good', 'Strong'];
+    if (password.length >= 8) strength += 1;
+    if (password.length >= 12) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[a-z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
     
-    strengthBar.className = 'password-strength-bar ' + (classes[strength - 1] || '');
-    
-    if (password.length > 0) {
-        strengthMsg.textContent = messages[strength - 1] || 'Very Weak';
-        strengthMsg.classList.add('show');
-        strengthMsg.style.color = strength >= 3 ? '#4CAF50' : '#ff6b6b';
+    strengthBar.className = 'password-strength-bar';
+    if (strength <= 2) {
+        strengthBar.classList.add('strength-weak');
+    } else if (strength <= 4) {
+        strengthBar.classList.add('strength-fair');
+    } else if (strength <= 6) {
+        strengthBar.classList.add('strength-good');
     } else {
-        strengthMsg.classList.remove('show');
+        strengthBar.classList.add('strength-strong');
     }
 });
-
-// تصدير الدوال
-window.handleLogin = handleLogin;
-window.handleRegister = handleRegister;
-window.switchTab = switchTab;
-window.showForgotPassword = showForgotPassword;
-window.backToLogin = backToLogin;
-window.contactAdmin = contactAdmin;
-window.contactAdminForActivation = contactAdminForActivation;
-window.handleForgotPassword = handleForgotPassword;
-
-// تحميل الصفحة
-window.addEventListener('load', () => {
-    loadSavedCredentials();
-    setTimeout(checkExistingSession, 1000);
-});
-
-console.log('%c🔥 TANK TOOLS - FIREBASE AUTH SYSTEM', 'color:orange;font-size:20px;font-weight:bold');
-console.log('%cDeveloper: Fahad - 17877', 'color:green;font-size:16px');
 </script>
 </body>
 </html>
