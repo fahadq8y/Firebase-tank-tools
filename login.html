@@ -1,383 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tank Tools</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="icon.png" type="image/png">
-  <meta name="theme-color" content="#003366">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Tank Tools">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}body{background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url("background.jpg");background-size:cover;background-position:center;background-attachment:fixed;background-repeat:no-repeat;font-family:Arial,sans-serif;min-height:100vh;display:flex;justify-content:center;align-items:center;color:white}.container{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:15px;padding:40px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);width:100%;max-width:450px;text-align:center;position:relative;overflow:hidden}.container::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transition:0.5s}.container:hover::before{left:100%}.logo{font-size:3rem;margin-bottom:10px;background:linear-gradient(45deg,#FFD700,#FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}.subtitle{font-size:1.2rem;margin-bottom:30px;opacity:0.9;font-weight:300}.tab-container{display:flex;margin-bottom:30px;background:rgba(255,255,255,0.1);border-radius:10px;padding:5px}.tab{flex:1;padding:12px 20px;border:none;background:transparent;color:white;cursor:pointer;border-radius:8px;transition:all 0.3s ease;font-weight:500}.tab.active{background:linear-gradient(45deg,#4CAF50,#45a049);box-shadow:0 5px 15px rgba(76,175,80,0.3);transform:translateY(-2px)}.form-container{display:none}.form-container.active{display:block;animation:slideIn 0.5s ease}@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.form-group{margin-bottom:20px;text-align:left}label{display:block;margin-bottom:8px;font-weight:500;color:rgba(255,255,255,0.9)}input{width:100%;padding:15px;border:none;border-radius:10px;background:rgba(255,255,255,0.9);color:#003366;font-size:16px;transition:all 0.3s ease;border:2px solid transparent;box-shadow:0 2px 5px rgba(0,0,0,0.3)}input::placeholder{color:rgba(0,51,102,0.6)}input:focus{outline:none;background:rgba(255,255,255,1);border-color:#4CAF50;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.2)}.username-container{display:flex;align-items:center;background:rgba(255,255,255,0.9);border-radius:10px;border:2px solid transparent;transition:all 0.3s ease;box-shadow:0 2px 5px rgba(0,0,0,0.3)}.username-container:focus-within{background:rgba(255,255,255,1);border-color:#4CAF50;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.2)}.username-input{background:transparent;border:none;padding:15px;flex:1;box-shadow:none;transform:none;color:#003366}.username-input:focus{background:transparent;border:none;box-shadow:none;transform:none}.email-suffix{padding:15px;color:#003366;font-weight:500;background:rgba(0,51,102,0.1);border-radius:0 8px 8px 0}.validation-message{margin-top:5px;font-size:12px;color:#ff6b6b;opacity:0;transition:opacity 0.3s ease}.validation-message.show{opacity:1}.validation-message.success{color:#4CAF50}.password-strength{margin-top:8px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden}.password-strength-bar{height:100%;width:0%;transition:all 0.3s ease;border-radius:2px}.strength-weak{background:#ff6b6b;width:25%}.strength-fair{background:#ffa726;width:50%}.strength-good{background:#42a5f5;width:75%}.strength-strong{background:#4CAF50;width:100%}.btn{width:100%;padding:15px;border:none;border-radius:10px;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.3s ease;margin-top:20px;position:relative;overflow:hidden}.btn-primary{background:linear-gradient(45deg,#4CAF50,#45a049);color:white}.btn-secondary{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;margin-top:10px;font-size:14px;padding:10px}.btn-danger{background:linear-gradient(45deg,#f44336,#d32f2f);color:white;margin-top:10px;font-size:14px;padding:10px}.btn:hover{transform:translateY(-3px);box-shadow:0 15px 30px rgba(76,175,80,0.4)}.btn:disabled{background:#ccc;cursor:not-allowed;transform:none}.btn::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transition:0.5s}.btn:hover::before{left:100%}.forgot-password-link{color:#2196F3;text-decoration:none;font-size:14px;display:block;margin-top:15px;transition:all 0.3s ease}.forgot-password-link:hover{color:#1976D2;text-shadow:0 0 5px rgba(33,150,243,0.5)}.message{margin-top:15px;padding:12px;border-radius:8px;font-size:14px;opacity:0;transform:translateY(-10px);transition:all 0.3s ease}.message.show{opacity:1;transform:translateY(0)}.message.success{background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.5);color:#4CAF50}.message.error{background:rgba(255,107,107,0.2);border:1px solid rgba(255,107,107,0.5);color:#ff6b6b}.message.info{background:rgba(33,150,243,0.2);border:1px solid rgba(33,150,243,0.5);color:#2196F3}.message.warning{background:rgba(255,193,7,0.2);border:1px solid rgba(255,193,7,0.5);color:#ffc107}.footer{margin-top:30px;font-size:12px;opacity:0.7;text-align:center}.loading{display:none;margin-top:10px}.spinner{border:3px solid rgba(255,255,255,0.3);border-radius:50%;border-top:3px solid white;width:30px;height:30px;animation:spin 1s linear infinite;margin:0 auto}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.firebase-status{background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.5);color:#4CAF50;padding:10px;border-radius:8px;margin-bottom:20px;font-size:13px;text-align:center}.forgot-container{display:none;text-align:center}.forgot-container.active{display:block;animation:slideIn 0.5s ease}.forgot-icon{font-size:4rem;margin-bottom:20px;color:#2196F3}.forgot-title{font-size:1.5rem;margin-bottom:15px;color:#2196F3}.forgot-text{margin-bottom:20px;opacity:0.8}.back-btn{background:transparent;border:1px solid rgba(255,255,255,0.3);color:white;padding:10px 20px;border-radius:8px;cursor:pointer;transition:all 0.3s ease;margin-top:10px}.back-btn:hover{background:rgba(255,255,255,0.1)}.security-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;backdrop-filter:blur(5px)}.security-modal.show{display:flex;justify-content:center;align-items:center}.security-modal-content{background:rgba(255,255,255,0.95);padding:30px;border-radius:15px;max-width:500px;width:90%;color:#003366;text-align:center;animation:modalSlideIn 0.5s ease}@keyframes modalSlideIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}.security-icon{font-size:3rem;margin-bottom:15px}.security-title{font-size:1.5rem;margin-bottom:15px;font-weight:bold}.security-text{margin-bottom:20px;line-height:1.5}.attempt-counter{background:rgba(255,193,7,0.2);border:1px solid rgba(255,193,7,0.5);color:#f57c00;padding:10px;border-radius:8px;margin:15px 0;font-weight:bold}.security-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.modal-btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:500;transition:all 0.3s ease}.modal-btn-primary{background:#4CAF50;color:white}.modal-btn-secondary{background:#2196F3;color:white}.modal-btn-danger{background:#f44336;color:white}.modal-btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.3)}.font-controls{position:absolute;top:15px;right:15px;display:flex;gap:8px}.font-btn{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:18px;font-weight:bold;transition:all 0.3s ease;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center}.font-btn:hover{background:rgba(255,255,255,0.3);transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.2)}@media (max-width:480px){.container{padding:30px 20px;margin:20px}.logo{font-size:2.5rem}.tab{padding:10px 15px;font-size:14px}.security-buttons{flex-direction:column}.modal-btn{width:100%}} </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tank Tools</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="icon.png" type="image/png">
+<meta name="theme-color" content="#003366">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;font-family:Arial,sans-serif;min-height:100vh;display:flex;justify-content:center;align-items:center;color:white}
+.container{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:15px;padding:40px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);width:100%;max-width:450px;text-align:center;position:relative;overflow:hidden}
+.container::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transition:0.5s}
+.container:hover::before{left:100%}
+.logo{font-size:3rem;margin-bottom:10px;background:linear-gradient(45deg,#FFD700,#FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.subtitle{font-size:1.2rem;margin-bottom:30px;opacity:0.9;font-weight:300}
+.tab-container{display:flex;margin-bottom:30px;background:rgba(255,255,255,0.1);border-radius:10px;padding:5px}
+.tab{flex:1;padding:12px 20px;border:none;background:transparent;color:white;cursor:pointer;border-radius:8px;transition:all 0.3s ease;font-weight:500}
+.tab.active{background:linear-gradient(45deg,#4CAF50,#45a049);box-shadow:0 5px 15px rgba(76,175,80,0.3);transform:translateY(-2px)}
+.form-container{display:none}
+.form-container.active{display:block;animation:slideIn 0.5s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.form-group{margin-bottom:20px;text-align:left}
+label{display:block;margin-bottom:8px;font-weight:500;color:rgba(255,255,255,0.9)}
+input{width:100%;padding:15px;border:none;border-radius:10px;background:rgba(255,255,255,0.9);color:#003366;font-size:16px;transition:all 0.3s ease;border:2px solid transparent;box-shadow:0 2px 5px rgba(0,0,0,0.3)}
+input::placeholder{color:rgba(0,51,102,0.6)}
+input:focus{outline:none;background:rgba(255,255,255,1);border-color:#4CAF50;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.2)}
+.username-container{display:flex;align-items:center;background:rgba(255,255,255,0.9);border-radius:10px;border:2px solid transparent;transition:all 0.3s ease;box-shadow:0 2px 5px rgba(0,0,0,0.3)}
+.username-container:focus-within{background:rgba(255,255,255,1);border-color:#4CAF50;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.2)}
+.username-input{background:transparent;border:none;padding:15px;flex:1;box-shadow:none;transform:none;color:#003366}
+.username-input:focus{background:transparent;border:none;box-shadow:none;transform:none}
+.email-suffix{padding:15px;color:#003366;font-weight:500;background:rgba(0,51,102,0.1);border-radius:0 8px 8px 0}
+.validation-message{margin-top:5px;font-size:12px;color:#ff6b6b;opacity:0;transition:opacity 0.3s ease}
+.validation-message.show{opacity:1}
+.validation-message.success{color:#4CAF50}
+.password-strength{margin-top:8px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden}
+.password-strength-bar{height:100%;width:0%;transition:all 0.3s ease;border-radius:2px}
+.strength-weak{background:#ff6b6b;width:25%}
+.strength-fair{background:#ffa726;width:50%}
+.strength-good{background:#42a5f5;width:75%}
+.strength-strong{background:#4CAF50;width:100%}
+.btn{width:100%;padding:15px;border:none;border-radius:10px;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.3s ease;margin-top:20px;position:relative;overflow:hidden}
+.btn-primary{background:linear-gradient(45deg,#4CAF50,#45a049);color:white}
+.btn-secondary{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;margin-top:10px;font-size:14px;padding:10px}
+.btn-danger{background:linear-gradient(45deg,#f44336,#d32f2f);color:white;margin-top:10px;font-size:14px;padding:10px}
+.btn:hover{transform:translateY(-3px);box-shadow:0 15px 30px rgba(76,175,80,0.4)}
+.btn:disabled{background:#ccc;cursor:not-allowed;transform:none}
+.btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transition:0.5s}
+.btn:hover::before{left:100%}
+.forgot-password-link{color:#2196F3;text-decoration:none;font-size:14px;display:block;margin-top:15px;transition:all 0.3s ease}
+.forgot-password-link:hover{color:#1976D2;text-shadow:0 0 5px rgba(33,150,243,0.5)}
+.message{margin-top:15px;padding:12px;border-radius:8px;font-size:14px;opacity:0;transform:translateY(-10px);transition:all 0.3s ease}
+.message.show{opacity:1;transform:translateY(0)}
+.message.success{background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.5);color:#4CAF50}
+.message.error{background:rgba(255,107,107,0.2);border:1px solid rgba(255,107,107,0.5);color:#ff6b6b}
+.message.info{background:rgba(33,150,243,0.2);border:1px solid rgba(33,150,243,0.5);color:#2196F3}
+.message.warning{background:rgba(255,193,7,0.2);border:1px solid rgba(255,193,7,0.5);color:#ffc107}
+.footer{margin-top:30px;font-size:12px;opacity:0.7;text-align:center}
+.loading{display:none;margin-top:10px}
+.spinner{border:3px solid rgba(255,255,255,0.3);border-radius:50%;border-top:3px solid white;width:30px;height:30px;animation:spin 1s linear infinite;margin:0 auto}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.firebase-status{background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.5);color:#4CAF50;padding:10px;border-radius:8px;margin-bottom:20px;font-size:13px;text-align:center}
+.forgot-container{display:none;text-align:center}
+.forgot-container.active{display:block;animation:slideIn 0.5s ease}
+.forgot-icon{font-size:4rem;margin-bottom:20px;color:#2196F3}
+.forgot-title{font-size:1.5rem;margin-bottom:15px;color:#2196F3}
+.forgot-text{margin-bottom:20px;opacity:0.8}
+.back-btn{background:transparent;border:1px solid rgba(255,255,255,0.3);color:white;padding:10px 20px;border-radius:8px;cursor:pointer;transition:all 0.3s ease;margin-top:10px}
+.back-btn:hover{background:rgba(255,255,255,0.1)}
+@media (max-width:480px){.container{padding:30px 20px;margin:20px}.logo{font-size:2.5rem}.tab{padding:10px 15px;font-size:14px}}
+</style>
 </head>
 <body>
-  <div id="securityModal" class="security-modal">
-    <div class="security-modal-content">
-      <div class="security-icon" id="securityIcon">⚠️</div>
-      <div class="security-title" id="securityTitle">Security Warning</div>
-      <div class="security-text" id="securityText">We detected you trying to access developer tools.</div>
-      <div class="attempt-counter" id="attemptCounter">Attempts: <span id="attemptCount">1</span>/3</div>
-      <div class="security-buttons">
-        <button class="modal-btn modal-btn-primary" onclick="acknowledgeWarning()">I Understand</button>
-        <button class="modal-btn modal-btn-secondary" onclick="resetPage()">Reset Page</button>
-        <button class="modal-btn modal-btn-danger" onclick="learnMore()">Learn More</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="container">
-    <div class="font-controls">
-      <button class="font-btn" onclick="decreaseFontSize()" title="تصغير الخط">-</button>
-      <button class="font-btn" onclick="increaseFontSize()" title="تكبير الخط">+</button>
-    </div>
-    <div class="logo">🛠️ Tank Tools</div>
-    <div class="subtitle">Kuwait National Petroleum Company</div>
-    <div class="firebase-status">🔥 Firebase Cloud Database - Real-time & Secure</div>
-    
-    <div id="mainContainer">
-      <div class="tab-container">
-        <button class="tab active" onclick="switchTab('login')">Login</button>
-        <button class="tab" onclick="switchTab('register')">Register</button>
-      </div>
-
-      <div id="loginForm" class="form-container active">
-        <form onsubmit="handleLogin(event)">
-          <div class="form-group">
-            <label for="loginUsername">👤 Username:</label>
-            <div class="username-container">
-              <input type="text" id="loginUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
-              <div class="email-suffix">@knpc.com</div>
-            </div>
-            <div class="validation-message" id="loginUsernameMsg"></div>
-          </div>
-          <div class="form-group">
-            <label for="loginPassword">🔒 Password:</label>
-            <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
-          </div>
-          <div class="form-group">
-            <label><input type="checkbox" id="rememberMe" style="width:auto;margin-right:8px;">Remember me</label>
-          </div>
-          <button type="submit" class="btn btn-primary" id="loginBtn">🚀 Login</button>
-          <a href="#" class="forgot-password-link" onclick="showForgotPassword()">🔑 Forgot Password?</a>
-          <div class="loading" id="loginLoading"><div class="spinner"></div><div>Connecting to Firebase...</div></div>
-        </form>
-      </div>
-
-      <div id="registerForm" class="form-container">
-        <form onsubmit="handleRegister(event)">
-          <div class="form-group">
-            <label for="fullName">👤 Full Name:</label>
-            <input type="text" id="fullName" placeholder="Enter your full name" required minlength="3">
-            <div class="validation-message" id="fullNameMsg"></div>
-          </div>
-          <div class="form-group">
-            <label for="username">📧 Username (Email):</label>
-            <div class="username-container">
-              <input type="text" id="username" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
-              <div class="email-suffix">@knpc.com</div>
-            </div>
-            <div class="validation-message" id="usernameMsg"></div>
-          </div>
-
-          <div class="form-group">
-            <label for="password">🔒 Password:</label>
-            <input type="password" id="password" placeholder="Create a strong password" required minlength="8" autocomplete="new-password">
-            <div class="password-strength"><div class="password-strength-bar" id="strengthBar"></div></div>
-            <div class="validation-message" id="passwordMsg"></div>
-          </div>
-          <div class="form-group">
-            <label for="confirmPassword">🔒 Confirm Password:</label>
-            <input type="password" id="confirmPassword" placeholder="Confirm your password" required autocomplete="new-password">
-            <div class="validation-message" id="confirmPasswordMsg"></div>
-          </div>
-          <button type="submit" class="btn btn-primary" id="registerBtn">✨ Create Account</button>
-          <div class="loading" id="registerLoading"><div class="spinner"></div><div>Creating account in Firebase...</div></div>
-        </form>
-      </div>
-    </div>
-
-    <div id="forgotContainer" class="forgot-container">
-      <div class="forgot-icon">🔑</div>
-      <div class="forgot-title">Reset Password</div>
-      <div class="forgot-text">Enter your username to reset your password</div>
-      <form onsubmit="handleForgotPassword(event)">
-        <div class="form-group">
-          <label for="forgotUsername">👤 Username:</label>
-          <div class="username-container">
-            <input type="text" id="forgotUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
-            <div class="email-suffix">@knpc.com</div>
-          </div>
-        </div>
-        <button type="submit" class="btn btn-secondary" id="resetBtn">📧 Send Reset Request</button>
-        <button type="button" class="btn btn-danger" onclick="contactAdmin()" style="margin-top:10px;">📱 Contact Admin</button>
-        <button type="button" class="back-btn" onclick="backToLogin()">Back to Login</button>
-        <div class="loading" id="forgotLoading"><div class="spinner"></div><div>Processing request...</div></div>
-      </form>
-    </div>
-
-    <div id="messageContainer"></div>
-    <div class="footer"><strong>🔥 Firebase Powered</strong><br>By <strong>Fahad - 17877</strong> | Version v4.1<br><small>Real-time cloud database</small></div>
-  </div>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",
-      authDomain: "tank-tools-knpc-c2d95.firebaseapp.com",
-      projectId: "tank-tools-knpc-c2d95",
-      storageBucket: "tank-tools-knpc-c2d95.firebasestorage.app",
-      messagingSenderId: "510062594324",
-      appId: "1:510062594324:web:b892fd02007a5ca2f0da01"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    // Make Firebase functions globally available
-    window.db = db;
-    window.doc = doc;
-    window.getDoc = getDoc;
-    window.setDoc = setDoc;
-    window.updateDoc = updateDoc;
-    window.collection = collection;
-    window.addDoc = addDoc;
-    window.serverTimestamp = serverTimestamp;
-    window.query = query;
-    window.where = where;
-    window.getDocs = getDocs;
-    window.auth = auth; // Make auth globally available
-    window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-    window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-    window.sendPasswordResetEmail = sendPasswordResetEmail;
-    window.signOut = signOut;
-    window.onAuthStateChanged = onAuthStateChanged;
-
-    console.log("Firebase initialized successfully!");
-
-    // Check if user is already logged in
-    onAuthStateChanged(auth, (user) => {
-      console.log("onAuthStateChanged triggered. User:", user);
-      if (user) {
-        console.log("User is signed in:", user.email);
-        // User is signed in, redirect to dashboard if not already there
-        if (window.location.pathname.indexOf('login.html') > -1) {
-          setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 1000);
-        }
-      } else {
-        console.log("User signed out.");
-        // User is signed out, stay on login page
-      }
-    });
-
-    // Handle login form submission
-    window.handleLogin = async (event) => {
-      event.preventDefault();
-      console.log("handleLogin called - Full version");
-      
-      const username = document.getElementById('loginUsername').value;
-      const password = document.getElementById('loginPassword').value;
-      const rememberMe = document.getElementById('rememberMe').checked;
-      const email = username + "@knpc.com";
-      
-      // Show loading spinner
-      const loginLoading = document.getElementById('loginLoading');
-      loginLoading.style.display = 'block';
-      
-      try {
-        console.log("Attempting to sign in with:", email);
-        // Sign in with Firebase Authentication
-        const userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
-        const user = userCredential.user;
-        
-        console.log("Login successful for user:", user.email);
-        
-        // Store user info in localStorage or sessionStorage based on "Remember me" checkbox
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem('user', JSON.stringify({
-          uid: user.uid,
-          email: user.email,
-          username: username
-        }));
-        
-        // Get user permissions from Firestore
-        try {
-          const permissionsDoc = await window.getDoc(window.doc(window.db, "userPermissions", username));
-          
-          if (permissionsDoc.exists()) {
-            const permissions = permissionsDoc.data();
-            storage.setItem('permissions', JSON.stringify(permissions));
-            console.log("User permissions loaded:", permissions);
-          } else {
-            console.warn("No permissions found for user:", username);
-            // Set default permissions
-            storage.setItem('permissions', JSON.stringify({
-              admin: false,
-              pbcr: true,
-              plcr: true,
-              nmogas: false,
-              liveTanks: false
-            }));
-          }
-        } catch (permError) {
-          console.error("Error loading permissions:", permError);
-          // Set default permissions as fallback
-          storage.setItem('permissions', JSON.stringify({
-            admin: false,
-            pbcr: true,
-            plcr: true,
-            nmogas: false,
-            liveTanks: false
-          }));
-        }
-        
-        // Update last login time in Firestore
-        try {
-          await window.updateDoc(window.doc(window.db, "users", user.uid), {
-            lastLogin: window.serverTimestamp()
-          });
-        } catch (updateError) {
-          console.warn("Could not update last login time:", updateError);
-        }
-        
-        // Show success message
-        window.showMessage('success', 'Login successful! Redirecting to dashboard...');
-        
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 1500);
-        
-      } catch (error) {
-        console.error("Login error:", error);
-        window.showMessage('error', `Login failed: ${error.message}`);
-        loginLoading.style.display = 'none';
-      }
-    };
-
-    // Handle register form submission
-    window.handleRegister = async (event) => {
-      event.preventDefault();
-      
-      const fullName = document.getElementById('fullName').value;
-      const username = document.getElementById('username').value;
-      const email = username + "@knpc.com";
-      const password = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      
-      // Validate inputs
-      if (!validateUsername(document.getElementById('username'), document.getElementById('usernameMsg'))) {
-        showMessage('error', 'Please enter a valid username.');
-        return;
-      }
-      
-      if (!checkPasswordStrength(password)) {
-        showMessage('error', 'Please create a stronger password.');
-        return;
-      }
-      
-      if (password !== confirmPassword) {
-        showMessage('error', 'Passwords do not match.');
-        return;
-      }
-      
-      const registerLoading = document.getElementById('registerLoading');
-      registerLoading.style.display = 'block';
-      
-      try {
-        // Create user in Firebase Auth
-        const userCredential = await window.createUserWithEmailAndPassword(window.auth, email, password);
-        const user = userCredential.user;
-        
-        // Store additional user data in Firestore
-        await window.setDoc(window.doc(window.db, "users", user.uid), {
-          fullName: fullName,
-          username: username,
-          email: email,
-          createdAt: window.serverTimestamp(),
-          lastLogin: window.serverTimestamp()
-        });
-        
-        // Set default permissions
-        await window.setDoc(window.doc(window.db, "userPermissions", username), {
-          admin: false,
-          pbcr: true,
-          plcr: true,
-          nmogas: false,
-          liveTanks: false,
-          createdAt: window.serverTimestamp(),
-          createdBy: "system"
-        });
-        
-        showMessage('success', 'Account created successfully! Redirecting to dashboard...');
-        
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 2000);
-        
-      } catch (error) {
-        console.error("Registration error:", error);
-        showMessage('error', `Registration failed: ${error.message}`);
-      } finally {
-        registerLoading.style.display = 'none';
-      }
-    };
-
-    // Function to show messages
-    window.showMessage = (type, text) => {
-      const messageContainer = document.getElementById('messageContainer');
-      messageContainer.innerHTML = `<div class="message ${type} show">${text}</div>`;
-      
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        const message = messageContainer.querySelector('.message');
-        if (message) {
-          message.classList.remove('show');
-          setTimeout(() => {
-            messageContainer.innerHTML = '';
-          }, 300);
-        }
-      }, 5000);
-    };
-
-    // Handle forgot password
-    window.handleForgotPassword = async (event) => {
-      event.preventDefault();
-      const forgotLoading = document.getElementById('forgotLoading');
-      forgotLoading.style.display = 'block';
-      const email = document.getElementById('forgotUsername').value + "@knpc.com";
-      
-      try {
-        await window.sendPasswordResetEmail(window.auth, email);
-        showMessage('success', 'Password reset email sent. Check your inbox.');
-      } catch (error) {
-        console.error("Forgot password error:", error);
-        showMessage('error', `Failed to send reset email: ${error.message}`);
-      } finally {
-        forgotLoading.style.display = 'none';
-      }
-    };
-
-    window.contactAdmin = () => {
-      showMessage('info', 'Please contact your administrator for assistance.');
-    };
-
-    // Initial setup
-    document.addEventListener('DOMContentLoaded', () => {
-      // Ensure the login form is active by default
-      switchTab('login');
-    });
-
-  </script>
+<div class="container">
+<div class="logo">🛠️ Tank Tools</div>
+<div class="subtitle">Kuwait National Petroleum Company</div>
+<div class="firebase-status">🔥 Firebase Cloud Database - Real-time & Secure</div>
+<div id="mainContainer">
+<div class="tab-container">
+<button class="tab active" onclick="switchTab('login')">Login</button>
+<button class="tab" onclick="switchTab('register')">Register</button>
+</div>
+<div id="loginForm" class="form-container active">
+<form onsubmit="handleLogin(event)">
+<div class="form-group">
+<label for="loginUsername">👤 Username:</label>
+<div class="username-container">
+<input type="text" id="loginUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
+<div class="email-suffix">@knpc.com</div>
+</div>
+<div class="validation-message" id="loginUsernameMsg"></div>
+</div>
+<div class="form-group">
+<label for="loginPassword">🔒 Password:</label>
+<input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+</div>
+<div class="form-group">
+<label><input type="checkbox" id="rememberMe" style="width:auto;margin-right:8px;">Remember me</label>
+</div>
+<button type="submit" class="btn btn-primary" id="loginBtn">🚀 Login</button>
+<a href="#" class="forgot-password-link" onclick="showForgotPassword()">🔑 Forgot Password?</a>
+<div class="loading" id="loginLoading"><div class="spinner"></div><div>Connecting to Firebase...</div></div>
+</form>
+</div>
+<div id="registerForm" class="form-container">
+<form onsubmit="handleRegister(event)">
+<div class="form-group">
+<label for="fullName">👤 Full Name:</label>
+<input type="text" id="fullName" placeholder="Enter your full name" required minlength="3" autocomplete="name">
+<div class="validation-message" id="fullNameMsg"></div>
+</div>
+<div class="form-group">
+<label for="username">📧 Username (Email):</label>
+<div class="username-container">
+<input type="text" id="username" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
+<div class="email-suffix">@knpc.com</div>
+</div>
+<div class="validation-message" id="usernameMsg"></div>
+</div>
+<div class="form-group">
+<label for="password">🔒 Password:</label>
+<input type="password" id="password" placeholder="Create a strong password" required minlength="8" autocomplete="new-password">
+<div class="password-strength"><div class="password-strength-bar" id="strengthBar"></div></div>
+<div class="validation-message" id="passwordMsg"></div>
+</div>
+<div class="form-group">
+<label for="confirmPassword">🔒 Confirm Password:</label>
+<input type="password" id="confirmPassword" placeholder="Confirm your password" required autocomplete="new-password">
+<div class="validation-message" id="confirmPasswordMsg"></div>
+</div>
+<button type="submit" class="btn btn-primary" id="registerBtn">✨ Create Account</button>
+<div class="loading" id="registerLoading"><div class="spinner"></div><div>Creating account in Firebase...</div></div>
+</form>
+</div>
+</div>
+<div id="forgotContainer" class="forgot-container">
+<div class="forgot-icon">🔑</div>
+<div class="forgot-title">Reset Password</div>
+<div class="forgot-text">Enter your username to reset your password</div>
+<form onsubmit="handleForgotPassword(event)">
+<div class="form-group">
+<label for="forgotUsername">👤 Username:</label>
+<div class="username-container">
+<input type="text" id="forgotUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
+<div class="email-suffix">@knpc.com</div>
+</div>
+</div>
+<button type="submit" class="btn btn-secondary" id="resetBtn">📧 Send Reset Request</button>
+<button type="button" class="btn btn-danger" onclick="contactAdmin()" style="margin-top:10px;">📱 Contact Admin</button>
+<button type="button" class="back-btn" onclick="backToLogin()">Back to Login</button>
+<div class="loading" id="forgotLoading"><div class="spinner"></div><div>Processing request...</div></div>
+</form>
+</div>
+<div id="messageContainer"></div>
+<div class="footer"><strong>🔥 Firebase Powered</strong><br>By <strong>Fahad - 17877</strong> | Version 4.0<br><small>Real-time cloud database</small></div>
+</div>
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';import{getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,serverTimestamp,query,where,getDocs}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
+window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.setDoc=setDoc;window.updateDoc=updateDoc;window.collection=collection;window.addDoc=addDoc;window.serverTimestamp=serverTimestamp;window.query=query;window.where=where;window.getDocs=getDocs;
+console.log('🔥 Firebase initialized successfully!');
+</script>
+<script>
+const WHATSAPP_ADMIN="96555222550";
+async function handleLogin(event){event.preventDefault();const username=document.getElementById('loginUsername').value.trim(),password=document.getElementById('loginPassword').value,rememberMe=document.getElementById('rememberMe').checked;console.log('🔐 Login attempt for:',username);if(!username||!password){showMessage('❌ Please enter username and password','error');return}showLoading('login',true);try{const userDocRef=doc(db,'users',username),userDoc=await getDoc(userDocRef);if(!userDoc.exists()){if(username==='fam030'&&password==='admin123'){console.log('✅ Admin login successful');const userData={id:1,username:'fam030',fullName:'Fahad Admin',email:'fam030@knpc.com',role:'admin',isActive:true,loginTime:new Date().toISOString()};localStorage.setItem('tanktools_current_user',JSON.stringify(userData));sessionStorage.setItem('tanktools_session','active');await addActivity('admin_login',username);showMessage('✅ Admin login successful! Redirecting...','success');setTimeout(()=>{const redirect=sessionStorage.getItem('tanktools_redirect');if(redirect){sessionStorage.removeItem('tanktools_redirect');window.location.href=redirect}else{window.location.href='dashboard.html'}},1500);return}else{showMessage('❌ User not found. Please register first.','error');return}}const userData=userDoc.data();if(userData.password!==password){showMessage('❌ Invalid password','error');await addActivity('failed_login_attempt',username);return}if(!userData.isActive){showMessage('⏳ Your account is pending admin approval. Please wait for activation.','warning');setTimeout(()=>{const messageContainer=document.getElementById('messageContainer');messageContainer.innerHTML+=`<div class="message info show" style="margin-top: 10px;"><div style="margin-bottom: 10px;">📞 Need help? Contact admin:</div><button class="btn btn-secondary" onclick="contactAdminForActivation('${username}', '${userData.fullName||username}')" style="width: 100%; margin-top: 0;">📱 Contact Admin for Activation</button></div>`},1000);return}console.log('✅ User login successful');await updateDoc(userDocRef,{lastLogin:serverTimestamp()});const sessionUserData={id:userData.id||Date.now(),username:userData.username,fullName:userData.fullName,email:userData.email,role:userData.role||'user',isActive:userData.isActive,loginTime:new Date().toISOString()};localStorage.setItem('tanktools_current_user',JSON.stringify(sessionUserData));sessionStorage.setItem('tanktools_session','active');if(rememberMe){localStorage.setItem('tanktools_remember',JSON.stringify({username:username,rememberMe:true}))}await addActivity('user_login',username);showMessage('✅ Login successful! Redirecting...','success');setTimeout(()=>{const redirect=sessionStorage.getItem('tanktools_redirect');if(redirect){sessionStorage.removeItem('tanktools_redirect');window.location.href=redirect}else{const defaultUrl=userData.role==='admin'?'dashboard.html':'index.html';window.location.href=defaultUrl}},1500)}catch(error){console.error('❌ Login error:',error);showMessage(`❌ Login failed: ${error.message}`,'error')}finally{showLoading('login',false)}}
+async function handleRegister(event){event.preventDefault();const fullName=document.getElementById('fullName').value.trim(),username=document.getElementById('username').value.trim(),password=document.getElementById('password').value,confirmPassword=document.getElementById('confirmPassword').value;console.log('📝 Registration attempt for:',username);if(!fullName||!username||!password||!confirmPassword){showMessage('❌ Please fill all fields','error');return}if(password!==confirmPassword){showMessage('❌ Passwords do not match','error');return}if(password.length<8){showMessage('❌ Password must be at least 8 characters','error');return}showLoading('register',true);try{const userDocRef=doc(db,'users',username),userDoc=await getDoc(userDocRef);if(userDoc.exists()){showMessage('❌ Username already exists. Please choose another.','error');return}const userData={id:Date.now(),username:username,fullName:fullName,email:`${username}@knpc.com`,password:password,role:'user',isActive:false,createdAt:serverTimestamp(),emailVerified:false};await setDoc(userDocRef,userData);await addActivity('user_registered',username);console.log('✅ User registered successfully in Firebase');showMessage('✅ Registration successful! Your account is pending admin approval. You will be able to login once approved.','success');setTimeout(()=>{const messageContainer=document.getElementById('messageContainer');messageContainer.innerHTML+=`<div class="message info show" style="margin-top: 10px;"><div style="margin-bottom: 10px;">📞 Need faster approval? Contact admin directly:</div><button class="btn btn-secondary" onclick="contactAdminForActivation('${username}', '${fullName}')" style="width: 100%; margin-top: 0;">📱 Contact Admin for Activation</button></div>`},1000);document.getElementById('fullName').value='';document.getElementById('username').value='';document.getElementById('password').value='';document.getElementById('confirmPassword').value='';setTimeout(()=>{switchTabDirect('login');showMessage('ℹ️ Please wait for admin approval before attempting to login.','info')},3000)}catch(error){console.error('❌ Registration error:',error);showMessage(`❌ Registration failed: ${error.message}`,'error')}finally{showLoading('register',false)}}
+async function addActivity(action,username){try{await addDoc(collection(db,'activities'),{action:action,username:username,timestamp:serverTimestamp(),ip:'login-page',userAgent:navigator.userAgent.substring(0,100)});console.log('✅ Activity logged:',action,username)}catch(error){console.error('❌ Error logging activity:',error)}}
+function switchTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.form-container').forEach(f=>f.classList.remove('active'));event.target.classList.add('active');document.getElementById(tab+'Form').classList.add('active');clearMessages()}
+function switchTabDirect(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.form-container').forEach(f=>f.classList.remove('active'));document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');document.getElementById(tab+'Form').classList.add('active');clearMessages()}
+function showForgotPassword(){document.getElementById('mainContainer').style.display='none';document.getElementById('forgotContainer').classList.add('active');clearMessages()}
+function backToLogin(){document.getElementById('forgotContainer').classList.remove('active');document.getElementById('mainContainer').style.display='block';clearMessages()}
+function contactAdmin(){const message="Hello Fahad, I need help with Tank Tools password reset. My username is: "+document.getElementById('forgotUsername').value+"@knpc.com";const whatsappURL=`https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(message)}`;try{const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');if(!newWindow)window.location.href=whatsappURL;showMessage('📱 WhatsApp opened. Contact admin for password reset.','info')}catch(error){showMessage('📱 Please contact admin via WhatsApp: +965 55222550','info')}}
+function contactAdminForActivation(username,fullName){const currentDate=new Date().toLocaleDateString();const message=`Hello Fahad,\n\nI am requesting account activation for Tank Tools system.\n\nUser Details:\n- Name: ${fullName}\n- Username: ${username}@knpc.com\n- Registration Date: ${currentDate}\n- Status: Pending Approval\n\nPlease activate my account so I can access the PBCR & WASHERY system.\n\nThank you.`;const whatsappURL=`https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(message)}`;try{const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');if(!newWindow)window.location.href=whatsappURL;showMessage('📱 WhatsApp opened. Message sent to admin for activation.','success')}catch(error){showMessage('📱 Please contact admin via WhatsApp: +965 55222550','info')}}
+async function handleForgotPassword(event){event.preventDefault();const username=document.getElementById('forgotUsername').value.trim();if(!username){showMessage('❌ Please enter your username','error');return}showLoading('forgot',true);try{await addDoc(collection(db,'passwordResets'),{username:username,email:`${username}@knpc.com`,requestTime:serverTimestamp(),status:'pending'});await addActivity('password_reset_requested',username);showMessage('📧 Password reset request sent to admin. You will be contacted soon.','info')}catch(error){console.error('Error requesting password reset:',error);showMessage('❌ Error sending reset request. Please try again.','error')}finally{showLoading('forgot',false)}}
+function showLoading(form,show){const btn=document.getElementById(form+'Btn'),loading=document.getElementById(form+'Loading');if(show){btn.style.display='none';loading.style.display='block'}else{btn.style.display='block';loading.style.display='none'}}
+function showMessage(message,type){const container=document.getElementById('messageContainer');container.innerHTML=`<div class="message ${type}">${message}</div>`;setTimeout(()=>container.querySelector('.message').classList.add('show'),100);setTimeout(()=>container.innerHTML='',7000)}
+function clearMessages(){document.getElementById('messageContainer').innerHTML=''}
+function checkExistingSession(){const session=sessionStorage.getItem('tanktools_session'),userData=localStorage.getItem('tanktools_current_user');console.log('🔍 Login page checking existing session...');console.log('Session:',session);console.log('User data exists:',!!userData);if(session==='active'&&userData){try{const user=JSON.parse(userData);console.log('User data parsed:',user);if(user&&user.username&&user.role){console.log('✅ Valid session found, redirecting...');showMessage('✅ Active session found, redirecting...','success');setTimeout(()=>{const redirect=sessionStorage.getItem('tanktools_redirect');if(redirect){sessionStorage.removeItem('tanktools_redirect');console.log('🎯 Redirecting to:',redirect);window.location.href=redirect}else{const defaultUrl=user.role==='admin'?'dashboard.html':'index.html';console.log('🎯 Redirecting to default:',defaultUrl);window.location.href=defaultUrl}},1000);return}else{console.log('❌ Invalid user data structure, clearing session');sessionStorage.removeItem('tanktools_session');localStorage.removeItem('tanktools_current_user')}}catch(error){console.log('❌ Error parsing user data, clearing session');sessionStorage.removeItem('tanktools_session');localStorage.removeItem('tanktools_current_user')}}else{console.log('ℹ️ No valid session found, staying on login page')}}
+function loadSavedCredentials(){const saved=localStorage.getItem('tanktools_remember');if(saved){try{const data=JSON.parse(saved);if(data.rememberMe){document.getElementById('loginUsername').value=data.username;document.getElementById('rememberMe').checked=true}}catch(error){console.log('Error loading saved credentials')}}}
+document.getElementById('password').addEventListener('input',function(){const password=this.value,strengthBar=document.getElementById('strengthBar'),strengthMsg=document.getElementById('passwordMsg');let strength=0;if(password.length>=8)strength++;if(/[A-Z]/.test(password))strength++;if(/[0-9]/.test(password))strength++;if(/[^A-Za-z0-9]/.test(password))strength++;const classes=['strength-weak','strength-fair','strength-good','strength-strong'],messages=['Weak','Fair','Good','Strong'];strengthBar.className='password-strength-bar '+(classes[strength-1]||'');if(password.length>0){strengthMsg.textContent=messages[strength-1]||'Very Weak';strengthMsg.classList.add('show');strengthMsg.style.color=strength>=3?'#4CAF50':'#ff6b6b'}else{strengthMsg.classList.remove('show')}});
+window.handleLogin=handleLogin;window.handleRegister=handleRegister;window.switchTab=switchTab;window.showForgotPassword=showForgotPassword;window.backToLogin=backToLogin;window.contactAdmin=contactAdmin;window.contactAdminForActivation=contactAdminForActivation;window.handleForgotPassword=handleForgotPassword;
+window.addEventListener('load',()=>{loadSavedCredentials();setTimeout(()=>{checkExistingSession()},1000)});
+console.log('%c🔥 TANK TOOLS - FIREBASE LOGIN SYSTEM','color:orange;font-size:20px;font-weight:bold');console.log('%cDeveloper: Fahad - 17877','color:green;font-size:16px');console.log('%cAutocomplete attributes added for better UX','color:blue;font-size:14px');
+</script>
 </body>
 </html>
