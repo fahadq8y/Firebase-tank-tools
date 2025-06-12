@@ -270,33 +270,42 @@
         console.log('✅ User is signed in:', user.email);
         window.updateUserInfo(user);
 
-        // تحميل صلاحيات المستخدم
-        const permissionsInstance = new Permissions();
-        window.userPermissions = await permissionsInstance.loadUserPermissions(user.email.split('@')[0]);
-        console.log('✅ User permissions loaded:', window.userPermissions);
+        // تحميل صلاحيات المستخدم - استخدام permissionsManager بدلاً من Permissions
+        try {
+          const username = user.email.split('@')[0];
+          window.userPermissions = await window.permissionsManager.loadUserPermissions(username);
+          console.log('✅ User permissions loaded:', window.userPermissions);
 
-        // التحقق من صلاحيات الأدمن والتانكات الحية
-        const adminLink = document.getElementById('adminLink');
-        const liveTanksLink = document.getElementById('liveTanksLink');
+          // التحقق من صلاحيات الأدمن والتانكات الحية
+          const adminLink = document.getElementById('adminLink');
+          const liveTanksLink = document.getElementById('liveTanksLink');
 
-        if (window.userPermissions.isAdmin) {
-          adminLink.style.display = 'block';
-        } else {
-          adminLink.style.display = 'none';
+          if (window.userPermissions.isAdmin) {
+            adminLink.style.display = 'block';
+          } else {
+            adminLink.style.display = 'none';
+          }
+
+          if (window.userPermissions.liveTanksAccess) {
+            liveTanksLink.style.display = 'block';
+          } else {
+            liveTanksLink.style.display = 'none';
+          }
+
+          // تحميل بيانات معايرة التانكات
+          await window.loadTankCalibrationData();
+
+          // إظهار المحتوى الرئيسي
+          document.getElementById('mainContent').style.display = 'block';
+          document.getElementById('accessDenied').style.display = 'none';
+        } catch (error) {
+          console.error('❌ Error loading permissions:', error);
+          // إظهار المحتوى الرئيسي على أي حال
+          document.getElementById('mainContent').style.display = 'block';
+          document.getElementById('accessDenied').style.display = 'none';
+          // تحميل بيانات معايرة التانكات
+          await window.loadTankCalibrationData();
         }
-
-        if (window.userPermissions.liveTanksAccess) {
-          liveTanksLink.style.display = 'block';
-        } else {
-          liveTanksLink.style.display = 'none';
-        }
-
-        // تحميل بيانات معايرة التانكات
-        await window.loadTankCalibrationData();
-
-        // إظهار المحتوى الرئيسي
-        document.getElementById('mainContent').style.display = 'block';
-        document.getElementById('accessDenied').style.display = 'none';
       } else {
         console.log('❌ User is not signed in. Redirecting to login.');
         document.getElementById('mainContent').style.display = 'none';
