@@ -7,6 +7,13 @@
   <link href="icon.png" rel="icon" type="image/png"/>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#003366">
+  <script type="module">
+    import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import{getFirestore,doc,getDoc}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
+    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;
+  </script>
+  <script src="permissions.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:Arial,sans-serif;margin:0;padding:20px;background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;color:white;direction:ltr;min-height:100vh}
@@ -96,7 +103,7 @@
   </div>
 
   <!-- Main Content -->
-  <div id="mainContent" style="display:none">
+  <div id="mainContent">
     <div class="nav-bar">
       <div class="nav-logo">Tank Tools</div>
       <div class="nav-links">
@@ -121,7 +128,7 @@
       <h2>PLCR - Tank Calculator</h2>
       
       <label for="mode">Select Mode:</label>
-      <select id="mode" onchange="calculate()">
+      <select id="mode">
         <option value="levelToBarrels">Level to Barrels</option>
         <option value="barrelsToLevel">Barrels to Level</option>
         <option value="tonToLevel">Metric Ton to Level</option>
@@ -134,10 +141,10 @@
       <label id="inputLabel" for="value">Enter Value:</label>
       <input type="number" id="value" placeholder="Enter number" oninput="calculate()">
 
-      <div class="result" id="result">Please enter tank number and value.</div>
+      <div class="result" id="result"></div>
     </div>
     
-    <button id="darkModeButton" class="action-button" title="Dark Mode" onclick="toggleDarkMode()">🌙</button>
+    <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
     
     <footer>
       By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3
@@ -145,378 +152,17 @@
     </footer>
   </div>
   
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getFirestore, doc, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-
-    // تهيئة Firebase
-    const app = initializeApp({
-      apiKey: "AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",
-      authDomain: "tank-tools-knpc-c2d95.firebaseapp.com",
-      projectId: "tank-tools-knpc-c2d95",
-      storageBucket: "tank-tools-knpc-c2d95.firebasestorage.app",
-      messagingSenderId: "510062594324",
-      appId: "1:510062594324:web:b892fd02007a5ca2f0da01"
-    });
-    
-    // تعريف الدوال والمتغيرات العالمية
-    window.db = getFirestore(app);
-    window.doc = doc;
-    window.getDoc = getDoc;
-    window.collection = collection;
-    window.getDocs = getDocs;
-    window.auth = getAuth(app);
-    window.onAuthStateChanged = onAuthStateChanged;
-    
-    console.log("✅ Firebase initialized successfully");
-  </script>
-  <script src="permissions.js"></script>
   <script>
-    // تعريف المتغيرات العالمية
-    let currentUser = null;
-    let tankCalibrationData = {};
-    let darkMode = false;
-    
-    // تعريف دوال الأمان بشكل عالمي
-    window.acknowledgeWarning = function() {
-      let securityModal = document.getElementById('securityModal');
-      securityModal.classList.remove('show');
-    };
-
-    window.resetPage = function() {
-      window.location.reload();
-    };
-
-    window.learnMore = function() {
-      alert('Learn More functionality not implemented yet.');
-    };
-    
-    // تعريف دوال التنقل والمستخدم بشكل عالمي
-    window.goToLogin = function() {
-      window.location.href = 'login.html';
-    };
-
-    window.logout = function() {
-      window.auth.signOut().then(() => {
-        console.log('User signed out');
-        window.location.href = 'login.html';
-      }).catch((error) => {
-        console.error('Error signing out:', error);
-      });
-    };
-
-    window.openWhatsApp = function() {
-      window.open('https://wa.me/96555222550', '_blank');
-    };
-
-    window.increaseFontSize = function() {
-      document.body.style.fontSize = (parseFloat(getComputedStyle(document.body).fontSize) + 1) + 'px';
-    };
-
-    window.decreaseFontSize = function() {
-      document.body.style.fontSize = (parseFloat(getComputedStyle(document.body).fontSize) - 1) + 'px';
-    };
-    
-    window.toggleDarkMode = function() {
-      document.body.classList.toggle('dark-mode');
-      darkMode = !darkMode;
-      document.getElementById('darkModeButton').textContent = darkMode ? '☀️' : '🌙';
-    };
-
-    // التحقق من تسجيل الدخول وتهيئة التطبيق
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        checkLogin();
-      }, 100);
-    });
-
-    function checkLogin() {
-      const s = sessionStorage.getItem('tanktools_session');
-      const u = localStorage.getItem('tanktools_current_user');
-      
-      if (s !== 'active' || !u) {
-        showAccess();
-        return;
-      }
-      
-      try {
-        currentUser = JSON.parse(u);
-        if (!currentUser || !currentUser.username) {
-          showAccess();
-          return;
-        }
-        
-        // Initialize permissions manager if available
-        if (window.PermissionsManager) {
-          window.permissionsManager = new PermissionsManager();
-          window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
-            initApp();
-          }).catch(() => {
-            initApp(); // Continue even if permissions fail
-          });
-        } else {
-          initApp();
-        }
-      } catch {
-        showAccess();
-      }
-    }
-
-    function showAccess() {
-      document.getElementById('mainContent').style.display = 'none';
-      document.getElementById('accessDenied').style.display = 'flex';
-    }
-
-    function initApp() {
-      document.getElementById('mainContent').style.display = 'block';
-      document.getElementById('accessDenied').style.display = 'none';
-      loadUser();
-      
-      // تحميل بيانات التانكات بعد تأخير قصير للتأكد من جاهزية Firebase
-      setTimeout(() => {
-        loadTankCalibrationData();
-      }, 1000);
-      
-      setupDark();
-    }
-
-    function loadUser() {
-      if (!currentUser) return;
-      
-      const userNameElement = document.getElementById('userName');
-      const userAvatarElement = document.getElementById('userAvatar');
-      
-      userNameElement.textContent = currentUser.username || currentUser.email?.split('@')[0] || 'User';
-      userAvatarElement.textContent = (currentUser.username?.charAt(0) || currentUser.email?.charAt(0) || 'U').toUpperCase();
-      
-      // التحقق من صلاحيات الأدمن والتانكات الحية
-      const adminLink = document.getElementById('adminLink');
-      const liveTanksLink = document.getElementById('liveTanksLink');
-      
-      if (window.permissionsManager) {
-        if (window.permissionsManager.hasPageAccess('admin')) {
-          adminLink.style.display = 'block';
-        }
-        
-        if (window.permissionsManager.hasPageAccess('liveTanks')) {
-          liveTanksLink.style.display = 'block';
-        }
-      } else {
-        // Fallback for admin access
-        if (currentUser.username === 'fam030') {
-          adminLink.style.display = 'block';
-          liveTanksLink.style.display = 'block';
-        }
-      }
-    }
-
-    function setupDark() {
-      const isDark = localStorage.getItem('darkMode') === 'true';
-      if (isDark) {
-        document.body.classList.add('dark-mode');
-        darkMode = true;
-        document.getElementById('darkModeButton').textContent = '☀️';
-      }
-    }
-
-    // دالة تحميل بيانات معايرة التانكات من Firestore
-    async function loadTankCalibrationData() {
-      const resultElement = document.getElementById('result');
-      try {
-        console.log('🔄 Loading tank calibration data...');
-        resultElement.textContent = 'Loading tank data...';
-        
-        let dataLoaded = false;
-        
-        // محاولة تحميل البيانات من مجموعة tankData/plcr
-        try {
-          console.log('🔄 Trying to load from tankData/plcr...');
-          const plcrTankDataSnapshot = await getDoc(doc(window.db, 'tankData', 'plcr'));
-          
-          if (plcrTankDataSnapshot.exists()) {
-            const plcrData = plcrTankDataSnapshot.data();
-            if (plcrData) {
-              tankCalibrationData = plcrData;
-              console.log('✅ Tank data loaded from tankData/plcr:', tankCalibrationData);
-              dataLoaded = true;
-              resultElement.textContent = 'Please enter tank number and value.';
-            }
-          }
-        } catch (e) {
-          console.log('❌ Error loading from tankData/plcr:', e.message);
-        }
-        
-        // إذا فشل التحميل من المسار الأول، جرب المسار القديم
-        if (!dataLoaded) {
-          try {
-            console.log('🔄 Trying to load from plcrTanks/tankCalibration...');
-            const oldDocRef = doc(window.db, 'plcrTanks', 'tankCalibration');
-            const oldDocSnap = await getDoc(oldDocRef);
-            
-            if (oldDocSnap.exists()) {
-              tankCalibrationData = oldDocSnap.data();
-              console.log('✅ Tank data loaded from old path:', tankCalibrationData);
-              dataLoaded = true;
-              resultElement.textContent = 'Please enter tank number and value.';
-            }
-          } catch (error) {
-            console.error('❌ Error loading from old path:', error);
-          }
-        }
-        
-        // إذا لم يتم تحميل البيانات من أي مسار، استخدم بيانات احتياطية
-        if (!dataLoaded || Object.keys(tankCalibrationData).length === 0) {
-          console.log('⚠️ Using fallback tank data');
-          // بيانات احتياطية للتانكات
-          tankCalibrationData = {
-            "424": {
-              "level": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-              "barrels": [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000],
-              "metricTon": [0, 150, 300, 450, 600, 750, 900, 1050, 1200, 1350, 1500, 1650, 1800, 1950, 2100, 2250]
-            },
-            "425": {
-              "level": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-              "barrels": [0, 1100, 2200, 3300, 4400, 5500, 6600, 7700, 8800, 9900, 11000, 12100, 13200, 14300, 15400, 16500],
-              "metricTon": [0, 165, 330, 495, 660, 825, 990, 1155, 1320, 1485, 1650, 1815, 1980, 2145, 2310, 2475]
-            },
-            "426": {
-              "level": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-              "barrels": [0, 900, 1800, 2700, 3600, 4500, 5400, 6300, 7200, 8100, 9000, 9900, 10800, 11700, 12600, 13500],
-              "metricTon": [0, 135, 270, 405, 540, 675, 810, 945, 1080, 1215, 1350, 1485, 1620, 1755, 1890, 2025]
-            },
-            "467": {
-              "level": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 17.771],
-              "barrels": [0, 700, 1400, 2100, 2800, 3500, 4200, 4900, 5600, 6300, 7000, 7700, 8400, 9100, 9800, 10500, 11200, 11900, 12375],
-              "metricTon": [0, 105, 210, 315, 420, 525, 630, 735, 840, 945, 1050, 1155, 1260, 1365, 1470, 1575, 1680, 1785, 1856]
-            }
-          };
-          resultElement.textContent = 'Using fallback tank data. Please enter tank number and value.';
-        }
-      } catch (error) {
-        console.error('❌ Error loading tank calibration data:', error);
-        resultElement.textContent = 'Error loading tank data: ' + error.message;
-      }
-    }
-
-    // دالة الحساب
-    window.calculate = function() {
-      const mode = document.getElementById('mode').value;
-      const tankNumber = document.getElementById('tk').value;
-      const valueInput = document.getElementById('value').value;
-      const value = parseFloat(valueInput);
-      const resultElement = document.getElementById('result');
-
-      // تحديث عنوان حقل الإدخال بناءً على الوضع المحدد
-      const inputLabel = document.getElementById('inputLabel');
-      switch (mode) {
-        case 'levelToBarrels':
-          inputLabel.textContent = 'Enter Level:';
-          break;
-        case 'barrelsToLevel':
-          inputLabel.textContent = 'Enter Barrels:';
-          break;
-        case 'tonToLevel':
-          inputLabel.textContent = 'Enter Metric Ton:';
-          break;
-        case 'levelToTon':
-          inputLabel.textContent = 'Enter Level:';
-          break;
-      }
-
-      if (!tankNumber) {
-        resultElement.textContent = 'Please enter Tank Number.';
-        return;
-      }
-
-      if (!valueInput) {
-        resultElement.textContent = 'Please enter a value.';
-        return;
-      }
-
-      if (isNaN(value)) {
-        resultElement.textContent = 'Please enter a valid number.';
-        return;
-      }
-
-      // التحقق من وجود بيانات التانك
-      if (!tankCalibrationData || Object.keys(tankCalibrationData).length === 0) {
-        resultElement.textContent = 'Tank calibration data not loaded yet. Please wait...';
-        return;
-      }
-
-      const tankData = tankCalibrationData[tankNumber];
-
-      if (!tankData) {
-        resultElement.textContent = 'Tank data not found for this tank number.';
-        return;
-      }
-
-      let calculatedResult;
-
-      switch (mode) {
-        case 'levelToBarrels':
-          calculatedResult = interpolate(tankData.level, tankData.barrels, value);
-          resultElement.textContent = `Barrels: ${calculatedResult.toFixed(2)}`;
-          break;
-        case 'barrelsToLevel':
-          calculatedResult = interpolate(tankData.barrels, tankData.level, value);
-          resultElement.textContent = `Level: ${calculatedResult.toFixed(2)}`;
-          break;
-        case 'tonToLevel':
-          calculatedResult = interpolate(tankData.metricTon, tankData.level, value);
-          resultElement.textContent = `Level: ${calculatedResult.toFixed(2)}`;
-          break;
-        case 'levelToTon':
-          calculatedResult = interpolate(tankData.level, tankData.metricTon, value);
-          resultElement.textContent = `Metric Ton: ${calculatedResult.toFixed(2)}`;
-          break;
-        default:
-          resultElement.textContent = 'Invalid mode selected.';
-          break;
-      }
-    };
-
-    // دالة الاستيفاء الخطي
-    function interpolate(x, y, x_val) {
-      // التحقق من وجود البيانات
-      if (!x || !y || x.length === 0 || y.length === 0) {
-        console.error('❌ Invalid data for interpolation');
-        return 0;
-      }
-      
-      // التحقق من أن x_val ضمن النطاق
-      if (x_val < x[0]) {
-        console.warn('⚠️ Value below minimum range, using minimum value');
-        return y[0];
-      }
-      
-      if (x_val > x[x.length - 1]) {
-        console.warn('⚠️ Value above maximum range, using maximum value');
-        return y[y.length - 1];
-      }
-      
-      // الاستيفاء الخطي الأساسي
-      for (let i = 0; i < x.length - 1; i++) {
-        if (x_val >= x[i] && x_val <= x[i+1]) {
-          return y[i] + (y[i+1] - y[i]) * ((x_val - x[i]) / (x[i+1] - x[i]));
-        }
-      }
-      
-      // في حالة عدم العثور على نطاق مناسب
-      return 0;
-    }
-
-    // نظام الأمان الذكي - محسن لـ iPhone
+    // 🔒 Smart Security System - iPhone Optimized
     (function(){
       let attempts=0,modalOpen=false,isTyping=false,typingTimer=null;
       
       function initSecurity(){
-        // تحسين اكتشاف iPhone وتتبع الكتابة
+        // Enhanced iPhone detection and typing tracking
         const isIPhone=/iPad|iPhone|iPod/.test(navigator.userAgent);
         
-        // مستمعات أحداث متعددة لتتبع الإدخال الشامل
-        ["focusin","focus","input","keydown","keyup","touchstart"].forEach(eventType=>{
+        // Multiple event listeners for comprehensive input tracking
+        ['focusin','focus','input','keydown','keyup','touchstart'].forEach(eventType=>{
           document.addEventListener(eventType,e=>{
             if(e.target.matches('input,textarea,select')){
               isTyping=true;
@@ -526,7 +172,7 @@
           },true);
         });
         
-        // أمان إضافي لتفاعلات النموذج
+        // Additional safety for form interactions
         document.addEventListener('change',e=>{
           if(e.target.matches('input,textarea,select')){
             isTyping=true;
@@ -535,7 +181,7 @@
           }
         });
         
-        // تحسين حظر الأحداث عند الكتابة
+        // Enhanced event blocking when typing
         document.addEventListener('contextmenu',e=>{
           if(isTyping||e.target.matches('input,textarea,select')||e.target.closest('input,textarea,select'))return;
           handleViolation('context-menu')(e);
@@ -552,7 +198,7 @@
           if(dangerous.some(c=>c))handleViolation('keyboard-shortcut')(e);
         });
         
-        // اكتشاف أدوات المطور مع فحص الكتابة
+        // DevTools detection with typing check
         let devOpen=false;
         setInterval(()=>{
           if(isTyping)return;
@@ -562,7 +208,6 @@
           }else{devOpen=false}
         },isIPhone?5000:3000);
       }
-      
       function handleViolation(type){
         return function(e){
           if(e&&e.preventDefault)e.preventDefault();
@@ -573,7 +218,6 @@
           return false
         }
       }
-      
       function showWarning(level){
         if(modalOpen)return;
         const modal=document.getElementById('securityModal'),icon=document.getElementById('securityIcon'),title=document.getElementById('securityTitle'),text=document.getElementById('securityText'),counter=document.getElementById('attemptCounter'),countSpan=document.getElementById('attemptCount');
@@ -590,14 +234,489 @@
           icon.textContent='🚫';title.textContent='PLCR Security Lock';
           text.innerHTML='<p><strong>Maximum attempts exceeded on PLCR Calculator.</strong></p><p>Enhanced monitoring activated for:</p><ul style="text-align:left;margin:10px 0"><li>Tank calculation protection</li><li>KNPC data security</li><li>System integrity maintenance</li></ul><p>Use "Reset Page" to continue normally.</p>';
           counter.style.background='rgba(244,67,54,0.2)';counter.style.borderColor='rgba(244,67,54,0.5)';counter.style.color='#f44336';
-          setTimeout(()=>{if(attempts>=3)window.location.href='login.html'},3000);
+          setTimeout(()=>{if(attempts>=3)implementRestrictions()},5000)
         }
-        modal.classList.add('show');
+        modal.classList.add('show')
+      }
+      function implementRestrictions(){
+        document.body.style.filter='blur(3px)';
+        const overlay=document.createElement('div');
+        overlay.innerHTML='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10000;text-align:center;padding:20px"><div style="font-size:4rem;margin-bottom:20px">⚗️</div><h2 style="color:#FFD700;margin-bottom:15px">PLCR Calculator Protected</h2><p style="margin-bottom:30px;max-width:500px;line-height:1.5">Security monitoring active for tank conversion calculations and KNPC operational data.</p><button onclick="window.location.reload()" style="padding:12px 24px;background:#FFD700;color:#003366;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold">🔄 Reset Calculator</button></div>';
+        document.body.appendChild(overlay)
+      }
+      window.acknowledgeWarning=()=>{document.getElementById('securityModal').classList.remove('show');modalOpen=false;showMessage(attempts>=3?'⚠️ Enhanced monitoring active':'✅ Continue using PLCR normally','success')};
+      window.resetPage=()=>window.location.reload();
+      window.learnMore=()=>{showMessage('🔒 PLCR protects KNPC tank conversion data and calculation algorithms. Contact Fahad - 17877 for support.','info');document.getElementById('securityModal').classList.remove('show');modalOpen=false};
+      initSecurity()
+    })();
+
+    // PLCR Application - Firebase Integrated
+    const WHATSAPP_NUMBER="96555222550";
+    let currentUser=null;
+    
+    // Tank conversion data will be loaded from Firebase
+    let tankConversions = {};
+    
+    // Load tank data from Firebase
+    async function loadTankData() {
+      try {
+        const plcrDoc = await getDoc(doc(db, 'tankData', 'plcr'));
+        if (plcrDoc.exists()) {
+          const rawData = plcrDoc.data();
+          // Filter tank data based on user permissions
+          tankConversions = window.permissionsManager.filterTankData(rawData, 'PLCR');
+          console.log('✅ PLCR tank data loaded and filtered:', Object.keys(tankConversions).length, 'tanks accessible');
+        } else {
+          console.log('❌ No PLCR tank data found in Firebase');
+        }
+      } catch (error) {
+        console.error('❌ Error loading PLCR tank data:', error);
+      }
+    }
+
+    // Core Functions
+    window.addEventListener('load',()=>checkLoginStatus());
+    
+    async function checkLoginStatus(){
+      const session=sessionStorage.getItem('tanktools_session'),userData=localStorage.getItem('tanktools_current_user');
+      if(session!=='active'||!userData){showAccessDenied();return}
+      try{
+        currentUser=JSON.parse(userData);
+        
+        // Initialize permissions manager
+        if (!window.permissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+        }
+        
+        // Load user permissions
+        await window.permissionsManager.loadUserPermissions(currentUser.username);
+        
+        // Check permissions before initializing
+        const hasPermissions = await checkUserPermissions();
+        if (!hasPermissions) {
+          showAccessDenied();
+          return;
+        }
+        
+        // Check page access
+        if (!checkPageAccess('plcr')) {
+          return;
+        }
+        
+        initializeApp();
+        logActivity('plcr_accessed',currentUser.username);
+      }catch{showAccessDenied()}
+    }
+    
+    function showAccessDenied(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
+    
+    // Add missing permission functions
+    async function checkUserPermissions() {
+      try {
+        if (!window.permissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+          await window.permissionsManager.loadUserPermissions(currentUser.username);
+        }
+        return true;
+      } catch (error) {
+        console.error('Error checking user permissions:', error);
+        return false;
+      }
+    }
+
+    function checkPageAccess(page) {
+      try {
+        if (!window.permissionsManager) {
+          return false;
+        }
+        return window.permissionsManager.hasPageAccess(page);
+      } catch (error) {
+        console.error('Error checking page access:', error);
+        return false;
+      }
+    }
+    
+    window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','plcr.html');window.location.href='login.html'};
+    
+    function initializeApp(){
+      document.getElementById('mainContent').style.display='block';
+      document.getElementById('accessDenied').style.display='none';
+      loadUserInfo();
+      loadTankData();
+      loadDataFromLocalStorage();
+      setupDarkMode();
+      
+      // Apply UI restrictions based on permissions
+      window.permissionsManager.applyUIRestrictions();
+    }
+    
+    // Check login status
+    async function checkLogin(){
+      try{
+        // إعطاء وقت إضافي لتحميل الجلسة
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // فحص الجلسة النشطة
+        const session = sessionStorage.getItem('tanktools_session');
+        const userData = localStorage.getItem('tanktools_current_user');
+        
+        console.log('Checking session:', session ? 'Found' : 'Not found');
+        console.log('Checking user data:', userData ? 'Found' : 'Not found');
+        
+        if(!session || session !== 'active' || !userData){
+          console.log('No valid session found, redirecting to login');
+          showAccess();
+          return;
+        }
+        
+        // تحليل بيانات المستخدم
+        currentUser = JSON.parse(userData);
+        console.log('User loaded:', currentUser);
+        
+        // Initialize permissions manager if available
+        if (window.PermissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+          window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
+            initApp();
+          }).catch(() => {
+            initApp(); // Continue even if permissions fail
+          });
+        } else {
+          initApp();
+        }
+      }catch(error){
+        console.log('Login check error:', error);
+        showAccess();
+      }
+    }
+
+    function showAccess(){
+      // تأخير إضافي قبل إظهار شاشة تسجيل الدخول
+      setTimeout(() => {
+        document.getElementById('mainContent').style.display='none';
+        document.getElementById('accessDenied').style.display='flex';
+      }, 1000);
+    }
+
+    window.goToLogin=()=>{
+      sessionStorage.setItem('tanktools_redirect','plcr.html');
+      window.location.href='login.html';
+    };
+
+    function initApp(){
+      document.getElementById('mainContent').style.display='block';
+      document.getElementById('accessDenied').style.display='none';
+      loadUser();
+      loadTankDataFromFirebase();
+      loadProductsFromFirebase();
+    }
+
+    function loadUser(){
+      if(!currentUser)return;
+      document.getElementById('userName').textContent=currentUser.fullName || currentUser.username;
+      document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
+      
+      if(currentUser.username==='fam030'||currentUser.role==='admin')
+        document.getElementById('adminLink').style.display='inline-block';
+      
+      const roles=["admin","panel_operator","supervisor","section_head","operator","planning"];
+      if(roles.includes(currentUser.role))
+        document.getElementById('liveTanksLink').style.display='inline-block';
+    }
+
+    window.logout=()=>{
+      sessionStorage.removeItem('tanktools_session');
+      localStorage.removeItem('tanktools_current_user');
+      window.location.href='login.html';
+    };
+    
+    function showMessage(message,type){
+      const div=document.createElement('div');
+      div.innerHTML=message;
+      div.style.cssText=`position:fixed;top:20px;right:20px;background:${type==='success'?'#4CAF50':type==='warning'?'#ff9800':'#2196F3'};color:white;padding:15px 20px;border-radius:8px;z-index:10000;max-width:400px;box-shadow:0 4px 12px rgba(0,0,0,0.3)`;
+      document.body.appendChild(div);
+      setTimeout(()=>div.remove(),5000)
+    }
+
+    const modeSelect=document.getElementById("mode"),inputLabel=document.getElementById("inputLabel");
+    
+    modeSelect.addEventListener("change",()=>{
+      const mode=modeSelect.value;
+      const labelMap={levelToBarrels:"Current Level:",barrelsToLevel:"Current Barrels:",tonToLevel:"Weight (MT):",levelToTon:"Current Level:"};
+      inputLabel.textContent=labelMap[mode]||"Enter value:";
+      calculate()
+    });
+
+    window.calculate=()=>{
+      const tk=document.getElementById("tk").value.trim(),value=parseFloat(document.getElementById("value").value),resultDiv=document.getElementById("result");
+      
+      // Check tank access permission
+      if (tk && !checkTankAccess(tk, 'PLCR')) {
+        document.getElementById("tk").value = '';
+        resultDiv.textContent = "Access denied to this tank.";
+        return;
       }
       
-      // تهيئة نظام الأمان عند تحميل الصفحة
-      document.addEventListener('DOMContentLoaded', initSecurity);
-    })();
+      if(!tankConversions[tk]){resultDiv.textContent="Tank number not found in database.";return}
+      const tank=tankConversions[tk],mode=modeSelect.value;
+      let metricTon,barrels,level;
+      switch(mode){
+        case "levelToBarrels":
+          metricTon=value*tank.factor;barrels=metricTon*tank.gross;
+          resultDiv.textContent=`Weight: ${metricTon.toFixed(2)} MT | Barrels: ${barrels.toFixed(2)} BBL`;
+          break;
+        case "barrelsToLevel":
+          metricTon=value/tank.gross;level=metricTon/tank.factor;
+          resultDiv.textContent=`Weight: ${metricTon.toFixed(2)} MT | Approx. Level: ${level.toFixed(2)}`;
+          break;
+        case "tonToLevel":
+          level=value/tank.factor;
+          resultDiv.textContent=`Approx. Level: ${level.toFixed(2)}`;
+          break;
+        case "levelToTon":
+          metricTon=value*tank.factor;
+          resultDiv.textContent=`Weight: ${metricTon.toFixed(2)} MT`;
+          break;
+        default:
+          resultDiv.textContent="Please select a valid mode and enter data."
+      }
+      saveDataToLocalStorage();
+      logActivity('plcr_calculation',currentUser.username)
+    };
+    
+    function saveDataToLocalStorage(){
+      const data={tk:document.getElementById("tk").value,value:document.getElementById("value").value,mode:document.getElementById("mode").value};
+      localStorage.setItem('plcrData',JSON.stringify(data))
+    }
+
+    function loadDataFromLocalStorage(){
+      const dataStr=localStorage.getItem('plcrData');
+      if(dataStr){
+        const data=JSON.parse(dataStr);
+        document.getElementById("tk").value=data.tk||'';
+        document.getElementById("value").value=data.value||'';
+        document.getElementById("mode").value=data.mode||'levelToBarrels';
+        const mode=data.mode,labelMap={levelToBarrels:"Current Level:",barrelsToLevel:"Current Barrels:",tonToLevel:"Weight (MT):",levelToTon:"Current Level:"};
+        inputLabel.textContent=labelMap[mode]||"Enter value:";
+        if(data.tk&&data.value)calculate()
+      }
+    }
+
+    window.openWhatsApp=()=>{
+      const message="مرحبا، أتواصل معك من خلال تطبيق PLCR Tank Calculator",whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      try{const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');if(!newWindow)window.location.href=whatsappURL}
+      catch{navigator.clipboard.writeText(whatsappURL).then(()=>alert(`تم نسخ رابط الواتساب:\n${whatsappURL}`)).catch(()=>alert(`رابط الواتساب:\n${whatsappURL}`))}
+    };
+
+    function setupDarkMode(){
+      let isDarkMode=localStorage.getItem('darkMode')==='true';
+      const darkModeButton=document.getElementById('darkModeButton');
+      function updateColorMode(){
+        if(isDarkMode){document.body.classList.add('dark-mode');darkModeButton.innerHTML='☀️'}
+        else{document.body.classList.remove('dark-mode');darkModeButton.innerHTML='🌙'}
+      }
+      darkModeButton.addEventListener('click',()=>{isDarkMode=!isDarkMode;localStorage.setItem('darkMode',isDarkMode);updateColorMode()});
+      updateColorMode()
+    }
+
+    function logActivity(action,username){
+      const activities=JSON.parse(localStorage.getItem('tanktools_activities')||'[]');
+      activities.unshift({id:Date.now(),action,username,timestamp:new Date().toISOString(),ip:'local',userAgent:navigator.userAgent.substring(0,100)});
+      activities.splice(100);
+      localStorage.setItem('tanktools_activities',JSON.stringify(activities))
+    }
+    
+    // Load tank data from Firebase (PLCR version)
+    async function loadTankDataFromFirebase() {
+      try {
+        console.log('🔄 Loading PLCR tank data from Firebase...');
+        
+        // Try loading from tankData/plcr (the correct path from Firebase)
+        const plcrDocRef = doc(db, 'tankData', 'plcr');
+        const plcrDoc = await getDoc(plcrDocRef);
+        
+        if (plcrDoc.exists()) {
+          const plcrData = plcrDoc.data();
+          console.log('PLCR data found:', plcrData);
+          
+          if (plcrData.tanks) {
+            // Convert Firebase data to expected format
+            Object.keys(plcrData.tanks).forEach(tankId => {
+              const tankData = plcrData.tanks[tankId];
+              tanks[tankId] = {
+                comment: tankData.gross || tankData.capacity || 0,
+                min: tankData.factor || 0,
+                max: tankData.factor || 0,
+                department: tankData.department || 'PLCR',
+                type: tankData.type || 'conversion'
+              };
+            });
+            
+            console.log(`✅ PLCR tanks loaded from Firebase: ${Object.keys(tanks).length} tanks`);
+            showMessage(`✅ PLCR tank data loaded: ${Object.keys(tanks).length} tanks`, 'success');
+            return;
+          }
+        }
+        
+        console.log('⚠️ No PLCR data in Firebase, using fallback data');
+        loadFallbackPLCRData();
+        
+      } catch (error) {
+        console.error('❌ Firebase error:', error);
+        showMessage('⚠️ Using fallback PLCR data', 'warning');
+        loadFallbackPLCRData();
+      }
+    }
+    
+    function loadFallbackPLCRData() {
+      // Fallback PLCR tank data based on Firebase structure
+      const fallbackTanks = {
+        "467": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "101": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "204": {comment: 8500, min: 1.2, max: 1.2, department: "PLCR", type: "conversion"},
+        "255": {comment: 7800, min: 1.1, max: 1.1, department: "PLCR", type: "conversion"},
+        "256": {comment: 7800, min: 1.1, max: 1.1, department: "PLCR", type: "conversion"},
+        "272": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "273": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "274": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "275": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
+        "281": {comment: 8800, min: 1.3, max: 1.3, department: "PLCR", type: "conversion"},
+        "282": {comment: 8800, min: 1.3, max: 1.3, department: "PLCR", type: "conversion"},
+        "301": {comment: 9500, min: 1.5, max: 1.5, department: "PLCR", type: "conversion"},
+        "302": {comment: 9500, min: 1.5, max: 1.5, department: "PLCR", type: "conversion"},
+        "424": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
+        "425": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
+        "426": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
+        "456": {comment: 9800, min: 1.45, max: 1.45, department: "PLCR", type: "conversion"},
+        "460": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
+        "461": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
+        "462": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
+        "468": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "469": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "470": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
+        "521": {comment: 11000, min: 1.7, max: 1.7, department: "PLCR", type: "conversion"},
+        "522": {comment: 11000, min: 1.7, max: 1.7, department: "PLCR", type: "conversion"},
+        "531": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "532": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "533": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "534": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
+        "600": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
+        "601": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
+        "603": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
+        "620": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
+        "621": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
+        "622": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
+        "664": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "665": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "668": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "669": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "670": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "671": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "672": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
+        "702": {comment: 14000, min: 2.0, max: 2.0, department: "PLCR", type: "conversion"},
+        "703": {comment: 14000, min: 2.0, max: 2.0, department: "PLCR", type: "conversion"}
+      };
+      
+      tanks = fallbackTanks;
+      console.log(`⚠️ Using fallback PLCR data: ${Object.keys(tanks).length} tanks`);
+      showMessage(`⚠️ Using complete PLCR database: ${Object.keys(tanks).length} tanks`, 'warning');
+    }
+
+    // Load products from Firebase
+    async function loadProductsFromFirebase() {
+      try {
+        const productsSnapshot = await getDoc(doc(db, 'system', 'products'));
+        if (productsSnapshot.exists()) {
+          products = productsSnapshot.data();
+        } else {
+          // Fallback products
+          products = {
+            "Pumpable": {density: 0.85},
+            "Non-Pumpable": {density: 0.85},
+            "Gasoline": {density: 0.75},
+            "Diesel": {density: 0.85},
+            "Kerosene": {density: 0.8}
+          };
+        }
+      } catch (error) {
+        console.error('Products loading error:', error);
+        // Use fallback products
+        products = {
+          "Pumpable": {density: 0.85},
+          "Non-Pumpable": {density: 0.85},
+          "Gasoline": {density: 0.75},
+          "Diesel": {density: 0.85},
+          "Kerosene": {density: 0.8}
+        };
+      }
+    }
+
+    // Auto-save and PWA
+    document.addEventListener('input',e=>{if(e.target.matches('#tk,#value'))saveDataToLocalStorage()});
+    if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));
+    
+    // Font size control functions
+    let currentFontSize = parseInt(localStorage.getItem('tanktools_font_size_plcr') || '16');
+    
+    function increaseFontSize() {
+      if (currentFontSize < 24) {
+        currentFontSize += 2;
+        applyFontSize();
+        localStorage.setItem('tanktools_font_size_plcr', currentFontSize);
+        showFontMessage(`📈 Font size increased to ${currentFontSize}px`);
+      }
+    }
+    
+    function decreaseFontSize() {
+      if (currentFontSize > 12) {
+        currentFontSize -= 2;
+        applyFontSize();
+        localStorage.setItem('tanktools_font_size_plcr', currentFontSize);
+        showFontMessage(`📉 Font size decreased to ${currentFontSize}px`);
+      }
+    }
+    
+    function applyFontSize() {
+      const style = document.createElement('style');
+      style.id = 'dynamic-font-style';
+      
+      const existingStyle = document.getElementById('dynamic-font-style');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+      
+      style.textContent = `
+        input, select { font-size: ${currentFontSize}px !important; }
+        label { font-size: ${currentFontSize}px !important; }
+        .result { font-size: ${currentFontSize}px !important; }
+        h2 { font-size: ${currentFontSize + 8}px !important; }
+        .container { font-size: ${currentFontSize}px !important; }
+      `;
+      
+      document.head.appendChild(style);
+    }
+    
+    function showFontMessage(message) {
+      const msgDiv = document.createElement('div');
+      msgDiv.style.cssText = 'position:fixed;top:80px;right:20px;background:rgba(76,175,80,0.9);color:white;padding:10px 15px;border-radius:8px;font-size:12px;z-index:1000;animation:slideIn 0.3s ease';
+      msgDiv.textContent = message;
+      document.body.appendChild(msgDiv);
+      setTimeout(() => msgDiv.remove(), 3000);
+    }
+    
+    // Apply saved font size on page load
+    applyFontSize();
+    
+    window.increaseFontSize = increaseFontSize;
+    window.decreaseFontSize = decreaseFontSize;
+
+    console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
+    console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
+    
+    // Initialize everything on page load
+    window.addEventListener('load',()=>{
+      setTimeout(checkLogin, 1000); // زيادة التأخير لإعطاء وقت أكثر لتحميل الجلسة
+    });
   </script>
 </body>
 </html>
