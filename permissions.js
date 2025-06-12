@@ -100,12 +100,25 @@ const USER_TYPES = {
 
 // الحصول على بيانات المستخدم الحالي
 function getCurrentUser() {
-  const userData = localStorage.getItem('tanktools_user');
+  // فحص الجلسة أولاً
+  const session = sessionStorage.getItem('tanktools_session');
+  if (session !== 'active') {
+    return null;
+  }
+  
+  // الحصول على بيانات المستخدم
+  const userData = localStorage.getItem('tanktools_current_user');
   if (!userData) {
     return null;
   }
+  
   try {
-    return JSON.parse(userData);
+    const user = JSON.parse(userData);
+    // التأكد من صحة بيانات المستخدم
+    if (user && user.username && (user.role || user.userType)) {
+      return user;
+    }
+    return null;
   } catch (e) {
     console.error('خطأ في قراءة بيانات المستخدم:', e);
     return null;
@@ -143,11 +156,18 @@ function getCurrentPageName() {
 // فحص صلاحية المستخدم للصفحة
 function checkUserPageAccess(user, pageName) {
   // الأدمن يصل لكل شيء
-  if (user.userType === 'admin' || user.isAdmin) {
+  if (user.userType === 'admin' || user.isAdmin || user.role === 'admin') {
     return true;
   }
 
-  // فحص الصفحات المسموحة
+  // إذا كان المستخدم يستخدم النظام القديم (role بدلاً من userType)
+  if (user.role && !user.userType) {
+    // السماح للمستخدمين القدامى بالوصول للصفحات الأساسية
+    const allowedPagesForOldUsers = ['index.html', 'plcr.html', 'NMOGASBL.html', 'dashboard.html', 'live-tanks.html'];
+    return allowedPagesForOldUsers.includes(pageName);
+  }
+
+  // فحص الصفحات المسموحة للمستخدمين الجدد
   const userConfig = USER_TYPES[user.userType];
   if (!userConfig) {
     console.error('نوع مستخدم غير معروف:', user.userType);
@@ -165,6 +185,20 @@ function checkUserPageAccess(user, pageName) {
 
 // تطبيق صلاحيات الوظائف على الصفحة
 function applyFeaturePermissions(user) {
+  // إذا كان المستخدم يستخدم النظام القديم
+  if (user.role && !user.userType) {
+    // تطبيق الصلاحيات الافتراضية للنظام القديم
+    const isAdmin = user.role === 'admin' || user.isAdmin;
+    const canAccessLiveTanks = ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+    
+    hideElementIfNoPermission('live-tanks-btn', canAccessLiveTanks);
+    hideElementIfNoPermission('add-to-live-tanks-btn', canAccessLiveTanks);
+    hideElementIfNoPermission('user-management-link', isAdmin);
+    hideElementIfNoPermission('nav-admin', isAdmin);
+    return;
+  }
+
+  // للمستخدمين الجدد مع نظام userType
   const userConfig = USER_TYPES[user.userType] || {};
   const permissions = userConfig.permissions || {};
 
@@ -225,7 +259,17 @@ function showAccessDenied() {
 
 // إعادة التوجيه لصفحة تسجيل الدخول
 function redirectToLogin() {
-  localStorage.removeItem('tanktools_user');
+  // حفظ الصفحة الحالية للعودة إليها بعد تسجيل الدخول
+  const currentPage = getCurrentPageName();
+  if (currentPage !== 'login.html') {
+    sessionStorage.setItem('tanktools_redirect', currentPage);
+  }
+  
+  // مسح الجلسة الحالية
+  sessionStorage.removeItem('tanktools_session');
+  localStorage.removeItem('tanktools_current_user');
+  
+  // التوجه لصفحة تسجيل الدخول
   window.location.href = 'login.html';
 }
 
@@ -234,8 +278,25 @@ function hasPermission(permissionName) {
   const user = getCurrentUser();
   if (!user) return false;
   
-  if (user.userType === 'admin' || user.isAdmin) return true;
+  // الأدمن له كل الصلاحيات
+  if (user.userType === 'admin' || user.isAdmin || user.role === 'admin') return true;
   
+  // إذا كان المستخدم يستخدم النظام القديم
+  if (user.role && !user.userType) {
+    // صلاحيات افتراضية للنظام القديم
+    switch (permissionName) {
+      case 'canManageUsers':
+        return user.role === 'admin' || user.isAdmin;
+      case 'canViewLiveTanks':
+      case 'canEditLiveTanks':
+      case 'canAddToLiveTanks':
+        return ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+      default:
+        return false;
+    }
+  }
+  
+  // للمستخدمين الجدد مع نظام userType
   const userConfig = USER_TYPES[user.userType];
   return userConfig && userConfig.permissions && userConfig.permissions[permissionName];
 }
