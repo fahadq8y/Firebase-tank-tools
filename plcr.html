@@ -9,9 +9,9 @@
   <meta name="theme-color" content="#003366">
   <script type="module">
     import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import{getFirestore,doc,getDoc}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import{getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
     const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
-    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;
+    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.setDoc=setDoc;window.addDoc=addDoc;window.serverTimestamp=serverTimestamp;window.collection=collection;
   </script>
   <script src="permissions.js"></script>
   <style>
@@ -43,8 +43,7 @@
     .dark-mode{background:linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url('background.jpg')!important}
     .dark-mode .result{color:#ffcc00!important}
     .dark-mode input,.dark-mode select{background:rgba(50,50,70,0.9)!important;color:#eee!important}
-    .dark-mode .container{background:rgba(40,40,60,0.3)!important}
-    .access-denied{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url('background.jpg');background-size:cover;background-position:center;display:flex;justify-content:center;align-items:center;z-index:9999}
+    .dark-mode .container{background:rgba(40,40,60,0.3)!important}.access-denied{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url('background.jpg');background-size:cover;background-position:center;display:flex;justify-content:center;align-items:center;z-index:9999}
     .access-denied-content{text-align:center;background:rgba(255,255,255,0.1);padding:40px;border-radius:20px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2)}
     .access-denied-icon{font-size:5rem;color:#f44336;margin-bottom:20px}
     .access-denied-title{font-size:2rem;color:#f44336;margin-bottom:15px}
@@ -136,7 +135,7 @@
       </select>
       
       <label for="tk">Tank Number:</label>
-      <input type="number" id="tk" placeholder="e.g. 424" oninput="calculate()">
+      <input type="number" id="tk" placeholder="e.g. 467" oninput="calculate()">
 
       <label id="inputLabel" for="value">Enter Value:</label>
       <input type="number" id="value" placeholder="Enter number" oninput="calculate()">
@@ -150,18 +149,14 @@
       By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3
       <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
     </footer>
-  </div>
-  
-  <script>
+  </div><script>
     // 🔒 Smart Security System - iPhone Optimized
     (function(){
       let attempts=0,modalOpen=false,isTyping=false,typingTimer=null;
       
       function initSecurity(){
-        // Enhanced iPhone detection and typing tracking
         const isIPhone=/iPad|iPhone|iPod/.test(navigator.userAgent);
         
-        // Multiple event listeners for comprehensive input tracking
         ['focusin','focus','input','keydown','keyup','touchstart'].forEach(eventType=>{
           document.addEventListener(eventType,e=>{
             if(e.target.matches('input,textarea,select')){
@@ -172,7 +167,6 @@
           },true);
         });
         
-        // Additional safety for form interactions
         document.addEventListener('change',e=>{
           if(e.target.matches('input,textarea,select')){
             isTyping=true;
@@ -181,7 +175,6 @@
           }
         });
         
-        // Enhanced event blocking when typing
         document.addEventListener('contextmenu',e=>{
           if(isTyping||e.target.matches('input,textarea,select')||e.target.closest('input,textarea,select'))return;
           handleViolation('context-menu')(e);
@@ -198,7 +191,6 @@
           if(dangerous.some(c=>c))handleViolation('keyboard-shortcut')(e);
         });
         
-        // DevTools detection with typing check
         let devOpen=false;
         setInterval(()=>{
           if(isTyping)return;
@@ -208,6 +200,7 @@
           }else{devOpen=false}
         },isIPhone?5000:3000);
       }
+      
       function handleViolation(type){
         return function(e){
           if(e&&e.preventDefault)e.preventDefault();
@@ -218,6 +211,7 @@
           return false
         }
       }
+      
       function showWarning(level){
         if(modalOpen)return;
         const modal=document.getElementById('securityModal'),icon=document.getElementById('securityIcon'),title=document.getElementById('securityTitle'),text=document.getElementById('securityText'),counter=document.getElementById('attemptCounter'),countSpan=document.getElementById('attemptCount');
@@ -238,164 +232,66 @@
         }
         modal.classList.add('show')
       }
+      
       function implementRestrictions(){
         document.body.style.filter='blur(3px)';
         const overlay=document.createElement('div');
         overlay.innerHTML='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10000;text-align:center;padding:20px"><div style="font-size:4rem;margin-bottom:20px">⚗️</div><h2 style="color:#FFD700;margin-bottom:15px">PLCR Calculator Protected</h2><p style="margin-bottom:30px;max-width:500px;line-height:1.5">Security monitoring active for tank conversion calculations and KNPC operational data.</p><button onclick="window.location.reload()" style="padding:12px 24px;background:#FFD700;color:#003366;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold">🔄 Reset Calculator</button></div>';
         document.body.appendChild(overlay)
       }
+      
       window.acknowledgeWarning=()=>{document.getElementById('securityModal').classList.remove('show');modalOpen=false;showMessage(attempts>=3?'⚠️ Enhanced monitoring active':'✅ Continue using PLCR normally','success')};
       window.resetPage=()=>window.location.reload();
       window.learnMore=()=>{showMessage('🔒 PLCR protects KNPC tank conversion data and calculation algorithms. Contact Fahad - 17877 for support.','info');document.getElementById('securityModal').classList.remove('show');modalOpen=false};
       initSecurity()
     })();
 
-    // PLCR Application - Firebase Integrated
+    // PLCR Application Variables
     const WHATSAPP_NUMBER="96555222550";
-    let currentUser=null;
-    
-    // Tank conversion data will be loaded from Firebase
-    let tankConversions = {};
-    
-    // Load tank data from Firebase
-    async function loadTankData() {
-      try {
-        const plcrDoc = await getDoc(doc(db, 'tankData', 'plcr'));
-        if (plcrDoc.exists()) {
-          const rawData = plcrDoc.data();
-          // Filter tank data based on user permissions
-          tankConversions = window.permissionsManager.filterTankData(rawData, 'PLCR');
-          console.log('✅ PLCR tank data loaded and filtered:', Object.keys(tankConversions).length, 'tanks accessible');
-        } else {
-          console.log('❌ No PLCR tank data found in Firebase');
-        }
-      } catch (error) {
-        console.error('❌ Error loading PLCR tank data:', error);
-      }
-    }
+    let currentUser=null,c=0,m=0,x=0,calcData=null;
+    let tanks={};
+    let products={};// Login and Initialization System
+    window.addEventListener('load',()=>{
+      setTimeout(() => {
+        checkLogin();
+        setTimeout(() => {
+          loadTankDataFromFirebase();
+          loadProductsFromFirebase();
+        }, 1000);
+      }, 100);
+    });
 
-    // Core Functions
-    window.addEventListener('load',()=>checkLoginStatus());
-    
-    async function checkLoginStatus(){
-      const session=sessionStorage.getItem('tanktools_session'),userData=localStorage.getItem('tanktools_current_user');
-      if(session!=='active'||!userData){showAccessDenied();return}
-      try{
-        currentUser=JSON.parse(userData);
-        
-        // Initialize permissions manager
-        if (!window.permissionsManager) {
-          window.permissionsManager = new PermissionsManager();
-        }
-        
-        // Load user permissions
-        await window.permissionsManager.loadUserPermissions(currentUser.username);
-        
-        // Check permissions before initializing
-        const hasPermissions = await checkUserPermissions();
-        if (!hasPermissions) {
-          showAccessDenied();
-          return;
-        }
-        
-        // Check page access
-        if (!checkPageAccess('plcr')) {
-          return;
-        }
-        
-        initializeApp();
-        logActivity('plcr_accessed',currentUser.username);
-      }catch{showAccessDenied()}
-    }
-    
-    function showAccessDenied(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
-    
-    // Add missing permission functions
-    async function checkUserPermissions() {
-      try {
-        if (!window.permissionsManager) {
-          window.permissionsManager = new PermissionsManager();
-          await window.permissionsManager.loadUserPermissions(currentUser.username);
-        }
-        return true;
-      } catch (error) {
-        console.error('Error checking user permissions:', error);
-        return false;
+    function checkLogin(){
+      const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');
+      if(s!=='active'||!u){
+        showAccess();
+        return;
       }
-    }
-
-    function checkPageAccess(page) {
-      try {
-        if (!window.permissionsManager) {
-          return false;
-        }
-        return window.permissionsManager.hasPageAccess(page);
-      } catch (error) {
-        console.error('Error checking page access:', error);
-        return false;
-      }
-    }
-    
-    window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','plcr.html');window.location.href='login.html'};
-    
-    function initializeApp(){
-      document.getElementById('mainContent').style.display='block';
-      document.getElementById('accessDenied').style.display='none';
-      loadUserInfo();
-      loadTankData();
-      loadDataFromLocalStorage();
-      setupDarkMode();
-      
-      // Apply UI restrictions based on permissions
-      window.permissionsManager.applyUIRestrictions();
-    }
-    
-    // Check login status
-    async function checkLogin(){
       try{
-        // إعطاء وقت إضافي لتحميل الجلسة
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // فحص الجلسة النشطة
-        const session = sessionStorage.getItem('tanktools_session');
-        const userData = localStorage.getItem('tanktools_current_user');
-        
-        console.log('Checking session:', session ? 'Found' : 'Not found');
-        console.log('Checking user data:', userData ? 'Found' : 'Not found');
-        
-        if(!session || session !== 'active' || !userData){
-          console.log('No valid session found, redirecting to login');
+        currentUser=JSON.parse(u);
+        if(!currentUser||!currentUser.username){
           showAccess();
           return;
         }
         
-        // تحليل بيانات المستخدم
-        currentUser = JSON.parse(userData);
-        console.log('User loaded:', currentUser);
-        
-        // Initialize permissions manager if available
         if (window.PermissionsManager) {
           window.permissionsManager = new PermissionsManager();
           window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
             initApp();
           }).catch(() => {
-            initApp(); // Continue even if permissions fail
+            initApp();
           });
         } else {
           initApp();
         }
-      }catch(error){
-        console.log('Login check error:', error);
+      }catch{
         showAccess();
       }
     }
 
     function showAccess(){
-      // تأخير إضافي قبل إظهار شاشة تسجيل الدخول
-      setTimeout(() => {
-        document.getElementById('mainContent').style.display='none';
-        document.getElementById('accessDenied').style.display='flex';
-      }, 1000);
+      document.getElementById('mainContent').style.display='none';
+      document.getElementById('accessDenied').style.display='flex';
     }
 
     window.goToLogin=()=>{
@@ -407,8 +303,8 @@
       document.getElementById('mainContent').style.display='block';
       document.getElementById('accessDenied').style.display='none';
       loadUser();
-      loadTankDataFromFirebase();
-      loadProductsFromFirebase();
+      loadDataFromLocalStorage();
+      setupDarkMode();
     }
 
     function loadUser(){
@@ -429,7 +325,208 @@
       localStorage.removeItem('tanktools_current_user');
       window.location.href='login.html';
     };
-    
+
+    // Load tank data from Firebase (PLCR version - matches PBCR system)
+    async function loadTankDataFromFirebase() {
+      try {
+        const statusDiv = document.getElementById("result");
+        if (statusDiv) statusDiv.textContent = "🔄 Loading PLCR tank data from Firebase...";
+        
+        let dataLoaded = false;
+        
+        // Path 1: tanks/tanks (main path)
+        try {
+          const tanksSnapshot = await getDoc(doc(db, 'tanks', 'tanks'));
+          if (tanksSnapshot.exists()) {
+            const tanksData = tanksSnapshot.data();
+            
+            for (let tankId in tanksData) {
+              const tankData = tanksData[tankId];
+              if (tankData.gross && tankData.factor !== undefined) {
+                tanks[tankId] = {
+                  comment: tankData.gross,
+                  min: tankData.factor,
+                  max: tankData.factor
+                };
+              }
+              else if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+                tanks[tankId] = {
+                  comment: tankData.capacity,
+                  min: tankData.min,
+                  max: tankData.max
+                };
+              }
+            }
+            
+            if (Object.keys(tanks).length > 0) {
+              dataLoaded = true;
+              if (statusDiv) statusDiv.textContent = `✅ PLCR tanks loaded from main path: ${Object.keys(tanks).length} tanks`;
+            }
+          }
+        } catch (e) {
+          console.log('Main path failed:', e.message);
+        }
+        
+        // Path 2: Load from individual collections
+        if (!dataLoaded || Object.keys(tanks).length < 10) {
+          try {
+            if (statusDiv) statusDiv.textContent = "🔄 Loading from PLCR collections...";
+            
+            const plcrSnapshot = await getDoc(doc(db, 'plcr', 'tanks'));
+            if (plcrSnapshot.exists()) {
+              const plcrData = plcrSnapshot.data();
+              
+              for (let tankId in plcrData) {
+                const tankData = plcrData[tankId];
+                if (tankData.gross && tankData.factor !== undefined) {
+                  tanks[tankId] = {
+                    comment: tankData.gross,
+                    min: tankData.factor,
+                    max: tankData.factor
+                  };
+                }
+                else if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+                  tanks[tankId] = {
+                    comment: tankData.capacity,
+                    min: tankData.min,
+                    max: tankData.max
+                  };
+                }
+              }
+            }
+            
+            const plcrTankDataSnapshot = await getDoc(doc(db, 'tankData', 'plcr'));
+            if (plcrTankDataSnapshot.exists()) {
+              const plcrTankData = plcrTankDataSnapshot.data();
+              if (plcrTankData.tanks) {
+                for (let tankId in plcrTankData.tanks) {
+                  const tankData = plcrTankData.tanks[tankId];
+                  if (tankData.gross && tankData.factor !== undefined) {
+                    tanks[tankId] = {
+                      comment: tankData.gross,
+                      min: tankData.factor,
+                      max: tankData.factor
+                    };
+                  }
+                  else if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+                    tanks[tankId] = {
+                      comment: tankData.capacity,
+                      min: tankData.min,
+                      max: tankData.max
+                    };
+                  }
+                }
+              }
+            }
+            
+            if (Object.keys(tanks).length > 0) {
+              dataLoaded = true;
+              if (statusDiv) statusDiv.textContent = `✅ Total PLCR tanks loaded: ${Object.keys(tanks).length} tanks`;
+            }
+            
+          } catch (e) {
+            console.log('PLCR collections failed:', e.message);
+          }
+        }
+        
+        if (!dataLoaded || Object.keys(tanks).length === 0) {
+          if (statusDiv) statusDiv.textContent = "❌ No PLCR tank data found in Firebase";
+          console.error('No PLCR tank data could be loaded from Firebase');
+        }
+        
+        setTimeout(() => {
+          if (statusDiv && (statusDiv.textContent.includes('loaded') || statusDiv.textContent.includes('tanks'))) {
+            statusDiv.textContent = "";
+          }
+        }, 3000);
+        
+      } catch (error) {
+        const statusDiv = document.getElementById("result");
+        if (statusDiv) statusDiv.textContent = `❌ Firebase Error: ${error.message}`;
+        console.error('Firebase loading error:', error);
+      }
+    }// Load products from Firebase
+    async function loadProductsFromFirebase() {
+      try {
+        const systemSnapshot = await getDoc(doc(db, 'system', 'products'));
+        if (systemSnapshot.exists()) {
+          products = systemSnapshot.data().products || {};
+        } else {
+          products = {
+            "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
+            "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
+            "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
+          };
+        }
+      } catch (error) {
+        console.error('❌ Error loading products:', error);
+        products = {
+          "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
+          "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
+          "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
+        };
+      }
+    }
+
+    // PLCR Calculate Function
+    window.calculate = () => {
+      const tk = document.getElementById("tk").value.trim();
+      const value = parseFloat(document.getElementById("value").value);
+      const resultDiv = document.getElementById("result");
+      const mode = document.getElementById("mode").value;
+      
+      if (!tk) {
+        resultDiv.textContent = "Please enter a tank number.";
+        return;
+      }
+      
+      if (!tanks[tk]) {
+        resultDiv.textContent = `Tank ${tk} not found in PLCR database.`;
+        return;
+      }
+      
+      if (isNaN(value)) {
+        resultDiv.textContent = "Please enter a valid number.";
+        return;
+      }
+      
+      const tank = tanks[tk];
+      const gross = tank.comment;  // gross value
+      const factor = tank.min;     // factor value
+      
+      let metricTon, barrels, level;
+      
+      switch (mode) {
+        case "levelToBarrels":
+          metricTon = value * factor;
+          barrels = metricTon * gross;
+          resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT | Barrels: ${barrels.toFixed(2)} BBL`;
+          break;
+          
+        case "barrelsToLevel":
+          metricTon = value / gross;
+          level = metricTon / factor;
+          resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT | Approx. Level: ${level.toFixed(2)}`;
+          break;
+          
+        case "tonToLevel":
+          level = value / factor;
+          resultDiv.textContent = `Approx. Level: ${level.toFixed(2)}`;
+          break;
+          
+        case "levelToTon":
+          metricTon = value * factor;
+          resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT`;
+          break;
+          
+        default:
+          resultDiv.textContent = "Please select a valid mode and enter data.";
+      }
+      
+      saveDataToLocalStorage();
+    };
+
+    // Utility Functions
     function showMessage(message,type){
       const div=document.createElement('div');
       div.innerHTML=message;
@@ -447,43 +544,6 @@
       calculate()
     });
 
-    window.calculate=()=>{
-      const tk=document.getElementById("tk").value.trim(),value=parseFloat(document.getElementById("value").value),resultDiv=document.getElementById("result");
-      
-      // Check tank access permission
-      if (tk && !checkTankAccess(tk, 'PLCR')) {
-        document.getElementById("tk").value = '';
-        resultDiv.textContent = "Access denied to this tank.";
-        return;
-      }
-      
-      if(!tankConversions[tk]){resultDiv.textContent="Tank number not found in database.";return}
-      const tank=tankConversions[tk],mode=modeSelect.value;
-      let metricTon,barrels,level;
-      switch(mode){
-        case "levelToBarrels":
-          metricTon=value*tank.factor;barrels=metricTon*tank.gross;
-          resultDiv.textContent=`Weight: ${metricTon.toFixed(2)} MT | Barrels: ${barrels.toFixed(2)} BBL`;
-          break;
-        case "barrelsToLevel":
-          metricTon=value/tank.gross;level=metricTon/tank.factor;
-          resultDiv.textContent=`Weight: ${metricTon.toFixed(2)} MT | Approx. Level: ${level.toFixed(2)}`;
-          break;
-        case "tonToLevel":
-          level=value/tank.factor;
-          resultDiv.textContent=`Approx. Level: ${level.toFixed(2)}`;
-          break;
-        case "levelToTon":
-          metricTon=value*tank.factor;
-          resultDiv.textContent=`Weight: ${metricTon.toFixed(2)} MT`;
-          break;
-        default:
-          resultDiv.textContent="Please select a valid mode and enter data."
-      }
-      saveDataToLocalStorage();
-      logActivity('plcr_calculation',currentUser.username)
-    };
-    
     function saveDataToLocalStorage(){
       const data={tk:document.getElementById("tk").value,value:document.getElementById("value").value,mode:document.getElementById("mode").value};
       localStorage.setItem('plcrData',JSON.stringify(data))
@@ -519,142 +579,6 @@
       updateColorMode()
     }
 
-    function logActivity(action,username){
-      const activities=JSON.parse(localStorage.getItem('tanktools_activities')||'[]');
-      activities.unshift({id:Date.now(),action,username,timestamp:new Date().toISOString(),ip:'local',userAgent:navigator.userAgent.substring(0,100)});
-      activities.splice(100);
-      localStorage.setItem('tanktools_activities',JSON.stringify(activities))
-    }
-    
-    // Load tank data from Firebase (PLCR version)
-    async function loadTankDataFromFirebase() {
-      try {
-        console.log('🔄 Loading PLCR tank data from Firebase...');
-        
-        // Try loading from tankData/plcr (the correct path from Firebase)
-        const plcrDocRef = doc(db, 'tankData', 'plcr');
-        const plcrDoc = await getDoc(plcrDocRef);
-        
-        if (plcrDoc.exists()) {
-          const plcrData = plcrDoc.data();
-          console.log('PLCR data found:', plcrData);
-          
-          if (plcrData.tanks) {
-            // Convert Firebase data to expected format
-            Object.keys(plcrData.tanks).forEach(tankId => {
-              const tankData = plcrData.tanks[tankId];
-              tanks[tankId] = {
-                comment: tankData.gross || tankData.capacity || 0,
-                min: tankData.factor || 0,
-                max: tankData.factor || 0,
-                department: tankData.department || 'PLCR',
-                type: tankData.type || 'conversion'
-              };
-            });
-            
-            console.log(`✅ PLCR tanks loaded from Firebase: ${Object.keys(tanks).length} tanks`);
-            showMessage(`✅ PLCR tank data loaded: ${Object.keys(tanks).length} tanks`, 'success');
-            return;
-          }
-        }
-        
-        console.log('⚠️ No PLCR data in Firebase, using fallback data');
-        loadFallbackPLCRData();
-        
-      } catch (error) {
-        console.error('❌ Firebase error:', error);
-        showMessage('⚠️ Using fallback PLCR data', 'warning');
-        loadFallbackPLCRData();
-      }
-    }
-    
-    function loadFallbackPLCRData() {
-      // Fallback PLCR tank data based on Firebase structure
-      const fallbackTanks = {
-        "467": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
-        "101": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
-        "204": {comment: 8500, min: 1.2, max: 1.2, department: "PLCR", type: "conversion"},
-        "255": {comment: 7800, min: 1.1, max: 1.1, department: "PLCR", type: "conversion"},
-        "256": {comment: 7800, min: 1.1, max: 1.1, department: "PLCR", type: "conversion"},
-        "272": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
-        "273": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
-        "274": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
-        "275": {comment: 9200, min: 1.4, max: 1.4, department: "PLCR", type: "conversion"},
-        "281": {comment: 8800, min: 1.3, max: 1.3, department: "PLCR", type: "conversion"},
-        "282": {comment: 8800, min: 1.3, max: 1.3, department: "PLCR", type: "conversion"},
-        "301": {comment: 9500, min: 1.5, max: 1.5, department: "PLCR", type: "conversion"},
-        "302": {comment: 9500, min: 1.5, max: 1.5, department: "PLCR", type: "conversion"},
-        "424": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
-        "425": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
-        "426": {comment: 10200, min: 1.6, max: 1.6, department: "PLCR", type: "conversion"},
-        "456": {comment: 9800, min: 1.45, max: 1.45, department: "PLCR", type: "conversion"},
-        "460": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
-        "461": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
-        "462": {comment: 9600, min: 1.42, max: 1.42, department: "PLCR", type: "conversion"},
-        "468": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
-        "469": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
-        "470": {comment: 9054, min: 1.358, max: 1.358, department: "PLCR", type: "conversion"},
-        "521": {comment: 11000, min: 1.7, max: 1.7, department: "PLCR", type: "conversion"},
-        "522": {comment: 11000, min: 1.7, max: 1.7, department: "PLCR", type: "conversion"},
-        "531": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
-        "532": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
-        "533": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
-        "534": {comment: 10800, min: 1.65, max: 1.65, department: "PLCR", type: "conversion"},
-        "600": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
-        "601": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
-        "603": {comment: 12000, min: 1.8, max: 1.8, department: "PLCR", type: "conversion"},
-        "620": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
-        "621": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
-        "622": {comment: 11500, min: 1.75, max: 1.75, department: "PLCR", type: "conversion"},
-        "664": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
-        "665": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
-        "668": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
-        "669": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
-        "670": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
-        "671": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
-        "672": {comment: 13000, min: 1.9, max: 1.9, department: "PLCR", type: "conversion"},
-        "702": {comment: 14000, min: 2.0, max: 2.0, department: "PLCR", type: "conversion"},
-        "703": {comment: 14000, min: 2.0, max: 2.0, department: "PLCR", type: "conversion"}
-      };
-      
-      tanks = fallbackTanks;
-      console.log(`⚠️ Using fallback PLCR data: ${Object.keys(tanks).length} tanks`);
-      showMessage(`⚠️ Using complete PLCR database: ${Object.keys(tanks).length} tanks`, 'warning');
-    }
-
-    // Load products from Firebase
-    async function loadProductsFromFirebase() {
-      try {
-        const productsSnapshot = await getDoc(doc(db, 'system', 'products'));
-        if (productsSnapshot.exists()) {
-          products = productsSnapshot.data();
-        } else {
-          // Fallback products
-          products = {
-            "Pumpable": {density: 0.85},
-            "Non-Pumpable": {density: 0.85},
-            "Gasoline": {density: 0.75},
-            "Diesel": {density: 0.85},
-            "Kerosene": {density: 0.8}
-          };
-        }
-      } catch (error) {
-        console.error('Products loading error:', error);
-        // Use fallback products
-        products = {
-          "Pumpable": {density: 0.85},
-          "Non-Pumpable": {density: 0.85},
-          "Gasoline": {density: 0.75},
-          "Diesel": {density: 0.85},
-          "Kerosene": {density: 0.8}
-        };
-      }
-    }
-
-    // Auto-save and PWA
-    document.addEventListener('input',e=>{if(e.target.matches('#tk,#value'))saveDataToLocalStorage()});
-    if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));
-    
     // Font size control functions
     let currentFontSize = parseInt(localStorage.getItem('tanktools_font_size_plcr') || '16');
     
@@ -710,13 +634,11 @@
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
 
-    console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
-    console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
+    // Auto-save
+    document.addEventListener('input',e=>{if(e.target.matches('#tk,#value'))saveDataToLocalStorage()});
     
-    // Initialize everything on page load
-    window.addEventListener('load',()=>{
-      setTimeout(checkLogin, 1000); // زيادة التأخير لإعطاء وقت أكثر لتحميل الجلسة
-    });
+    console.log('%c🔒 PLCR CALCULATOR - FIREBASE INTEGRATED','color:red;font-size:16px;font-weight:bold');
+    console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
   </script>
 </body>
 </html>
