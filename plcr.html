@@ -9,9 +9,9 @@
   <meta name="theme-color" content="#003366">
   <script type="module">
     import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import{getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import{getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,serverTimestamp,getDocs}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
     const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
-    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.setDoc=setDoc;window.addDoc=addDoc;window.serverTimestamp=serverTimestamp;window.collection=collection;
+    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.setDoc=setDoc;window.addDoc=addDoc;window.serverTimestamp=serverTimestamp;window.collection=collection;window.getDocs=getDocs;
   </script>
   <script src="permissions.js"></script>
   <style>
@@ -146,7 +146,7 @@
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
     
     <footer>
-      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3
+      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3 Debug
       <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
     </footer>
   </div><script>
@@ -250,7 +250,83 @@
     const WHATSAPP_NUMBER="96555222550";
     let currentUser=null,c=0,m=0,x=0,calcData=null;
     let tanks={};
-    let products={};// Login and Initialization System
+    let products={};
+
+    // Login and Initialization System
+    window.addEventListener('load',()=>{
+      setTimeout(() => {
+        checkLogin();
+        setTimeout(() => {
+          loadTankDataFromFirebase();
+          loadProductsFromFirebase();
+        }, 1000);
+      }, 100);
+    });
+
+    function checkLogin(){
+      const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');
+      if(s!=='active'||!u){
+        showAccess();
+        return;
+      }
+      try{
+        currentUser=JSON.parse(u);
+        if(!currentUser||!currentUser.username){
+          showAccess();
+          return;
+        }
+        
+        if (window.PermissionsManager) {
+          window.permissionsManager = new PermissionsManager();
+          window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
+            initApp();
+          }).catch(() => {
+            initApp();
+          });
+        } else {
+          initApp();
+        }
+      }catch{
+        showAccess();
+      }
+    }
+
+    function showAccess(){
+      document.getElementById('mainContent').style.display='none';
+      document.getElementById('accessDenied').style.display='flex';
+    }
+
+    window.goToLogin=()=>{
+      sessionStorage.setItem('tanktools_redirect','plcr.html');
+      window.location.href='login.html';
+    };
+
+    function initApp(){
+      document.getElementById('mainContent').style.display='block';
+      document.getElementById('accessDenied').style.display='none';
+      loadUser();
+      loadDataFromLocalStorage();
+      setupDarkMode();
+    }
+
+    function loadUser(){
+      if(!currentUser)return;
+      document.getElementById('userName').textContent=currentUser.fullName || currentUser.username;
+      document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
+      
+      if(currentUser.username==='fam030'||currentUser.role==='admin')
+        document.getElementById('adminLink').style.display='inline-block';
+      
+      const roles=["admin","panel_operator","supervisor","section_head","operator","planning"];
+      if(roles.includes(currentUser.role))
+        document.getElementById('liveTanksLink').style.display='inline-block';
+    }
+
+    window.logout=()=>{
+      sessionStorage.removeItem('tanktools_session');
+      localStorage.removeItem('tanktools_current_user');
+      window.location.href='login.html';
+    };// Login and Initialization System
     window.addEventListener('load',()=>{
       setTimeout(() => {
         checkLogin();
@@ -326,140 +402,156 @@
       window.location.href='login.html';
     };
 
-    // Load tank data from Firebase (PLCR version - matches PBCR system)
+    // DEBUG VERSION: Load tank data from Firebase with detailed logging
     async function loadTankDataFromFirebase() {
       try {
         const statusDiv = document.getElementById("result");
-        if (statusDiv) statusDiv.textContent = "🔄 Loading PLCR tank data from Firebase...";
+        if (statusDiv) statusDiv.textContent = "🔄 DEBUG: Loading PLCR tank data from Firebase...";
+        
+        console.log('🔄 DEBUG: Starting PLCR Firebase loading...');
         
         let dataLoaded = false;
         
-        // Path 1: tanks/tanks (main path)
+        // Path 1: Try to read from tankData/plcr/tanks as a collection
         try {
-          const tanksSnapshot = await getDoc(doc(db, 'tanks', 'tanks'));
-          if (tanksSnapshot.exists()) {
-            const tanksData = tanksSnapshot.data();
-            
-            for (let tankId in tanksData) {
-              const tankData = tanksData[tankId];
+          console.log('🔍 DEBUG: Trying tankData/plcr/tanks collection approach...');
+          
+          // Read the tanks collection under tankData/plcr
+          const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
+          const tanksSnapshot = await getDocs(tanksCollectionRef);
+          
+          console.log('📊 DEBUG: Collection size:', tanksSnapshot.size);
+          console.log('📊 DEBUG: Collection empty?', tanksSnapshot.empty);
+          
+          if (!tanksSnapshot.empty) {
+            tanksSnapshot.forEach((doc) => {
+              const tankId = doc.id;
+              const tankData = doc.data();
+              
+              console.log(`🔍 DEBUG: Processing tank ${tankId}:`, tankData);
+              
+              // For PLCR: look for gross and factor
               if (tankData.gross && tankData.factor !== undefined) {
                 tanks[tankId] = {
                   comment: tankData.gross,
                   min: tankData.factor,
                   max: tankData.factor
                 };
+                console.log(`✅ DEBUG: Added tank ${tankId} with gross=${tankData.gross}, factor=${tankData.factor}`);
               }
+              // Also check for capacity/min/max format
               else if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
                 tanks[tankId] = {
                   comment: tankData.capacity,
                   min: tankData.min,
                   max: tankData.max
                 };
+                console.log(`✅ DEBUG: Added tank ${tankId} with capacity=${tankData.capacity}`);
               }
-            }
+              else {
+                console.log(`❌ DEBUG: Tank ${tankId} missing required fields. Available fields:`, Object.keys(tankData));
+              }
+            });
             
             if (Object.keys(tanks).length > 0) {
               dataLoaded = true;
-              if (statusDiv) statusDiv.textContent = `✅ PLCR tanks loaded from main path: ${Object.keys(tanks).length} tanks`;
+              const message = `✅ DEBUG: PLCR tanks loaded from collection: ${Object.keys(tanks).length} tanks`;
+              console.log(message);
+              if (statusDiv) statusDiv.textContent = message;
             }
+          } else {
+            console.log('❌ DEBUG: Collection is empty');
           }
         } catch (e) {
-          console.log('Main path failed:', e.message);
+          console.log('❌ DEBUG: Collection approach failed:', e.message);
         }
         
-        // Path 2: Load from individual collections
-        if (!dataLoaded || Object.keys(tanks).length < 10) {
+        // Path 2: Try document approach (fallback)
+        if (!dataLoaded || Object.keys(tanks).length < 5) {
           try {
-            if (statusDiv) statusDiv.textContent = "🔄 Loading from PLCR collections...";
-            
-            const plcrSnapshot = await getDoc(doc(db, 'plcr', 'tanks'));
-            if (plcrSnapshot.exists()) {
-              const plcrData = plcrSnapshot.data();
-              
-              for (let tankId in plcrData) {
-                const tankData = plcrData[tankId];
-                if (tankData.gross && tankData.factor !== undefined) {
-                  tanks[tankId] = {
-                    comment: tankData.gross,
-                    min: tankData.factor,
-                    max: tankData.factor
-                  };
-                }
-                else if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-                  tanks[tankId] = {
-                    comment: tankData.capacity,
-                    min: tankData.min,
-                    max: tankData.max
-                  };
-                }
-              }
-            }
+            console.log('🔍 DEBUG: Trying document approach as fallback...');
             
             const plcrTankDataSnapshot = await getDoc(doc(db, 'tankData', 'plcr'));
+            console.log('📄 DEBUG: Document exists?', plcrTankDataSnapshot.exists());
+            
             if (plcrTankDataSnapshot.exists()) {
               const plcrTankData = plcrTankDataSnapshot.data();
+              console.log('📄 DEBUG: Document data keys:', Object.keys(plcrTankData));
+              console.log('📄 DEBUG: Full document data:', plcrTankData);
+              
               if (plcrTankData.tanks) {
+                console.log('📄 DEBUG: Found tanks field with keys:', Object.keys(plcrTankData.tanks));
                 for (let tankId in plcrTankData.tanks) {
                   const tankData = plcrTankData.tanks[tankId];
+                  console.log(`🔍 DEBUG: Document tank ${tankId}:`, tankData);
+                  
                   if (tankData.gross && tankData.factor !== undefined) {
                     tanks[tankId] = {
                       comment: tankData.gross,
                       min: tankData.factor,
                       max: tankData.factor
                     };
-                  }
-                  else if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-                    tanks[tankId] = {
-                      comment: tankData.capacity,
-                      min: tankData.min,
-                      max: tankData.max
-                    };
+                    console.log(`✅ DEBUG: Added tank ${tankId} from document`);
                   }
                 }
+              } else {
+                console.log('❌ DEBUG: No tanks field in document');
               }
             }
             
             if (Object.keys(tanks).length > 0) {
               dataLoaded = true;
-              if (statusDiv) statusDiv.textContent = `✅ Total PLCR tanks loaded: ${Object.keys(tanks).length} tanks`;
+              const message = `✅ DEBUG: PLCR tanks loaded from document: ${Object.keys(tanks).length} tanks`;
+              console.log(message);
+              if (statusDiv) statusDiv.textContent = message;
             }
-            
           } catch (e) {
-            console.log('PLCR collections failed:', e.message);
+            console.log('❌ DEBUG: Document approach failed:', e.message);
           }
         }
         
+        // Debug: Show what tanks we have
+        console.log('🎯 DEBUG: Final tanks loaded:', Object.keys(tanks));
+        console.log('🔍 DEBUG: Looking for tank 467:', tanks['467']);
+        console.log('🔍 DEBUG: Tank 467 exists?', tanks.hasOwnProperty('467'));
+        
         if (!dataLoaded || Object.keys(tanks).length === 0) {
-          if (statusDiv) statusDiv.textContent = "❌ No PLCR tank data found in Firebase";
-          console.error('No PLCR tank data could be loaded from Firebase');
+          const message = "❌ DEBUG: No PLCR tank data found in Firebase";
+          console.error(message);
+          if (statusDiv) statusDiv.textContent = message;
         }
         
+        // Clear status after 8 seconds (longer for debugging)
         setTimeout(() => {
           if (statusDiv && (statusDiv.textContent.includes('loaded') || statusDiv.textContent.includes('tanks'))) {
             statusDiv.textContent = "";
           }
-        }, 3000);
+        }, 8000);
         
       } catch (error) {
         const statusDiv = document.getElementById("result");
-        if (statusDiv) statusDiv.textContent = `❌ Firebase Error: ${error.message}`;
-        console.error('Firebase loading error:', error);
+        const message = `❌ DEBUG: Firebase Error: ${error.message}`;
+        console.error('🔥 DEBUG: Firebase loading error:', error);
+        if (statusDiv) statusDiv.textContent = message;
       }
     }// Load products from Firebase
     async function loadProductsFromFirebase() {
       try {
+        console.log('🔄 DEBUG: Loading products from Firebase...');
         const systemSnapshot = await getDoc(doc(db, 'system', 'products'));
         if (systemSnapshot.exists()) {
           products = systemSnapshot.data().products || {};
+          console.log('✅ DEBUG: Products loaded from system collection');
         } else {
           products = {
             "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
             "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
             "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
           };
+          console.log('✅ DEBUG: Using default products');
         }
       } catch (error) {
-        console.error('❌ Error loading products:', error);
+        console.error('❌ DEBUG: Error loading products:', error);
         products = {
           "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
           "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
@@ -468,31 +560,41 @@
       }
     }
 
-    // PLCR Calculate Function
+    // DEBUG VERSION: PLCR Calculate Function with detailed logging
     window.calculate = () => {
       const tk = document.getElementById("tk").value.trim();
       const value = parseFloat(document.getElementById("value").value);
       const resultDiv = document.getElementById("result");
       const mode = document.getElementById("mode").value;
       
+      console.log(`🔍 DEBUG: Calculate called with tank=${tk}, value=${value}, mode=${mode}`);
+      console.log(`🔍 DEBUG: Available tanks:`, Object.keys(tanks));
+      console.log(`🔍 DEBUG: Tank ${tk} exists?`, tanks.hasOwnProperty(tk));
+      
       if (!tk) {
-        resultDiv.textContent = "Please enter a tank number.";
+        resultDiv.textContent = "DEBUG: Please enter a tank number.";
+        console.log('❌ DEBUG: No tank number entered');
         return;
       }
       
       if (!tanks[tk]) {
-        resultDiv.textContent = `Tank ${tk} not found in PLCR database.`;
+        const message = `DEBUG: Tank ${tk} not found in PLCR database. Available tanks: ${Object.keys(tanks).slice(0,5).join(', ')}${Object.keys(tanks).length > 5 ? '...' : ''}`;
+        resultDiv.textContent = message;
+        console.log(`❌ DEBUG: Tank ${tk} not found. Available:`, Object.keys(tanks));
         return;
       }
       
       if (isNaN(value)) {
-        resultDiv.textContent = "Please enter a valid number.";
+        resultDiv.textContent = "DEBUG: Please enter a valid number.";
+        console.log('❌ DEBUG: Invalid value entered');
         return;
       }
       
       const tank = tanks[tk];
       const gross = tank.comment;  // gross value
       const factor = tank.min;     // factor value
+      
+      console.log(`✅ DEBUG: Using tank ${tk} with gross=${gross}, factor=${factor}`);
       
       let metricTon, barrels, level;
       
@@ -501,26 +603,31 @@
           metricTon = value * factor;
           barrels = metricTon * gross;
           resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT | Barrels: ${barrels.toFixed(2)} BBL`;
+          console.log(`✅ DEBUG: Level to Barrels: ${value} → ${metricTon.toFixed(2)} MT → ${barrels.toFixed(2)} BBL`);
           break;
           
         case "barrelsToLevel":
           metricTon = value / gross;
           level = metricTon / factor;
           resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT | Approx. Level: ${level.toFixed(2)}`;
+          console.log(`✅ DEBUG: Barrels to Level: ${value} BBL → ${metricTon.toFixed(2)} MT → ${level.toFixed(2)} level`);
           break;
           
         case "tonToLevel":
           level = value / factor;
           resultDiv.textContent = `Approx. Level: ${level.toFixed(2)}`;
+          console.log(`✅ DEBUG: Ton to Level: ${value} MT → ${level.toFixed(2)} level`);
           break;
           
         case "levelToTon":
           metricTon = value * factor;
           resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT`;
+          console.log(`✅ DEBUG: Level to Ton: ${value} → ${metricTon.toFixed(2)} MT`);
           break;
           
         default:
-          resultDiv.textContent = "Please select a valid mode and enter data.";
+          resultDiv.textContent = "DEBUG: Please select a valid mode and enter data.";
+          console.log('❌ DEBUG: Invalid mode selected');
       }
       
       saveDataToLocalStorage();
@@ -563,7 +670,7 @@
     }
 
     window.openWhatsApp=()=>{
-      const message="مرحبا، أتواصل معك من خلال تطبيق PLCR Tank Calculator",whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      const message="مرحبا، أتواصل معك من خلال تطبيق PLCR Tank Calculator - Debug Version",whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
       try{const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');if(!newWindow)window.location.href=whatsappURL}
       catch{navigator.clipboard.writeText(whatsappURL).then(()=>alert(`تم نسخ رابط الواتساب:\n${whatsappURL}`)).catch(()=>alert(`رابط الواتساب:\n${whatsappURL}`))}
     };
@@ -637,7 +744,8 @@
     // Auto-save
     document.addEventListener('input',e=>{if(e.target.matches('#tk,#value'))saveDataToLocalStorage()});
     
-    console.log('%c🔒 PLCR CALCULATOR - FIREBASE INTEGRATED','color:red;font-size:16px;font-weight:bold');
+    console.log('%c🔒 PLCR CALCULATOR - DEBUG VERSION','color:red;font-size:16px;font-weight:bold');
+    console.log('%c🔍 Full debugging enabled - Check console for details','color:orange;font-size:14px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
   </script>
 </body>
