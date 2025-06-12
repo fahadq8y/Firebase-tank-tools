@@ -2,7 +2,7 @@
   "name": "Tank Tools - KNPC System",
   "short_name": "Tank Tools",
   "description": "Kuwait National Petroleum Company - Tank Management System by Fahad 17877",
-  "version": "3.0.0",
+  "version": "3.2.0",
   "start_url": "/login.html",
   "scope": "/",
   "display": "standalone",
@@ -17,42 +17,7 @@
       "src": "icon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "icon.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ],
-  
-  "screenshots": [
-    {
-      "src": "screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Tank Tools Dashboard"
-    },
-    {
-      "src": "screenshot-narrow.png", 
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Tank Tools Mobile"
+      "purpose": "any maskable"
     }
   ],
 
@@ -97,6 +62,19 @@
       ]
     },
     {
+      "name": "Live Tanks",
+      "short_name": "Live Tanks",
+      "description": "Real-time tank monitoring", 
+      "url": "/live-tanks.html",
+      "icons": [
+        {
+          "src": "icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "Admin Dashboard",
       "short_name": "Dashboard",
       "description": "System management and monitoring", 
@@ -114,56 +92,14 @@
   "categories": [
     "business",
     "productivity", 
-    "utilities",
-    "finance"
+    "utilities"
   ],
-
-  "iarc_rating_id": "e58c174a-81d2-5c3c-32cc-34b8de4a52e9",
 
   "prefer_related_applications": false,
-
-  "protocol_handlers": [
-    {
-      "protocol": "web+tanktools",
-      "url": "/login.html?action=%s"
-    }
-  ],
-
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
 
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
 
-  "file_handlers": [
-    {
-      "action": "/",
-      "accept": {
-        "text/csv": [".csv"],
-        "application/json": [".json"]
-      }
-    }
-  ],
-
-  "share_target": {
-    "action": "/",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url",
-      "files": [
-        {
-          "name": "files",
-          "accept": ["text/csv", "application/json"]
-        }
-      ]
-    }
-  },
-
-  "id": "tanktools-knpc-app",
-  "handle_links": "preferred"
+  "id": "tanktools-knpc-app"
 }
