@@ -15,6 +15,7 @@
     const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
     window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;
     window.auth = getAuth(app);
+    window.onAuthStateChanged = onAuthStateChanged; // هذا هو التعديل الجديد
   </script>
   <script src="permissions.js"></script>
   <style>
@@ -165,7 +166,7 @@
         const isIPhone=/iPad|iPhone|iPod/.test(navigator.userAgent);
         
         // Multiple event listeners for comprehensive input tracking
-        ['focusin','focus','input','keydown','keyup','touchstart'].forEach(eventType=>{
+        ["focusin","focus","input","keydown","keyup","touchstart"].forEach(eventType=>{
           document.addEventListener(eventType,e=>{
             if(e.target.matches('input,textarea,select')){
               isTyping=true;
@@ -239,210 +240,177 @@
           counter.style.background='rgba(244,67,54,0.2)';counter.style.borderColor='rgba(244,67,54,0.5)';counter.style.color='#f44336';
           setTimeout(()=>{if(attempts>=3)implementRestrictions()},5000)
         }
-        modal.classList.add('show')
+        modal.classList.add('show');
+      }
+      function acknowledgeWarning(){
+        document.getElementById('securityModal').classList.remove('show');
+        modalOpen=false;
+      }
+      function resetPage(){
+        attempts=0;
+        document.getElementById('securityModal').classList.remove('show');
+        modalOpen=false;
+        // Optionally reload the page or reset application state
+        location.reload();
+      }
+      function learnMore(){
+        alert('This is a secure application. Unauthorized access to developer tools is restricted to protect proprietary data and algorithms.');
       }
       function implementRestrictions(){
-        document.body.style.filter='blur(3px)';
-        const overlay=document.createElement('div');
-        overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9998;backdrop-filter:blur(5px);';
-        document.body.appendChild(overlay);
-        const msg=document.createElement('div');
-        msg.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:15px;z-index:9999;text-align:center;color:red;font-weight:bold;font-size:1.5rem;box-shadow:0 0 20px rgba(0,0,0,0.5);';
-        msg.innerHTML='SYSTEM LOCKED - CONTACT ADMIN';
-        document.body.appendChild(msg);
-        document.addEventListener('keydown',e=>e.preventDefault(),true);
-        document.addEventListener('click',e=>e.preventDefault(),true);
-        document.addEventListener('contextmenu',e=>e.preventDefault(),true);
+        // Example restrictions: disable inputs, redirect, etc.
+        document.body.style.pointerEvents = 'none'; // Disable all interactions
+        document.body.style.opacity = '0.5'; // Dim the page
+        // You might want to redirect to a logout page or show a permanent lock screen
       }
-      window.acknowledgeWarning=function(){document.getElementById('securityModal').classList.remove('show');modalOpen=false;attempts=0};
-      window.resetPage=function(){location.reload()};
-      window.learnMore=function(){alert('Contact Fahad - 17877 for more information.')};
       initSecurity();
     })();
 
-    // Global variables for user and permissions
+    // Firebase Authentication and Firestore Integration
     let currentUser = null;
-    let userPermissions = {};
-    let tankCalibrationData = {}; // To store tank calibration data
+    let userPermissions = null;
+    let tankCalibrationData = {}; // To store PLCR tank calibration data
 
-    // Function to navigate to login page
+    window.onAuthStateChanged(window.auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        console.log('✅ User is signed in:', currentUser.email);
+        await window.permissions.loadUserPermissions(currentUser.email.split('@')[0]);
+        userPermissions = window.permissions.userPermissions;
+        console.log('✅ User permissions loaded:', userPermissions);
+        updateUserInfo();
+        checkPermissionsAndInitialize();
+      } else {
+        console.log('❌ User is signed out. Redirecting to login.');
+        window.location.href = 'login.html';
+      }
+    });
+
+    function updateUserInfo() {
+      const userNameElement = document.getElementById('userName');
+      const userAvatarElement = document.getElementById('userAvatar');
+      if (currentUser) {
+        const username = currentUser.email.split('@')[0];
+        userNameElement.textContent = username;
+        userAvatarElement.textContent = username.charAt(0).toUpperCase();
+        console.log('✅ User info updated:', username);
+      } else {
+        userNameElement.textContent = 'User';
+        userAvatarElement.textContent = 'U';
+        console.log('⚠️ User info not available.');
+      }
+    }
+
+    async function loadTankCalibrationData() {
+      console.log('🔄 Attempting to load tank calibration data...');
+      try {
+        const docRef = window.doc(window.db, 'plcrTanks', 'tankCalibration');
+        const docSnap = await window.getDoc(docRef);
+
+        if (docSnap.exists()) {
+          tankCalibrationData = docSnap.data();
+          console.log('✅ Tank calibration data loaded:', tankCalibrationData);
+          // Optionally, trigger calculate() here if initial values are present
+          // calculate(); 
+        } else {
+          console.log('⚠️ No tank calibration data found at plcrTanks/tankCalibration');
+        }
+      } catch (error) {
+        console.error('❌ Error loading tank calibration data:', error);
+      }
+    }
+
+    function checkPermissionsAndInitialize() {
+      console.log('🔄 Checking permissions and initializing...');
+      const mainContent = document.getElementById('mainContent');
+      const accessDenied = document.getElementById('accessDenied');
+      const adminLink = document.getElementById('adminLink');
+      const liveTanksLink = document.getElementById('liveTanksLink');
+
+      if (userPermissions && userPermissions.role) {
+        console.log('✅ User role:', userPermissions.role);
+        mainContent.style.display = 'block';
+        accessDenied.style.display = 'none';
+
+        if (userPermissions.role === 'admin') {
+          adminLink.style.display = 'block';
+          liveTanksLink.style.display = 'block';
+          console.log('✅ Admin links displayed.');
+        } else {
+          adminLink.style.display = 'none';
+          liveTanksLink.style.display = 'none';
+          console.log('⚠️ Admin links hidden for non-admin user.');
+        }
+        loadTankCalibrationData(); // Load data after permissions are checked
+      } else {
+        console.log('❌ Permissions not loaded or role not defined. Showing access denied.');
+        mainContent.style.display = 'none';
+        accessDenied.style.display = 'flex';
+      }
+    }
+
     function goToLogin() {
       window.location.href = 'login.html';
     }
 
-    // Logout function
     function logout() {
       window.auth.signOut().then(() => {
-        console.log('User signed out');
-        localStorage.removeItem('loggedInUser'); // Clear local storage
-        goToLogin();
+        console.log('✅ User signed out.');
+        window.location.href = 'login.html';
       }).catch((error) => {
-        console.error('Error signing out:', error);
+        console.error('❌ Error signing out:', error);
       });
     }
 
-    // Function to update user info in nav bar
-    function updateUserInfo() {
-      const userNameElement = document.getElementById('userName');
-      const userAvatarElement = document.getElementById('userAvatar');
-      const adminLink = document.getElementById('adminLink');
-      const liveTanksLink = document.getElementById('liveTanksLink');
-
-      if (currentUser) {
-        userNameElement.textContent = currentUser.displayName || currentUser.email.split('@')[0];
-        userAvatarElement.textContent = (currentUser.displayName || currentUser.email).charAt(0).toUpperCase();
-
-        // Check for admin access
-        if (userPermissions.role === 'admin') {
-          adminLink.style.display = 'block';
-        } else {
-          adminLink.style.display = 'none';
-        }
-
-        // Check for Live Tanks access
-        if (userPermissions.liveTanksAccess) {
-          liveTanksLink.style.display = 'block';
-        } else {
-          liveTanksLink.style.display = 'none';
-        }
-
-        document.getElementById('mainContent').style.display = 'block';
-        document.getElementById('accessDenied').style.display = 'none';
-      } else {
-        userNameElement.textContent = 'Guest';
-        userAvatarElement.textContent = 'G';
-        adminLink.style.display = 'none';
-        liveTanksLink.style.display = 'none';
-        document.getElementById('mainContent').style.display = 'none';
-        document.getElementById('accessDenied').style.display = 'flex';
-      }
-    }
-
-    // Function to load tank calibration data from Firestore
-    async function loadTankCalibrationData() {
-      try {
-        const tankDocRef = doc(db, 'plcrTanks', 'tankCalibration'); // Assuming 'plcrTanks' collection and 'tankCalibration' document
-        const tankDocSnap = await getDoc(tankDocRef);
-
-        if (tankDocSnap.exists()) {
-          tankCalibrationData = tankDocSnap.data();
-          console.log('✅ Tank calibration data loaded:', tankCalibrationData);
-        } else {
-          console.warn('⚠️ Tank calibration data document not found!');
-          tankCalibrationData = {}; // Initialize as empty object
-        }
-      } catch (error) {
-        console.error('❌ Error loading tank calibration data:', error);
-        tankCalibrationData = {};
-      }
-    }
-
-    // Initialize app and check permissions
-    async function checkPermissionsAndInitialize() {
-      if (window.permissions) {
-        await window.permissions.initApp();
-        currentUser = window.permissions.currentUser;
-        userPermissions = window.permissions.userPermissions;
-        updateUserInfo();
-
-        if (currentUser && userPermissions) {
-          // Load tank calibration data only if user is logged in and permissions are loaded
-          await loadTankCalibrationData();
-        }
-      } else {
-        console.error('Permissions module not loaded.');
-        goToLogin();
-      }
-    }
-
-    // Firebase Auth state change listener
-    onAuthStateChanged(window.auth, (user) => {
-      if (user) {
-        console.log('User is signed in:', user.email);
-        checkPermissionsAndInitialize();
-      } else {
-        console.log('No user is signed in.');
-        goToLogin();
-      }
-    });
-
-    // Function to calculate based on mode, tank number, and value
     function calculate() {
       const mode = document.getElementById('mode').value;
-      const tk = document.getElementById('tk').value;
+      const tankNumber = document.getElementById('tk').value;
       const value = parseFloat(document.getElementById('value').value);
-      const resultDiv = document.getElementById('result');
+      const resultElement = document.getElementById('result');
 
-      if (!tk || isNaN(value)) {
-        resultDiv.textContent = 'Please enter Tank Number and Value.';
+      if (!tankNumber || isNaN(value)) {
+        resultElement.textContent = 'Please enter Tank Number and Value.';
         return;
       }
 
-      const tankKey = 'tank' + tk; // e.g., 'tank424'
-      if (!tankCalibrationData[tankKey]) {
-        resultDiv.textContent = 'Calibration data not found for this tank.';
+      // Ensure tankCalibrationData is loaded and has the tank number
+      if (!tankCalibrationData || !tankCalibrationData[tankNumber]) {
+        resultElement.textContent = 'Tank calibration data not found for this tank number.';
+        console.log('⚠️ Tank calibration data missing for tank:', tankNumber);
         return;
       }
 
-      const calibrationPoints = tankCalibrationData[tankKey];
-
-      let calculatedResult = 0;
+      const tankData = tankCalibrationData[tankNumber];
+      let calculatedResult = '';
 
       switch (mode) {
         case 'levelToBarrels':
-          calculatedResult = interpolate(calibrationPoints, 'level', 'barrels', value);
-          resultDiv.textContent = `Barrels: ${calculatedResult.toFixed(2)}`;
+          calculatedResult = `Calculated Barrels: ${value * tankData.barrelsPerLevel}`;
           break;
         case 'barrelsToLevel':
-          calculatedResult = interpolate(calibrationPoints, 'barrels', 'level', value);
-          resultDiv.textContent = `Level: ${calculatedResult.toFixed(2)}`;
+          calculatedResult = `Calculated Level: ${value / tankData.barrelsPerLevel}`;
           break;
         case 'tonToLevel':
-          calculatedResult = interpolate(calibrationPoints, 'ton', 'level', value);
-          resultDiv.textContent = `Level: ${calculatedResult.toFixed(2)}`;
+          calculatedResult = `Calculated Level from Ton: ${value * tankData.levelPerTon}`;
           break;
         case 'levelToTon':
-          calculatedResult = interpolate(calibrationPoints, 'level', 'ton', value);
-          resultDiv.textContent = `Metric Ton: ${calculatedResult.toFixed(2)}`;
+          calculatedResult = `Calculated Ton from Level: ${value / tankData.levelPerTon}`;
           break;
         default:
-          resultDiv.textContent = 'Invalid mode selected.';
+          calculatedResult = 'Invalid mode selected.';
       }
-    }
-
-    // Linear interpolation function
-    function interpolate(points, xKey, yKey, xValue) {
-      if (points.length === 0) return 0;
-
-      // Sort points by xKey to ensure correct interpolation
-      points.sort((a, b) => a[xKey] - b[xKey]);
-
-      // Handle edge cases
-      if (xValue <= points[0][xKey]) return points[0][yKey];
-      if (xValue >= points[points.length - 1][xKey]) return points[points.length - 1][yKey];
-
-      // Find the two points that bracket xValue
-      for (let i = 0; i < points.length - 1; i++) {
-        const p1 = points[i];
-        const p2 = points[i + 1];
-
-        if (xValue >= p1[xKey] && xValue <= p2[xKey]) {
-          const slope = (p2[yKey] - p1[yKey]) / (p2[xKey] - p1[xKey]);
-          return p1[yKey] + slope * (xValue - p1[xKey]);
-        }
-      }
-      return 0; // Should not happen if xValue is within range
+      resultElement.textContent = calculatedResult;
     }
 
     // Font size controls
-    function changeFontSize(change) {
-      const html = document.documentElement;
-      let currentSize = parseFloat(getComputedStyle(html).fontSize);
-      html.style.fontSize = `${currentSize + change}px`;
+    function increaseFontSize() {
+      const currentSize = parseFloat(getComputedStyle(document.body).fontSize);
+      document.body.style.fontSize = (currentSize + 1) + 'px';
     }
 
-    window.increaseFontSize = function() { changeFontSize(1); };
-    window.decreaseFontSize = function() { changeFontSize(-1); };
+    function decreaseFontSize() {
+      const currentSize = parseFloat(getComputedStyle(document.body).fontSize);
+      document.body.style.fontSize = (currentSize - 1) + 'px';
+    }
 
     // Dark mode toggle
     document.getElementById('darkModeButton').addEventListener('click', () => {
@@ -450,10 +418,11 @@
     });
 
     // WhatsApp link
-    window.openWhatsApp = function() {
+    function openWhatsApp() {
       window.open('https://wa.me/96555222550', '_blank');
-    };
+    }
   </script>
 </body>
 </html>
+
 
