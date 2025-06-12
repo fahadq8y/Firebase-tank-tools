@@ -48,14 +48,14 @@
           <div class="form-group">
             <label for="loginUsername">👤 Username:</label>
             <div class="username-container">
-              <input type="text" id="loginUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6">
+              <input type="text" id="loginUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
               <div class="email-suffix">@knpc.com</div>
             </div>
             <div class="validation-message" id="loginUsernameMsg"></div>
           </div>
           <div class="form-group">
             <label for="loginPassword">🔒 Password:</label>
-            <input type="password" id="loginPassword" placeholder="Enter your password" required>
+            <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
           </div>
           <div class="form-group">
             <label><input type="checkbox" id="rememberMe" style="width:auto;margin-right:8px;">Remember me</label>
@@ -76,7 +76,7 @@
           <div class="form-group">
             <label for="username">📧 Username (Email):</label>
             <div class="username-container">
-              <input type="text" id="username" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6">
+              <input type="text" id="username" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
               <div class="email-suffix">@knpc.com</div>
             </div>
             <div class="validation-message" id="usernameMsg"></div>
@@ -84,13 +84,13 @@
 
           <div class="form-group">
             <label for="password">🔒 Password:</label>
-            <input type="password" id="password" placeholder="Create a strong password" required minlength="8">
+            <input type="password" id="password" placeholder="Create a strong password" required minlength="8" autocomplete="new-password">
             <div class="password-strength"><div class="password-strength-bar" id="strengthBar"></div></div>
             <div class="validation-message" id="passwordMsg"></div>
           </div>
           <div class="form-group">
             <label for="confirmPassword">🔒 Confirm Password:</label>
-            <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+            <input type="password" id="confirmPassword" placeholder="Confirm your password" required autocomplete="new-password">
             <div class="validation-message" id="confirmPasswordMsg"></div>
           </div>
           <button type="submit" class="btn btn-primary" id="registerBtn">✨ Create Account</button>
@@ -107,7 +107,7 @@
         <div class="form-group">
           <label for="forgotUsername">👤 Username:</label>
           <div class="username-container">
-            <input type="text" id="forgotUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6">
+            <input type="text" id="forgotUsername" class="username-input" placeholder="abc123" required pattern="[a-zA-Z]{3}[0-9]{3}" maxlength="6" autocomplete="username">
             <div class="email-suffix">@knpc.com</div>
           </div>
         </div>
