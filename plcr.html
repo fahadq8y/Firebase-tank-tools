@@ -146,7 +146,7 @@
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
     
     <footer>
-      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3 Debug
+      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3 Fixed
       <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
     </footer>
   </div><script>
@@ -250,83 +250,7 @@
     const WHATSAPP_NUMBER="96555222550";
     let currentUser=null,c=0,m=0,x=0,calcData=null;
     let tanks={};
-    let products={};
-
-    // Login and Initialization System
-    window.addEventListener('load',()=>{
-      setTimeout(() => {
-        checkLogin();
-        setTimeout(() => {
-          loadTankDataFromFirebase();
-          loadProductsFromFirebase();
-        }, 1000);
-      }, 100);
-    });
-
-    function checkLogin(){
-      const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');
-      if(s!=='active'||!u){
-        showAccess();
-        return;
-      }
-      try{
-        currentUser=JSON.parse(u);
-        if(!currentUser||!currentUser.username){
-          showAccess();
-          return;
-        }
-        
-        if (window.PermissionsManager) {
-          window.permissionsManager = new PermissionsManager();
-          window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
-            initApp();
-          }).catch(() => {
-            initApp();
-          });
-        } else {
-          initApp();
-        }
-      }catch{
-        showAccess();
-      }
-    }
-
-    function showAccess(){
-      document.getElementById('mainContent').style.display='none';
-      document.getElementById('accessDenied').style.display='flex';
-    }
-
-    window.goToLogin=()=>{
-      sessionStorage.setItem('tanktools_redirect','plcr.html');
-      window.location.href='login.html';
-    };
-
-    function initApp(){
-      document.getElementById('mainContent').style.display='block';
-      document.getElementById('accessDenied').style.display='none';
-      loadUser();
-      loadDataFromLocalStorage();
-      setupDarkMode();
-    }
-
-    function loadUser(){
-      if(!currentUser)return;
-      document.getElementById('userName').textContent=currentUser.fullName || currentUser.username;
-      document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
-      
-      if(currentUser.username==='fam030'||currentUser.role==='admin')
-        document.getElementById('adminLink').style.display='inline-block';
-      
-      const roles=["admin","panel_operator","supervisor","section_head","operator","planning"];
-      if(roles.includes(currentUser.role))
-        document.getElementById('liveTanksLink').style.display='inline-block';
-    }
-
-    window.logout=()=>{
-      sessionStorage.removeItem('tanktools_session');
-      localStorage.removeItem('tanktools_current_user');
-      window.location.href='login.html';
-    };// Login and Initialization System
+    let products={};// Login and Initialization System
     window.addEventListener('load',()=>{
       setTimeout(() => {
         checkLogin();
@@ -402,217 +326,81 @@
       window.location.href='login.html';
     };
 
-    // DEBUG VERSION: Load tank data from Firebase with detailed logging
-    
-async function loadTankDataFromFirebase() {
-  try {
-    const statusDiv = document.getElementById("result");
-    if (statusDiv) statusDiv.textContent = "🔄 DEBUG: Loading PLCR tank data from Firebase...";
-    
-    console.log('🔄 DEBUG: Starting PLCR Firebase loading...');
-    
-    let dataLoaded = false;
-    
-    // الطريقة الصحيحة: قراءة Collection من tankData/plcr/tanks
-    try {
-      console.log('🔍 DEBUG: Reading tankData/plcr/tanks collection...');
-      
-      const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
-      const tanksSnapshot = await getDocs(tanksCollectionRef);
-      
-      console.log('📊 DEBUG: Collection size:', tanksSnapshot.size);
-      console.log('📊 DEBUG: Collection empty?', tanksSnapshot.empty);
-      
-      if (!tanksSnapshot.empty) {
-        tanksSnapshot.forEach((doc) => {
-          const tankId = doc.id;
-          const tankData = doc.data();
-          
-          console.log(`🔍 DEBUG: Processing tank ${tankId}:`, tankData);
-          
-          // الطريقة الصحيحة: استخدام gross و factor
-          if (tankData.gross && tankData.factor !== undefined) {
-            tanks[tankId] = {
-              comment: tankData.gross,    // gross becomes comment
-              min: tankData.factor,       // factor becomes min
-              max: tankData.factor        // factor becomes max
-            };
-            console.log(`✅ DEBUG: Added tank ${tankId} with gross=${tankData.gross}, factor=${tankData.factor}`);
-          }
-          // احتياط: للبيانات بصيغة مختلفة
-          else if (tankData.capacity && tankData.min !== undefined) {
-            tanks[tankId] = {
-              comment: tankData.capacity,
-              min: tankData.min,
-              max: tankData.max || tankData.min
-            };
-            console.log(`✅ DEBUG: Added tank ${tankId} with capacity format`);
-          }
-          else {
-            console.log(`❌ DEBUG: Tank ${tankId} missing required fields. Available:`, Object.keys(tankData));
-          }
-        });
-        
-        if (Object.keys(tanks).length > 0) {
-          dataLoaded = true;
-          const message = `✅ DEBUG: PLCR tanks loaded from Firebase: ${Object.keys(tanks).length} tanks`;
-          console.log(message);
-          if (statusDiv) statusDiv.textContent = message;
-        } else {
-          console.log('❌ DEBUG: No tanks were processed successfully');
-        }
-      } else {
-        console.log('❌ DEBUG: Collection is empty');
-      }
-    } catch (e) {
-      console.log('❌ DEBUG: Collection reading failed:', e.message);
-    }
-    
-    // Path 2: Fallback - محاولة قراءة من مسارات أخرى
-    if (!dataLoaded || Object.keys(tanks).length < 5) {
-      try {
-        console.log('🔍 DEBUG: Trying fallback paths...');
-        
-        // Try tanks/tanks path
-        const tanksSnapshot = await getDoc(doc(db, 'tanks', 'tanks'));
-        if (tanksSnapshot.exists()) {
-          const tanksData = tanksSnapshot.data();
-          
-          // Filter PLCR tanks
-          const plcrTankNumbers = ['101', '204', '255', '256', '272', '273', '274', '275', '281', '282', '301', '302', '424', '425', '426', '456', '460', '461', '462', '467', '468', '469', '470', '521', '522', '531', '532', '533', '534', '600', '601', '603', '620', '621', '622', '664', '665', '668', '669', '670', '671', '672', '702', '703', '705'];
-          
-          for (let tankId in tanksData) {
-            if (plcrTankNumbers.includes(tankId)) {
-              const tankData = tanksData[tankId];
-              
-              if (tankData.gross && tankData.factor !== undefined) {
-                tanks[tankId] = {
-                  comment: tankData.gross,
-                  min: tankData.factor,
-                  max: tankData.factor
-                };
-                console.log(`✅ DEBUG: Added PLCR tank ${tankId} from tanks/tanks`);
-              }
-            }
-          }
-        }
-        
-        if (Object.keys(tanks).length > 0) {
-          dataLoaded = true;
-          const message = `✅ DEBUG: PLCR tanks loaded from fallback: ${Object.keys(tanks).length} tanks`;
-          console.log(message);
-          if (statusDiv) statusDiv.textContent = message;
-        }
-      } catch (e) {
-        console.log('❌ DEBUG: Fallback failed:', e.message);
-      }
-    }
-    
-    // Debug final results
-    console.log('🎯 DEBUG: Final tanks loaded:', Object.keys(tanks));
-    console.log('🔍 DEBUG: Tank 467 exists?', tanks.hasOwnProperty('467'));
-    console.log('🔍 DEBUG: Tank 467 data:', tanks['467']);
-    
-    if (!dataLoaded || Object.keys(tanks).length === 0) {
-      const message = "❌ DEBUG: No PLCR tank data could be loaded";
-      console.error(message);
-      if (statusDiv) statusDiv.textContent = message;
-    }
-    
-    // Clear status after 5 seconds
-    setTimeout(() => {
-      if (statusDiv && statusDiv.textContent.includes('DEBUG')) {
-        statusDiv.textContent = "";
-      }
-    }, 5000);
-    
-  } catch (error) {
-    const statusDiv = document.getElementById("result");
-    const message = `❌ DEBUG: Firebase Error: ${error.message}`;
-    console.error('🔥 DEBUG: Firebase loading error:', error);
-    if (statusDiv) statusDiv.textContent = message;
-  }
-}
+    // FIXED: Load tank data from Firebase - Collection Reading
+    async function loadTankDataFromFirebase() {
       try {
         const statusDiv = document.getElementById("result");
-        if (statusDiv) statusDiv.textContent = "🔄 DEBUG: Loading PLCR tank data from Firebase...";
+        if (statusDiv) statusDiv.textContent = "🔄 Loading PLCR tank data from Firebase...";
         
-        console.log('🔄 DEBUG: Starting PLCR Firebase loading...');
+        console.log('🔄 Starting PLCR Firebase loading...');
         
         let dataLoaded = false;
         
-        // Path 1: Try to read from tankData/plcr/tanks as a collection
+        // FIXED: Read from tankData/plcr/tanks collection correctly
         try {
-          console.log('🔍 DEBUG: Trying tankData/plcr/tanks collection approach...');
+          console.log('🔍 Reading tankData/plcr/tanks collection...');
           
-          // Read the tanks collection under tankData/plcr
           const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
           const tanksSnapshot = await getDocs(tanksCollectionRef);
           
-          console.log('📊 DEBUG: Collection size:', tanksSnapshot.size);
-          console.log('📊 DEBUG: Collection empty?', tanksSnapshot.empty);
+          console.log('📊 Collection size:', tanksSnapshot.size);
           
           if (!tanksSnapshot.empty) {
             tanksSnapshot.forEach((doc) => {
               const tankId = doc.id;
               const tankData = doc.data();
               
-              console.log(`🔍 DEBUG: Processing tank ${tankId}:`, tankData);
+              console.log(`🔍 Processing tank ${tankId}:`, tankData);
               
-              // For PLCR: look for gross and factor
+              // PLCR format: gross and factor
               if (tankData.gross && tankData.factor !== undefined) {
                 tanks[tankId] = {
-                  comment: tankData.gross,
-                  min: tankData.factor,
-                  max: tankData.factor
+                  comment: tankData.gross,    // gross becomes comment
+                  min: tankData.factor,       // factor becomes min
+                  max: tankData.factor        // factor becomes max
                 };
-                console.log(`✅ DEBUG: Added tank ${tankId} with gross=${tankData.gross}, factor=${tankData.factor}`);
+                console.log(`✅ Added tank ${tankId} with gross=${tankData.gross}, factor=${tankData.factor}`);
               }
-              // Also check for capacity/min/max format
-              else if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
+              // Alternative format
+              else if (tankData.capacity && tankData.min !== undefined) {
                 tanks[tankId] = {
                   comment: tankData.capacity,
                   min: tankData.min,
-                  max: tankData.max
+                  max: tankData.max || tankData.min
                 };
-                console.log(`✅ DEBUG: Added tank ${tankId} with capacity=${tankData.capacity}`);
+                console.log(`✅ Added tank ${tankId} with capacity format`);
               }
               else {
-                console.log(`❌ DEBUG: Tank ${tankId} missing required fields. Available fields:`, Object.keys(tankData));
+                console.log(`❌ Tank ${tankId} missing required fields:`, Object.keys(tankData));
               }
             });
             
             if (Object.keys(tanks).length > 0) {
               dataLoaded = true;
-              const message = `✅ DEBUG: PLCR tanks loaded from collection: ${Object.keys(tanks).length} tanks`;
+              const message = `✅ PLCR tanks loaded: ${Object.keys(tanks).length} tanks`;
               console.log(message);
               if (statusDiv) statusDiv.textContent = message;
             }
           } else {
-            console.log('❌ DEBUG: Collection is empty');
+            console.log('❌ Collection is empty');
           }
         } catch (e) {
-          console.log('❌ DEBUG: Collection approach failed:', e.message);
-        }
-        
-        // Path 2: Try document approach (fallback)
-        if (!dataLoaded || Object.keys(tanks).length < 5) {
+          console.log('❌ Collection reading failed:', e.message);
+          
+          // Fallback: try reading from unified tanks/tanks
           try {
-            console.log('🔍 DEBUG: Trying document approach as fallback...');
+            console.log('🔍 Trying fallback: tanks/tanks...');
             
-            const plcrTankDataSnapshot = await getDoc(doc(db, 'tankData', 'plcr'));
-            console.log('📄 DEBUG: Document exists?', plcrTankDataSnapshot.exists());
-            
-            if (plcrTankDataSnapshot.exists()) {
-              const plcrTankData = plcrTankDataSnapshot.data();
-              console.log('📄 DEBUG: Document data keys:', Object.keys(plcrTankData));
-              console.log('📄 DEBUG: Full document data:', plcrTankData);
+            const tanksSnapshot = await getDoc(doc(db, 'tanks', 'tanks'));
+            if (tanksSnapshot.exists()) {
+              const tanksData = tanksSnapshot.data();
               
-              if (plcrTankData.tanks) {
-                console.log('📄 DEBUG: Found tanks field with keys:', Object.keys(plcrTankData.tanks));
-                for (let tankId in plcrTankData.tanks) {
-                  const tankData = plcrTankData.tanks[tankId];
-                  console.log(`🔍 DEBUG: Document tank ${tankId}:`, tankData);
+              // Filter PLCR tanks
+              const plcrTankNumbers = ['101', '204', '255', '256', '272', '273', '274', '275', '281', '282', '301', '302', '424', '425', '426', '456', '460', '461', '462', '467', '468', '469', '470', '521', '522', '531', '532', '533', '534', '600', '601', '603', '620', '621', '622', '664', '665', '668', '669', '670', '671', '672', '702', '703', '705'];
+              
+              for (let tankId in tanksData) {
+                if (plcrTankNumbers.includes(tankId)) {
+                  const tankData = tanksData[tankId];
                   
                   if (tankData.gross && tankData.factor !== undefined) {
                     tanks[tankId] = {
@@ -620,67 +408,60 @@ async function loadTankDataFromFirebase() {
                       min: tankData.factor,
                       max: tankData.factor
                     };
-                    console.log(`✅ DEBUG: Added tank ${tankId} from document`);
+                    console.log(`✅ Added PLCR tank ${tankId} from fallback`);
                   }
                 }
-              } else {
-                console.log('❌ DEBUG: No tanks field in document');
+              }
+              
+              if (Object.keys(tanks).length > 0) {
+                dataLoaded = true;
+                if (statusDiv) statusDiv.textContent = `✅ PLCR tanks loaded from fallback: ${Object.keys(tanks).length} tanks`;
               }
             }
-            
-            if (Object.keys(tanks).length > 0) {
-              dataLoaded = true;
-              const message = `✅ DEBUG: PLCR tanks loaded from document: ${Object.keys(tanks).length} tanks`;
-              console.log(message);
-              if (statusDiv) statusDiv.textContent = message;
-            }
-          } catch (e) {
-            console.log('❌ DEBUG: Document approach failed:', e.message);
+          } catch (fallbackError) {
+            console.log('❌ Fallback also failed:', fallbackError.message);
           }
         }
         
-        // Debug: Show what tanks we have
-        console.log('🎯 DEBUG: Final tanks loaded:', Object.keys(tanks));
-        console.log('🔍 DEBUG: Looking for tank 467:', tanks['467']);
-        console.log('🔍 DEBUG: Tank 467 exists?', tanks.hasOwnProperty('467'));
+        // Debug final results
+        console.log('🎯 Final tanks loaded:', Object.keys(tanks));
+        console.log('🔍 Tank 467 exists?', tanks.hasOwnProperty('467'));
+        console.log('🔍 Tank 467 data:', tanks['467']);
         
         if (!dataLoaded || Object.keys(tanks).length === 0) {
-          const message = "❌ DEBUG: No PLCR tank data found in Firebase";
+          const message = "❌ No PLCR tank data could be loaded";
           console.error(message);
           if (statusDiv) statusDiv.textContent = message;
         }
         
-        // Clear status after 8 seconds (longer for debugging)
+        // Clear status after 5 seconds
         setTimeout(() => {
-          if (statusDiv && (statusDiv.textContent.includes('loaded') || statusDiv.textContent.includes('tanks'))) {
+          if (statusDiv && statusDiv.textContent.includes('loaded')) {
             statusDiv.textContent = "";
           }
-        }, 8000);
+        }, 5000);
         
       } catch (error) {
         const statusDiv = document.getElementById("result");
-        const message = `❌ DEBUG: Firebase Error: ${error.message}`;
-        console.error('🔥 DEBUG: Firebase loading error:', error);
+        const message = `❌ Firebase Error: ${error.message}`;
+        console.error('🔥 Firebase loading error:', error);
         if (statusDiv) statusDiv.textContent = message;
       }
     }// Load products from Firebase
     async function loadProductsFromFirebase() {
       try {
-        console.log('🔄 DEBUG: Loading products from Firebase...');
         const systemSnapshot = await getDoc(doc(db, 'system', 'products'));
         if (systemSnapshot.exists()) {
           products = systemSnapshot.data().products || {};
-          console.log('✅ DEBUG: Products loaded from system collection');
         } else {
           products = {
             "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
             "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
             "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
           };
-          console.log('✅ DEBUG: Using default products');
         }
       } catch (error) {
-        console.error('❌ DEBUG: Error loading products:', error);
+        console.error('❌ Error loading products:', error);
         products = {
           "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
           "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
@@ -689,41 +470,31 @@ async function loadTankDataFromFirebase() {
       }
     }
 
-    // DEBUG VERSION: PLCR Calculate Function with detailed logging
+    // PLCR Calculate Function - FIXED
     window.calculate = () => {
       const tk = document.getElementById("tk").value.trim();
       const value = parseFloat(document.getElementById("value").value);
       const resultDiv = document.getElementById("result");
       const mode = document.getElementById("mode").value;
       
-      console.log(`🔍 DEBUG: Calculate called with tank=${tk}, value=${value}, mode=${mode}`);
-      console.log(`🔍 DEBUG: Available tanks:`, Object.keys(tanks));
-      console.log(`🔍 DEBUG: Tank ${tk} exists?`, tanks.hasOwnProperty(tk));
-      
       if (!tk) {
-        resultDiv.textContent = "DEBUG: Please enter a tank number.";
-        console.log('❌ DEBUG: No tank number entered');
+        resultDiv.textContent = "Please enter a tank number.";
         return;
       }
       
       if (!tanks[tk]) {
-        const message = `DEBUG: Tank ${tk} not found in PLCR database. Available tanks: ${Object.keys(tanks).slice(0,5).join(', ')}${Object.keys(tanks).length > 5 ? '...' : ''}`;
-        resultDiv.textContent = message;
-        console.log(`❌ DEBUG: Tank ${tk} not found. Available:`, Object.keys(tanks));
+        resultDiv.textContent = `Tank ${tk} not found in PLCR database. Available tanks: ${Object.keys(tanks).slice(0,5).join(', ')}${Object.keys(tanks).length > 5 ? '...' : ''}`;
         return;
       }
       
       if (isNaN(value)) {
-        resultDiv.textContent = "DEBUG: Please enter a valid number.";
-        console.log('❌ DEBUG: Invalid value entered');
+        resultDiv.textContent = "Please enter a valid number.";
         return;
       }
       
       const tank = tanks[tk];
       const gross = tank.comment;  // gross value
       const factor = tank.min;     // factor value
-      
-      console.log(`✅ DEBUG: Using tank ${tk} with gross=${gross}, factor=${factor}`);
       
       let metricTon, barrels, level;
       
@@ -732,31 +503,26 @@ async function loadTankDataFromFirebase() {
           metricTon = value * factor;
           barrels = metricTon * gross;
           resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT | Barrels: ${barrels.toFixed(2)} BBL`;
-          console.log(`✅ DEBUG: Level to Barrels: ${value} → ${metricTon.toFixed(2)} MT → ${barrels.toFixed(2)} BBL`);
           break;
           
         case "barrelsToLevel":
           metricTon = value / gross;
           level = metricTon / factor;
           resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT | Approx. Level: ${level.toFixed(2)}`;
-          console.log(`✅ DEBUG: Barrels to Level: ${value} BBL → ${metricTon.toFixed(2)} MT → ${level.toFixed(2)} level`);
           break;
           
         case "tonToLevel":
           level = value / factor;
           resultDiv.textContent = `Approx. Level: ${level.toFixed(2)}`;
-          console.log(`✅ DEBUG: Ton to Level: ${value} MT → ${level.toFixed(2)} level`);
           break;
           
         case "levelToTon":
           metricTon = value * factor;
           resultDiv.textContent = `Weight: ${metricTon.toFixed(2)} MT`;
-          console.log(`✅ DEBUG: Level to Ton: ${value} → ${metricTon.toFixed(2)} MT`);
           break;
           
         default:
-          resultDiv.textContent = "DEBUG: Please select a valid mode and enter data.";
-          console.log('❌ DEBUG: Invalid mode selected');
+          resultDiv.textContent = "Please select a valid mode and enter data.";
       }
       
       saveDataToLocalStorage();
@@ -799,7 +565,7 @@ async function loadTankDataFromFirebase() {
     }
 
     window.openWhatsApp=()=>{
-      const message="مرحبا، أتواصل معك من خلال تطبيق PLCR Tank Calculator - Debug Version",whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      const message="مرحبا، أتواصل معك من خلال تطبيق PLCR Tank Calculator",whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
       try{const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');if(!newWindow)window.location.href=whatsappURL}
       catch{navigator.clipboard.writeText(whatsappURL).then(()=>alert(`تم نسخ رابط الواتساب:\n${whatsappURL}`)).catch(()=>alert(`رابط الواتساب:\n${whatsappURL}`))}
     };
@@ -870,186 +636,102 @@ async function loadTankDataFromFirebase() {
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
 
+    // Debug Button - يظهر معلومات Firebase على الشاشة مباشرة
+    function createDebugButton() {
+      const debugBtn = document.createElement('button');
+      debugBtn.innerHTML = '🔍 DEBUG';
+      debugBtn.style.cssText = 'position:fixed;top:60px;right:10px;background:#ff4444;color:white;border:none;padding:10px;border-radius:8px;cursor:pointer;z-index:9999;font-weight:bold;';
+      
+      debugBtn.onclick = function() {
+        showDebugInfo();
+      };
+      
+      document.body.appendChild(debugBtn);
+    }
+
+    // عرض معلومات Debug على الشاشة
+    function showDebugInfo() {
+      const debugDiv = document.createElement('div');
+      debugDiv.id = 'debugInfo';
+      debugDiv.style.cssText = 'position:fixed;top:100px;right:10px;background:rgba(0,0,0,0.9);color:#00ff00;padding:20px;border-radius:10px;z-index:9999;max-width:400px;font-family:monospace;font-size:12px;max-height:500px;overflow-y:auto;';
+      
+      let debugText = `🔍 PLCR DEBUG INFO:\n\n`;
+      debugText += `📊 Total tanks loaded: ${Object.keys(tanks).length}\n`;
+      debugText += `📋 Available tanks: ${Object.keys(tanks).slice(0,10).join(', ')}${Object.keys(tanks).length > 10 ? '...' : ''}\n\n`;
+      
+      debugText += `🔍 Tank 467 exists: ${tanks.hasOwnProperty('467') ? 'YES' : 'NO'}\n`;
+      if (tanks['467']) {
+        debugText += `📄 Tank 467 data: ${JSON.stringify(tanks['467'])}\n`;
+      }
+      
+      debugText += `\n🔧 Firebase Connection: ${typeof db !== 'undefined' ? 'CONNECTED' : 'FAILED'}\n`;
+      debugText += `🔧 getDocs function: ${typeof getDocs !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
+      debugText += `🔧 collection function: ${typeof collection !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
+      
+      debugText += `\n📂 Firebase Paths Tested:\n`;
+      debugText += `• tankData/plcr/tanks (collection)\n`;
+      debugText += `• tanks/tanks (fallback)\n`;
+      
+      debugText += `\n🎯 Current User: ${currentUser ? currentUser.username : 'NOT LOGGED IN'}\n`;
+      
+      debugDiv.innerHTML = `<pre>${debugText}</pre>
+        <button onclick="testFirebaseData()" style="background:#4CAF50;color:white;border:none;padding:8px 15px;border-radius:5px;margin:5px;cursor:pointer;">🧪 Test Firebase</button>
+        <button onclick="document.getElementById('debugInfo').remove()" style="background:#ff4444;color:white;border:none;padding:8px 15px;border-radius:5px;margin:5px;cursor:pointer;">Close</button>`;
+      
+      // Remove existing debug info if present
+      const existing = document.getElementById('debugInfo');
+      if (existing) existing.remove();
+      
+      document.body.appendChild(debugDiv);
+    }
+
+    // اختبار قراءة البيانات من Firebase مباشرة
+    async function testFirebaseData() {
+      const debugDiv = document.getElementById('debugInfo');
+      if (!debugDiv) return;
+      
+      let testResult = '\n\n🧪 FIREBASE DATA TEST:\n';
+      
+      try {
+        testResult += `🔍 Reading tankData/plcr/tanks collection...\n`;
+        const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
+        const tanksSnapshot = await getDocs(tanksCollectionRef);
+        
+        testResult += `📊 Collection size: ${tanksSnapshot.size}\n`;
+        
+        if (!tanksSnapshot.empty) {
+          let sampleCount = 0;
+          tanksSnapshot.forEach((doc) => {
+            if (sampleCount < 3) {
+              const tankId = doc.id;
+              const tankData = doc.data();
+              testResult += `📄 Tank ${tankId}: ${JSON.stringify(tankData)}\n`;
+              sampleCount++;
+            }
+          });
+          if (tanksSnapshot.size > 3) {
+            testResult += `... and ${tanksSnapshot.size - 3} more tanks\n`;
+          }
+        } else {
+          testResult += `❌ Collection is empty!\n`;
+        }
+        
+      } catch (error) {
+        testResult += `❌ Firebase Error: ${error.message}\n`;
+      }
+      
+      debugDiv.innerHTML += `<pre>${testResult}</pre>`;
+    }
+
     // Auto-save
     document.addEventListener('input',e=>{if(e.target.matches('#tk,#value'))saveDataToLocalStorage()});
     
-    console.log('%c🔒 PLCR CALCULATOR - DEBUG VERSION','color:red;font-size:16px;font-weight:bold');
-    console.log('%c🔍 Full debugging enabled - Check console for details','color:orange;font-size:14px;font-weight:bold');
+    // Initialize debug button after page load
+    setTimeout(createDebugButton, 2000);
+    
+    console.log('%c🔒 PLCR CALCULATOR - FIXED VERSION','color:red;font-size:16px;font-weight:bold');
+    console.log('%c✅ Collection reading implemented','color:green;font-size:14px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
-
-// Debug Button - يظهر معلومات Firebase على الشاشة مباشرة
-function createDebugButton() {
-  const debugBtn = document.createElement('button');
-  debugBtn.innerHTML = '🔍 DEBUG';
-  debugBtn.style.cssText = 'position:fixed;top:60px;right:10px;background:#ff4444;color:white;border:none;padding:10px;border-radius:8px;cursor:pointer;z-index:9999;font-weight:bold;';
-  
-  debugBtn.onclick = function() {
-    showDebugInfo();
-  };
-  
-  document.body.appendChild(debugBtn);
-}
-
-// عرض معلومات Debug على الشاشة
-function showDebugInfo() {
-  const debugDiv = document.createElement('div');
-  debugDiv.id = 'debugInfo';
-  debugDiv.style.cssText = 'position:fixed;top:100px;right:10px;background:rgba(0,0,0,0.9);color:#00ff00;padding:20px;border-radius:10px;z-index:9999;max-width:400px;font-family:monospace;font-size:12px;max-height:500px;overflow-y:auto;';
-  
-  let debugText = `🔍 PLCR DEBUG INFO:\n\n`;
-  debugText += `📊 Total tanks loaded: ${Object.keys(tanks).length}\n`;
-  debugText += `📋 Available tanks: ${Object.keys(tanks).slice(0,10).join(', ')}${Object.keys(tanks).length > 10 ? '...' : ''}\n\n`;
-  
-  debugText += `🔍 Tank 467 exists: ${tanks.hasOwnProperty('467') ? 'YES' : 'NO'}\n`;
-  if (tanks['467']) {
-    debugText += `📄 Tank 467 data: ${JSON.stringify(tanks['467'])}\n`;
-  }
-  
-  debugText += `\n🔧 Firebase Connection: ${typeof db !== 'undefined' ? 'CONNECTED' : 'FAILED'}\n`;
-  debugText += `🔧 getDocs function: ${typeof getDocs !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
-  debugText += `🔧 collection function: ${typeof collection !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
-  
-  debugText += `\n📂 Firebase Paths Tested:\n`;
-  debugText += `• tankData/plcr/tanks (collection)\n`;
-  debugText += `• tankData/plcr (document)\n`;
-  
-  debugText += `\n🎯 Current User: ${currentUser ? currentUser.username : 'NOT LOGGED IN'}\n`;
-  
-  debugDiv.innerHTML = `<pre>${debugText}</pre><button onclick="document.getElementById('debugInfo').remove()" style="background:#ff4444;color:white;border:none;padding:5px 10px;border-radius:5px;margin-top:10px;cursor:pointer;">Close</button>`;
-  
-  // Remove existing debug info if present
-  const existing = document.getElementById('debugInfo');
-  if (existing) existing.remove();
-  
-  document.body.appendChild(debugDiv);
-}
-
-// Test Firebase Connection
-async function testFirebaseConnection() {
-  const debugDiv = document.getElementById('debugInfo');
-  if (!debugDiv) return;
-  
-  let testResult = '\n\n🧪 FIREBASE CONNECTION TEST:\n';
-  
-  try {
-    // Test 1: Basic Firebase connection
-    testResult += `✅ Firebase DB object exists\n`;
-    
-    // Test 2: Try to read a simple document
-    const testDoc = await getDoc(doc(db, 'system', 'test'));
-    testResult += `✅ Firebase read operation works\n`;
-    
-    // Test 3: Try to read tankData collection
-    const tankDataTest = await getDoc(doc(db, 'tankData', 'plcr'));
-    testResult += `${tankDataTest.exists() ? '✅' : '❌'} tankData/plcr document ${tankDataTest.exists() ? 'EXISTS' : 'NOT FOUND'}\n`;
-    
-    // Test 4: Try to read tanks collection
-    if (typeof getDocs !== 'undefined') {
-      const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
-      const tanksSnapshot = await getDocs(tanksCollectionRef);
-      testResult += `${tanksSnapshot.size > 0 ? '✅' : '❌'} tanks collection has ${tanksSnapshot.size} documents\n`;
-    } else {
-      testResult += `❌ getDocs function not available\n`;
-    }
-    
-  } catch (error) {
-    testResult += `❌ Firebase Error: ${error.message}\n`;
-  }
-  
-  debugDiv.innerHTML += `<pre>${testResult}</pre>`;
-}
-// أضف هذا الكود مع الـ Debug Button
-
-// تحديث دالة showDebugInfo لتشمل اختبار Firebase
-function showDebugInfo() {
-  const debugDiv = document.createElement('div');
-  debugDiv.id = 'debugInfo';
-  debugDiv.style.cssText = 'position:fixed;top:100px;right:10px;background:rgba(0,0,0,0.9);color:#00ff00;padding:20px;border-radius:10px;z-index:9999;max-width:400px;font-family:monospace;font-size:12px;max-height:500px;overflow-y:auto;';
-  
-  let debugText = `🔍 PLCR DEBUG INFO:\n\n`;
-  debugText += `📊 Total tanks loaded: ${Object.keys(tanks).length}\n`;
-  debugText += `📋 Available tanks: ${Object.keys(tanks).slice(0,10).join(', ')}${Object.keys(tanks).length > 10 ? '...' : ''}\n\n`;
-  
-  debugText += `🔍 Tank 467 exists: ${tanks.hasOwnProperty('467') ? 'YES' : 'NO'}\n`;
-  if (tanks['467']) {
-    debugText += `📄 Tank 467 data: ${JSON.stringify(tanks['467'])}\n`;
-  }
-  
-  debugText += `\n🔧 Firebase Connection: ${typeof db !== 'undefined' ? 'CONNECTED' : 'FAILED'}\n`;
-  debugText += `🔧 getDocs function: ${typeof getDocs !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
-  debugText += `🔧 collection function: ${typeof collection !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
-  
-  debugText += `\n📂 Firebase Paths Tested:\n`;
-  debugText += `• tankData/plcr/tanks (collection)\n`;
-  debugText += `• tankData/plcr (document)\n`;
-  
-  debugText += `\n🎯 Current User: ${currentUser ? currentUser.username : 'NOT LOGGED IN'}\n`;
-  
-  debugDiv.innerHTML = `<pre>${debugText}</pre>
-    <button onclick="testFirebaseData()" style="background:#4CAF50;color:white;border:none;padding:8px 15px;border-radius:5px;margin:5px;cursor:pointer;">🧪 Test Firebase</button>
-    <button onclick="document.getElementById('debugInfo').remove()" style="background:#ff4444;color:white;border:none;padding:8px 15px;border-radius:5px;margin:5px;cursor:pointer;">Close</button>`;
-  
-  // Remove existing debug info if present
-  const existing = document.getElementById('debugInfo');
-  if (existing) existing.remove();
-  
-  document.body.appendChild(debugDiv);
-}
-
-// اختبار قراءة البيانات من Firebase مباشرة
-async function testFirebaseData() {
-  const debugDiv = document.getElementById('debugInfo');
-  if (!debugDiv) return;
-  
-  let testResult = '\n\n🧪 FIREBASE DATA TEST:\n';
-  
-  try {
-    // Test 1: قراءة collection مباشرة
-    testResult += `🔍 Reading tankData/plcr/tanks collection...\n`;
-    const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
-    const tanksSnapshot = await getDocs(tanksCollectionRef);
-    
-    testResult += `📊 Collection size: ${tanksSnapshot.size}\n`;
-    
-    if (!tanksSnapshot.empty) {
-      let sampleCount = 0;
-      tanksSnapshot.forEach((doc) => {
-        if (sampleCount < 3) { // Show first 3 tanks as samples
-          const tankId = doc.id;
-          const tankData = doc.data();
-          testResult += `📄 Tank ${tankId}: ${JSON.stringify(tankData)}\n`;
-          sampleCount++;
-        }
-      });
-      if (tanksSnapshot.size > 3) {
-        testResult += `... and ${tanksSnapshot.size - 3} more tanks\n`;
-      }
-    } else {
-      testResult += `❌ Collection is empty!\n`;
-    }
-    
-    // Test 2: قراءة document
-    testResult += `\n🔍 Reading tankData/plcr document...\n`;
-    const plcrDoc = await getDoc(doc(db, 'tankData', 'plcr'));
-    if (plcrDoc.exists()) {
-      const docData = plcrDoc.data();
-      testResult += `📄 Document fields: ${Object.keys(docData).join(', ')}\n`;
-      if (docData.tanks) {
-        const tankKeys = Object.keys(docData.tanks);
-        testResult += `📊 Document has ${tankKeys.length} tanks: ${tankKeys.slice(0,5).join(', ')}\n`;
-      }
-    } else {
-      testResult += `❌ Document does not exist!\n`;
-    }
-    
-  } catch (error) {
-    testResult += `❌ Firebase Error: ${error.message}\n`;
-  }
-  
-  debugDiv.innerHTML += `<pre>${testResult}</pre>`;
-}
-// Initialize debug button after page load
-setTimeout(createDebugButton, 2000);
   </script>
 </body>
 </html>
