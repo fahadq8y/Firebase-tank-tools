@@ -829,7 +829,96 @@ async function testFirebaseConnection() {
   
   debugDiv.innerHTML += `<pre>${testResult}</pre>`;
 }
+// أضف هذا الكود مع الـ Debug Button
 
+// تحديث دالة showDebugInfo لتشمل اختبار Firebase
+function showDebugInfo() {
+  const debugDiv = document.createElement('div');
+  debugDiv.id = 'debugInfo';
+  debugDiv.style.cssText = 'position:fixed;top:100px;right:10px;background:rgba(0,0,0,0.9);color:#00ff00;padding:20px;border-radius:10px;z-index:9999;max-width:400px;font-family:monospace;font-size:12px;max-height:500px;overflow-y:auto;';
+  
+  let debugText = `🔍 PLCR DEBUG INFO:\n\n`;
+  debugText += `📊 Total tanks loaded: ${Object.keys(tanks).length}\n`;
+  debugText += `📋 Available tanks: ${Object.keys(tanks).slice(0,10).join(', ')}${Object.keys(tanks).length > 10 ? '...' : ''}\n\n`;
+  
+  debugText += `🔍 Tank 467 exists: ${tanks.hasOwnProperty('467') ? 'YES' : 'NO'}\n`;
+  if (tanks['467']) {
+    debugText += `📄 Tank 467 data: ${JSON.stringify(tanks['467'])}\n`;
+  }
+  
+  debugText += `\n🔧 Firebase Connection: ${typeof db !== 'undefined' ? 'CONNECTED' : 'FAILED'}\n`;
+  debugText += `🔧 getDocs function: ${typeof getDocs !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
+  debugText += `🔧 collection function: ${typeof collection !== 'undefined' ? 'AVAILABLE' : 'MISSING'}\n`;
+  
+  debugText += `\n📂 Firebase Paths Tested:\n`;
+  debugText += `• tankData/plcr/tanks (collection)\n`;
+  debugText += `• tankData/plcr (document)\n`;
+  
+  debugText += `\n🎯 Current User: ${currentUser ? currentUser.username : 'NOT LOGGED IN'}\n`;
+  
+  debugDiv.innerHTML = `<pre>${debugText}</pre>
+    <button onclick="testFirebaseData()" style="background:#4CAF50;color:white;border:none;padding:8px 15px;border-radius:5px;margin:5px;cursor:pointer;">🧪 Test Firebase</button>
+    <button onclick="document.getElementById('debugInfo').remove()" style="background:#ff4444;color:white;border:none;padding:8px 15px;border-radius:5px;margin:5px;cursor:pointer;">Close</button>`;
+  
+  // Remove existing debug info if present
+  const existing = document.getElementById('debugInfo');
+  if (existing) existing.remove();
+  
+  document.body.appendChild(debugDiv);
+}
+
+// اختبار قراءة البيانات من Firebase مباشرة
+async function testFirebaseData() {
+  const debugDiv = document.getElementById('debugInfo');
+  if (!debugDiv) return;
+  
+  let testResult = '\n\n🧪 FIREBASE DATA TEST:\n';
+  
+  try {
+    // Test 1: قراءة collection مباشرة
+    testResult += `🔍 Reading tankData/plcr/tanks collection...\n`;
+    const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
+    const tanksSnapshot = await getDocs(tanksCollectionRef);
+    
+    testResult += `📊 Collection size: ${tanksSnapshot.size}\n`;
+    
+    if (!tanksSnapshot.empty) {
+      let sampleCount = 0;
+      tanksSnapshot.forEach((doc) => {
+        if (sampleCount < 3) { // Show first 3 tanks as samples
+          const tankId = doc.id;
+          const tankData = doc.data();
+          testResult += `📄 Tank ${tankId}: ${JSON.stringify(tankData)}\n`;
+          sampleCount++;
+        }
+      });
+      if (tanksSnapshot.size > 3) {
+        testResult += `... and ${tanksSnapshot.size - 3} more tanks\n`;
+      }
+    } else {
+      testResult += `❌ Collection is empty!\n`;
+    }
+    
+    // Test 2: قراءة document
+    testResult += `\n🔍 Reading tankData/plcr document...\n`;
+    const plcrDoc = await getDoc(doc(db, 'tankData', 'plcr'));
+    if (plcrDoc.exists()) {
+      const docData = plcrDoc.data();
+      testResult += `📄 Document fields: ${Object.keys(docData).join(', ')}\n`;
+      if (docData.tanks) {
+        const tankKeys = Object.keys(docData.tanks);
+        testResult += `📊 Document has ${tankKeys.length} tanks: ${tankKeys.slice(0,5).join(', ')}\n`;
+      }
+    } else {
+      testResult += `❌ Document does not exist!\n`;
+    }
+    
+  } catch (error) {
+    testResult += `❌ Firebase Error: ${error.message}\n`;
+  }
+  
+  debugDiv.innerHTML += `<pre>${testResult}</pre>`;
+}
 // Initialize debug button after page load
 setTimeout(createDebugButton, 2000);
   </script>
