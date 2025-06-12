@@ -8,14 +8,34 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#003366">
   <script type="module">
-    import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import{getFirestore,doc,getDoc}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, doc, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
     import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-    const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
-    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;
+    // تهيئة Firebase
+    const app = initializeApp({
+      apiKey: "AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",
+      authDomain: "tank-tools-knpc-c2d95.firebaseapp.com",
+      projectId: "tank-tools-knpc-c2d95",
+      storageBucket: "tank-tools-knpc-c2d95.firebasestorage.app",
+      messagingSenderId: "510062594324",
+      appId: "1:510062594324:web:b892fd02007a5ca2f0da01"
+    });
+    
+    // تعريف الدوال والمتغيرات العالمية
+    window.db = getFirestore(app);
+    window.doc = doc;
+    window.getDoc = getDoc;
+    window.collection = collection;
+    window.getDocs = getDocs;
     window.auth = getAuth(app);
-    window.onAuthStateChanged = onAuthStateChanged; // هذا هو التعديل الجديد
+    
+    // تعريف دالة onAuthStateChanged بشكل صحيح
+    window.firebaseAuthStateChanged = function(auth, callback) {
+      return onAuthStateChanged(auth, callback);
+    };
+    
+    console.log("✅ Firebase initialized successfully");
   </script>
   <script src="permissions.js"></script>
   <style>
@@ -132,7 +152,7 @@
       <h2>PLCR - Tank Calculator</h2>
       
       <label for="mode">Select Mode:</label>
-      <select id="mode">
+      <select id="mode" onchange="calculate()">
         <option value="levelToBarrels">Level to Barrels</option>
         <option value="barrelsToLevel">Barrels to Level</option>
         <option value="tonToLevel">Metric Ton to Level</option>
@@ -145,10 +165,10 @@
       <label id="inputLabel" for="value">Enter Value:</label>
       <input type="number" id="value" placeholder="Enter number" oninput="calculate()">
 
-      <div class="result" id="result"></div>
+      <div class="result" id="result">Please enter tank number and value.</div>
     </div>
     
-    <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
+    <button id="darkModeButton" class="action-button" title="Dark Mode" onclick="toggleDarkMode()">🌙</button>
     
     <footer>
       By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3
@@ -157,15 +177,250 @@
   </div>
   
   <script>
-    // 🔒 Smart Security System - iPhone Optimized
+    // تعريف المتغيرات العالمية
+    window.userPermissions = {};
+    window.tankCalibrationData = {};
+    window.darkMode = false;
+    
+    // تعريف دوال الأمان بشكل عالمي
+    window.acknowledgeWarning = function() {
+      let securityModal = document.getElementById('securityModal');
+      securityModal.classList.remove('show');
+      // Reset attempts or other logic as needed
+    };
+
+    window.resetPage = function() {
+      window.location.reload();
+    };
+
+    window.learnMore = function() {
+      alert('Learn More functionality not implemented yet.');
+    };
+    
+    // تعريف دوال التنقل والمستخدم بشكل عالمي
+    window.goToLogin = function() {
+      window.location.href = 'login.html';
+    };
+
+    window.logout = function() {
+      window.auth.signOut().then(() => {
+        console.log('User signed out');
+        window.location.href = 'login.html';
+      }).catch((error) => {
+        console.error('Error signing out:', error);
+      });
+    };
+
+    window.openWhatsApp = function() {
+      window.open('https://wa.me/96555222550', '_blank');
+    };
+
+    window.increaseFontSize = function() {
+      document.body.style.fontSize = (parseFloat(getComputedStyle(document.body).fontSize) + 1) + 'px';
+    };
+
+    window.decreaseFontSize = function() {
+      document.body.style.fontSize = (parseFloat(getComputedStyle(document.body).fontSize) - 1) + 'px';
+    };
+    
+    window.toggleDarkMode = function() {
+      document.body.classList.toggle('dark-mode');
+      window.darkMode = !window.darkMode;
+      document.getElementById('darkModeButton').textContent = window.darkMode ? '☀️' : '🌙';
+    };
+
+    // دالة تحديث معلومات المستخدم في شريط التنقل
+    window.updateUserInfo = function(user) {
+      const userNameElement = document.getElementById('userName');
+      const userAvatarElement = document.getElementById('userAvatar');
+      
+      if (user) {
+        console.log('✅ Updating user info for:', user.email);
+        userNameElement.textContent = user.email.split('@')[0]; // Display username from email
+        userAvatarElement.textContent = user.email.charAt(0).toUpperCase(); // First letter of email
+      } else {
+        userNameElement.textContent = 'User';
+        userAvatarElement.textContent = 'U';
+      }
+    };
+
+    // دالة تحميل بيانات معايرة التانكات من Firestore
+    window.loadTankCalibrationData = async function() {
+      try {
+        console.log('🔄 Loading tank calibration data...');
+        const docRef = window.doc(window.db, 'plcrTanks', 'tankCalibration');
+        const docSnap = await window.getDoc(docRef);
+
+        if (docSnap.exists()) {
+          window.tankCalibrationData = docSnap.data();
+          console.log('✅ Tank calibration data loaded:', window.tankCalibrationData);
+          // استدعاء دالة الحساب بعد تحميل البيانات
+          window.calculate();
+        } else {
+          console.log('⚠️ No tank calibration data found!');
+        }
+      } catch (error) {
+        console.error('❌ Error loading tank calibration data:', error);
+      }
+    };
+
+    // دالة التحقق من الصلاحيات وتهيئة الصفحة
+    window.checkPermissionsAndInitialize = async function(user) {
+      if (user) {
+        console.log('✅ User is signed in:', user.email);
+        window.updateUserInfo(user);
+
+        // تحميل صلاحيات المستخدم
+        const permissionsInstance = new Permissions();
+        window.userPermissions = await permissionsInstance.loadUserPermissions(user.email.split('@')[0]);
+        console.log('✅ User permissions loaded:', window.userPermissions);
+
+        // التحقق من صلاحيات الأدمن والتانكات الحية
+        const adminLink = document.getElementById('adminLink');
+        const liveTanksLink = document.getElementById('liveTanksLink');
+
+        if (window.userPermissions.isAdmin) {
+          adminLink.style.display = 'block';
+        } else {
+          adminLink.style.display = 'none';
+        }
+
+        if (window.userPermissions.liveTanksAccess) {
+          liveTanksLink.style.display = 'block';
+        } else {
+          liveTanksLink.style.display = 'none';
+        }
+
+        // تحميل بيانات معايرة التانكات
+        await window.loadTankCalibrationData();
+
+        // إظهار المحتوى الرئيسي
+        document.getElementById('mainContent').style.display = 'block';
+        document.getElementById('accessDenied').style.display = 'none';
+      } else {
+        console.log('❌ User is not signed in. Redirecting to login.');
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('accessDenied').style.display = 'flex';
+      }
+    };
+
+    // دالة الحساب
+    window.calculate = function() {
+      const mode = document.getElementById('mode').value;
+      const tankNumber = document.getElementById('tk').value;
+      const valueInput = document.getElementById('value').value;
+      const value = parseFloat(valueInput);
+      const resultElement = document.getElementById('result');
+
+      // تحديث عنوان حقل الإدخال بناءً على الوضع المحدد
+      const inputLabel = document.getElementById('inputLabel');
+      switch (mode) {
+        case 'levelToBarrels':
+          inputLabel.textContent = 'Enter Level:';
+          break;
+        case 'barrelsToLevel':
+          inputLabel.textContent = 'Enter Barrels:';
+          break;
+        case 'tonToLevel':
+          inputLabel.textContent = 'Enter Metric Ton:';
+          break;
+        case 'levelToTon':
+          inputLabel.textContent = 'Enter Level:';
+          break;
+      }
+
+      if (!tankNumber) {
+        resultElement.textContent = 'Please enter Tank Number.';
+        return;
+      }
+
+      if (!valueInput) {
+        resultElement.textContent = 'Please enter a value.';
+        return;
+      }
+
+      if (isNaN(value)) {
+        resultElement.textContent = 'Please enter a valid number.';
+        return;
+      }
+
+      // التحقق من وجود بيانات التانك
+      if (!window.tankCalibrationData || Object.keys(window.tankCalibrationData).length === 0) {
+        resultElement.textContent = 'Tank calibration data not loaded yet. Please wait...';
+        return;
+      }
+
+      const tankData = window.tankCalibrationData[tankNumber];
+
+      if (!tankData) {
+        resultElement.textContent = 'Tank data not found for this tank number.';
+        return;
+      }
+
+      let calculatedResult;
+
+      switch (mode) {
+        case 'levelToBarrels':
+          calculatedResult = window.interpolate(tankData.level, tankData.barrels, value);
+          resultElement.textContent = `Barrels: ${calculatedResult.toFixed(2)}`;
+          break;
+        case 'barrelsToLevel':
+          calculatedResult = window.interpolate(tankData.barrels, tankData.level, value);
+          resultElement.textContent = `Level: ${calculatedResult.toFixed(2)}`;
+          break;
+        case 'tonToLevel':
+          calculatedResult = window.interpolate(tankData.metricTon, tankData.level, value);
+          resultElement.textContent = `Level: ${calculatedResult.toFixed(2)}`;
+          break;
+        case 'levelToTon':
+          calculatedResult = window.interpolate(tankData.level, tankData.metricTon, value);
+          resultElement.textContent = `Metric Ton: ${calculatedResult.toFixed(2)}`;
+          break;
+        default:
+          resultElement.textContent = 'Invalid mode selected.';
+          break;
+      }
+    };
+
+    // دالة الاستيفاء الخطي
+    window.interpolate = function(x, y, x_val) {
+      // التحقق من وجود البيانات
+      if (!x || !y || x.length === 0 || y.length === 0) {
+        console.error('❌ Invalid data for interpolation');
+        return 0;
+      }
+      
+      // التحقق من أن x_val ضمن النطاق
+      if (x_val < x[0]) {
+        console.warn('⚠️ Value below minimum range, using minimum value');
+        return y[0];
+      }
+      
+      if (x_val > x[x.length - 1]) {
+        console.warn('⚠️ Value above maximum range, using maximum value');
+        return y[y.length - 1];
+      }
+      
+      // الاستيفاء الخطي الأساسي
+      for (let i = 0; i < x.length - 1; i++) {
+        if (x_val >= x[i] && x_val <= x[i+1]) {
+          return y[i] + (y[i+1] - y[i]) * ((x_val - x[i]) / (x[i+1] - x[i]));
+        }
+      }
+      
+      // في حالة عدم العثور على نطاق مناسب
+      return 0;
+    };
+
+    // نظام الأمان الذكي - محسن لـ iPhone
     (function(){
       let attempts=0,modalOpen=false,isTyping=false,typingTimer=null;
       
       function initSecurity(){
-        // Enhanced iPhone detection and typing tracking
+        // تحسين اكتشاف iPhone وتتبع الكتابة
         const isIPhone=/iPad|iPhone|iPod/.test(navigator.userAgent);
         
-        // Multiple event listeners for comprehensive input tracking
+        // مستمعات أحداث متعددة لتتبع الإدخال الشامل
         ["focusin","focus","input","keydown","keyup","touchstart"].forEach(eventType=>{
           document.addEventListener(eventType,e=>{
             if(e.target.matches('input,textarea,select')){
@@ -176,7 +431,7 @@
           },true);
         });
         
-        // Additional safety for form interactions
+        // أمان إضافي لتفاعلات النموذج
         document.addEventListener('change',e=>{
           if(e.target.matches('input,textarea,select')){
             isTyping=true;
@@ -185,7 +440,7 @@
           }
         });
         
-        // Enhanced event blocking when typing
+        // تحسين حظر الأحداث عند الكتابة
         document.addEventListener('contextmenu',e=>{
           if(isTyping||e.target.matches('input,textarea,select')||e.target.closest('input,textarea,select'))return;
           handleViolation('context-menu')(e);
@@ -202,7 +457,7 @@
           if(dangerous.some(c=>c))handleViolation('keyboard-shortcut')(e);
         });
         
-        // DevTools detection with typing check
+        // اكتشاف أدوات المطور مع فحص الكتابة
         let devOpen=false;
         setInterval(()=>{
           if(isTyping)return;
@@ -212,6 +467,7 @@
           }else{devOpen=false}
         },isIPhone?5000:3000);
       }
+      
       function handleViolation(type){
         return function(e){
           if(e&&e.preventDefault)e.preventDefault();
@@ -222,6 +478,7 @@
           return false
         }
       }
+      
       function showWarning(level){
         if(modalOpen)return;
         const modal=document.getElementById('securityModal'),icon=document.getElementById('securityIcon'),title=document.getElementById('securityTitle'),text=document.getElementById('securityText'),counter=document.getElementById('attemptCounter'),countSpan=document.getElementById('attemptCount');
@@ -238,191 +495,20 @@
           icon.textContent='🚫';title.textContent='PLCR Security Lock';
           text.innerHTML='<p><strong>Maximum attempts exceeded on PLCR Calculator.</strong></p><p>Enhanced monitoring activated for:</p><ul style="text-align:left;margin:10px 0"><li>Tank calculation protection</li><li>KNPC data security</li><li>System integrity maintenance</li></ul><p>Use "Reset Page" to continue normally.</p>';
           counter.style.background='rgba(244,67,54,0.2)';counter.style.borderColor='rgba(244,67,54,0.5)';counter.style.color='#f44336';
-          setTimeout(()=>{if(attempts>=3)implementRestrictions()},5000)
+          setTimeout(()=>{if(attempts>=3)window.location.href='login.html'},3000);
         }
         modal.classList.add('show');
       }
-      function acknowledgeWarning(){
-        document.getElementById('securityModal').classList.remove('show');
-        modalOpen=false;
-      }
-      function resetPage(){
-        attempts=0;
-        document.getElementById('securityModal').classList.remove('show');
-        modalOpen=false;
-        // Optionally reload the page or reset application state
-        location.reload();
-      }
-      function learnMore(){
-        alert('This is a secure application. Unauthorized access to developer tools is restricted to protect proprietary data and algorithms.');
-      }
-      function implementRestrictions(){
-        // Example restrictions: disable inputs, redirect, etc.
-        document.body.style.pointerEvents = 'none'; // Disable all interactions
-        document.body.style.opacity = '0.5'; // Dim the page
-        // You might want to redirect to a logout page or show a permanent lock screen
-      }
-      initSecurity();
+      
+      // تهيئة نظام الأمان عند تحميل الصفحة
+      document.addEventListener('DOMContentLoaded', initSecurity);
     })();
 
-    // Firebase Authentication and Firestore Integration
-    let currentUser = null;
-    let userPermissions = null;
-    let tankCalibrationData = {}; // To store PLCR tank calibration data
-
-    window.onAuthStateChanged(window.auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        console.log('✅ User is signed in:', currentUser.email);
-        await window.permissions.loadUserPermissions(currentUser.email.split('@')[0]);
-        userPermissions = window.permissions.userPermissions;
-        console.log('✅ User permissions loaded:', userPermissions);
-        updateUserInfo();
-        checkPermissionsAndInitialize();
-      } else {
-        console.log('❌ User is signed out. Redirecting to login.');
-        window.location.href = 'login.html';
-      }
+    // الاستماع لتغييرات حالة المصادقة
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔄 Initializing authentication listener...');
+      window.firebaseAuthStateChanged(window.auth, window.checkPermissionsAndInitialize);
     });
-
-    function updateUserInfo() {
-      const userNameElement = document.getElementById('userName');
-      const userAvatarElement = document.getElementById('userAvatar');
-      if (currentUser) {
-        const username = currentUser.email.split('@')[0];
-        userNameElement.textContent = username;
-        userAvatarElement.textContent = username.charAt(0).toUpperCase();
-        console.log('✅ User info updated:', username);
-      } else {
-        userNameElement.textContent = 'User';
-        userAvatarElement.textContent = 'U';
-        console.log('⚠️ User info not available.');
-      }
-    }
-
-    async function loadTankCalibrationData() {
-      console.log('🔄 Attempting to load tank calibration data...');
-      try {
-        const docRef = window.doc(window.db, 'plcrTanks', 'tankCalibration');
-        const docSnap = await window.getDoc(docRef);
-
-        if (docSnap.exists()) {
-          tankCalibrationData = docSnap.data();
-          console.log('✅ Tank calibration data loaded:', tankCalibrationData);
-          // Optionally, trigger calculate() here if initial values are present
-          // calculate(); 
-        } else {
-          console.log('⚠️ No tank calibration data found at plcrTanks/tankCalibration');
-        }
-      } catch (error) {
-        console.error('❌ Error loading tank calibration data:', error);
-      }
-    }
-
-    function checkPermissionsAndInitialize() {
-      console.log('🔄 Checking permissions and initializing...');
-      const mainContent = document.getElementById('mainContent');
-      const accessDenied = document.getElementById('accessDenied');
-      const adminLink = document.getElementById('adminLink');
-      const liveTanksLink = document.getElementById('liveTanksLink');
-
-      if (userPermissions && userPermissions.role) {
-        console.log('✅ User role:', userPermissions.role);
-        mainContent.style.display = 'block';
-        accessDenied.style.display = 'none';
-
-        if (userPermissions.role === 'admin') {
-          adminLink.style.display = 'block';
-          liveTanksLink.style.display = 'block';
-          console.log('✅ Admin links displayed.');
-        } else {
-          adminLink.style.display = 'none';
-          liveTanksLink.style.display = 'none';
-          console.log('⚠️ Admin links hidden for non-admin user.');
-        }
-        loadTankCalibrationData(); // Load data after permissions are checked
-      } else {
-        console.log('❌ Permissions not loaded or role not defined. Showing access denied.');
-        mainContent.style.display = 'none';
-        accessDenied.style.display = 'flex';
-      }
-    }
-
-    function goToLogin() {
-      window.location.href = 'login.html';
-    }
-
-    function logout() {
-      window.auth.signOut().then(() => {
-        console.log('✅ User signed out.');
-        window.location.href = 'login.html';
-      }).catch((error) => {
-        console.error('❌ Error signing out:', error);
-      });
-    }
-
-    function calculate() {
-      const mode = document.getElementById('mode').value;
-      const tankNumber = document.getElementById('tk').value;
-      const value = parseFloat(document.getElementById('value').value);
-      const resultElement = document.getElementById('result');
-
-      if (!tankNumber || isNaN(value)) {
-        resultElement.textContent = 'Please enter Tank Number and Value.';
-        return;
-      }
-
-      // Ensure tankCalibrationData is loaded and has the tank number
-      if (!tankCalibrationData || !tankCalibrationData[tankNumber]) {
-        resultElement.textContent = 'Tank calibration data not found for this tank number.';
-        console.log('⚠️ Tank calibration data missing for tank:', tankNumber);
-        return;
-      }
-
-      const tankData = tankCalibrationData[tankNumber];
-      let calculatedResult = '';
-
-      switch (mode) {
-        case 'levelToBarrels':
-          calculatedResult = `Calculated Barrels: ${value * tankData.barrelsPerLevel}`;
-          break;
-        case 'barrelsToLevel':
-          calculatedResult = `Calculated Level: ${value / tankData.barrelsPerLevel}`;
-          break;
-        case 'tonToLevel':
-          calculatedResult = `Calculated Level from Ton: ${value * tankData.levelPerTon}`;
-          break;
-        case 'levelToTon':
-          calculatedResult = `Calculated Ton from Level: ${value / tankData.levelPerTon}`;
-          break;
-        default:
-          calculatedResult = 'Invalid mode selected.';
-      }
-      resultElement.textContent = calculatedResult;
-    }
-
-    // Font size controls
-    function increaseFontSize() {
-      const currentSize = parseFloat(getComputedStyle(document.body).fontSize);
-      document.body.style.fontSize = (currentSize + 1) + 'px';
-    }
-
-    function decreaseFontSize() {
-      const currentSize = parseFloat(getComputedStyle(document.body).fontSize);
-      document.body.style.fontSize = (currentSize - 1) + 'px';
-    }
-
-    // Dark mode toggle
-    document.getElementById('darkModeButton').addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-    });
-
-    // WhatsApp link
-    function openWhatsApp() {
-      window.open('https://wa.me/96555222550', '_blank');
-    }
   </script>
 </body>
 </html>
-
-
