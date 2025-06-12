@@ -9,9 +9,12 @@
   <meta name="theme-color" content="#003366">
   <script type="module">
     import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import{getFirestore,doc,getDoc,collection,getDocs}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import{getFirestore,doc,getDoc}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
     const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
-    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.collection=collection;window.getDocs=getDocs;
+    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;
+    window.auth = getAuth(app);
   </script>
   <script src="permissions.js"></script>
   <style>
@@ -36,7 +39,6 @@
     label,input,select{display:block;width:100%;margin:10px 0;text-align:left}
     input,select{padding:10px;border-radius:8px;border:none;background:rgba(255,255,255,0.9);color:#003366;box-shadow:0 2px 5px rgba(0,0,0,0.3)}
     .result{margin-top:20px;font-weight:bold;text-align:center;color:#00ffff;padding:15px;background:rgba(0,0,0,0.3);border-radius:8px}
-    .debug-info{margin-top:10px;font-size:12px;color:#ffcc00;background:rgba(0,0,0,0.5);padding:10px;border-radius:5px;text-align:left}
     footer{margin-top:40px;color:#ccc;text-align:center}
     .whatsapp-link{color:#25D366;text-decoration:none;font-weight:bold;transition:all 0.3s ease;cursor:pointer}
     .whatsapp-link:hover{color:#128C7E;text-shadow:0 0 5px rgba(37,211,102,0.5);transform:scale(1.05)}
@@ -120,7 +122,7 @@
           <button class="font-btn" onclick="increaseFontSize()" title="تكبير الخط">+</button>
         </div>
         <div class="user-avatar" id="userAvatar">U</div>
-        <div id="userName">Loading...</div>
+        <div id="userName">User</div>
         <button class="logout-btn" onclick="logout()">Logout</button>
       </div>
     </div>
@@ -129,7 +131,7 @@
       <h2>PLCR - Tank Calculator</h2>
       
       <label for="mode">Select Mode:</label>
-      <select id="mode" onchange="updateInputLabel()">
+      <select id="mode">
         <option value="levelToBarrels">Level to Barrels</option>
         <option value="barrelsToLevel">Barrels to Level</option>
         <option value="tonToLevel">Metric Ton to Level</option>
@@ -139,27 +141,21 @@
       <label for="tk">Tank Number:</label>
       <input type="number" id="tk" placeholder="e.g. 424" oninput="calculate()">
 
-      <label id="inputLabel" for="value">Enter Level (mm):</label>
+      <label id="inputLabel" for="value">Enter Value:</label>
       <input type="number" id="value" placeholder="Enter number" oninput="calculate()">
 
-      <div class="result" id="result">Enter tank number and value to calculate</div>
-      <div class="debug-info" id="debugInfo" style="display:none"></div>
+      <div class="result" id="result"></div>
     </div>
     
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
     
     <footer>
-      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.4
+      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3
       <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
     </footer>
   </div>
   
   <script>
-    // Global variables
-    let tankConversions = {};
-    let currentUser = null;
-    let debugMode = false;
-
     // 🔒 Smart Security System - iPhone Optimized
     (function(){
       let attempts=0,modalOpen=false,isTyping=false,typingTimer=null;
@@ -248,348 +244,215 @@
       function implementRestrictions(){
         document.body.style.filter='blur(3px)';
         const overlay=document.createElement('div');
-        overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;color:white;font-size:24px;text-align:center;';
-        overlay.innerHTML='<div>🔒 PLCR Security Lock Active<br><small style="font-size:16px;margin-top:10px;display:block;">Refresh page to continue</small></div>';
+        overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9998;backdrop-filter:blur(5px);';
         document.body.appendChild(overlay);
+        const msg=document.createElement('div');
+        msg.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:15px;z-index:9999;text-align:center;color:red;font-weight:bold;font-size:1.5rem;box-shadow:0 0 20px rgba(0,0,0,0.5);';
+        msg.innerHTML='SYSTEM LOCKED - CONTACT ADMIN';
+        document.body.appendChild(msg);
         document.addEventListener('keydown',e=>e.preventDefault(),true);
-        document.addEventListener('contextmenu',e=>e.preventDefault(),true)
+        document.addEventListener('click',e=>e.preventDefault(),true);
+        document.addEventListener('contextmenu',e=>e.preventDefault(),true);
       }
-      window.acknowledgeWarning=function(){
-        document.getElementById('securityModal').classList.remove('show');
-        modalOpen=false
-      };
-      window.resetPage=function(){
-        location.reload()
-      };
-      window.learnMore=function(){
-        alert('🔒 PLCR Security Information\n\nThis calculator contains:\n• Proprietary KNPC tank conversion data\n• Protected calculation algorithms\n• Sensitive operational information\n\nDeveloper tools access is monitored for security purposes.')
-      };
-      initSecurity()
+      window.acknowledgeWarning=function(){document.getElementById('securityModal').classList.remove('show');modalOpen=false;attempts=0};
+      window.resetPage=function(){location.reload()};
+      window.learnMore=function(){alert('Contact Fahad - 17877 for more information.')};
+      initSecurity();
     })();
 
-    // Enhanced Login Check with better error handling
-    async function checkLogin() {
-      try {
-        const session = sessionStorage.getItem('tanktools_session');
-        const userData = localStorage.getItem('tanktools_current_user');
-        
-        if (session !== 'active' || !userData) {
-          showAccessDenied();
-          return false;
-        }
-        
-        // Parse user data with error handling
-        try {
-          currentUser = JSON.parse(userData);
-          console.log('✅ User data loaded:', currentUser);
-        } catch (parseError) {
-          console.error('❌ Error parsing user data:', parseError);
-          showAccessDenied();
-          return false;
-        }
-        
-        // Load user permissions with timeout
-        const permissionsLoaded = await Promise.race([
-          checkUserPermissions(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-        ]);
-        
-        if (!permissionsLoaded) {
-          console.error('❌ Failed to load user permissions');
-          showAccessDenied();
-          return false;
-        }
-        
-        // Check page access
-        if (!checkPageAccess('plcr')) {
-          return false;
-        }
-        
-        // Load user info after successful authentication
-        loadUserInfo();
-        
-        // Load tank data
-        await loadTankData();
-        
-        return true;
-      } catch (error) {
-        console.error('❌ Login check failed:', error);
-        showAccessDenied();
-        return false;
-      }
-    }
+    // Global variables for user and permissions
+    let currentUser = null;
+    let userPermissions = {};
+    let tankCalibrationData = {}; // To store tank calibration data
 
-    // Enhanced User Info Loading
-    function loadUserInfo() {
-      try {
-        if (!currentUser) {
-          console.warn('⚠️ No current user data available');
-          return;
-        }
-        
-        const userName = document.getElementById('userName');
-        const userAvatar = document.getElementById('userAvatar');
-        
-        if (userName && currentUser.fullName) {
-          userName.textContent = currentUser.fullName;
-          console.log('✅ User name displayed:', currentUser.fullName);
-        } else if (userName && currentUser.username) {
-          userName.textContent = currentUser.username;
-          console.log('✅ Username displayed:', currentUser.username);
-        } else {
-          userName.textContent = 'User';
-          console.warn('⚠️ No user name available, using default');
-        }
-        
-        if (userAvatar && currentUser.fullName) {
-          userAvatar.textContent = currentUser.fullName.charAt(0).toUpperCase();
-        } else if (userAvatar && currentUser.username) {
-          userAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
-        }
-        
-        // Apply UI restrictions based on permissions
-        if (window.permissionsManager) {
-          window.permissionsManager.applyUIRestrictions();
-        }
-      } catch (error) {
-        console.error('❌ Error loading user info:', error);
-      }
-    }
-
-    // Enhanced Tank Data Loading with proper Firebase path
-    async function loadTankData() {
-      try {
-        console.log('🔄 Loading tank data from Firebase...');
-        
-        // Try to load from the correct subcollection path
-        const tanksRef = collection(db, 'tankData', 'plcr', 'tanks');
-        const snapshot = await getDocs(tanksRef);
-        
-        if (!snapshot.empty) {
-          tankConversions = {};
-          let loadedCount = 0;
-          
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            const tankId = doc.id;
-            
-            // Convert Firebase data structure to expected format
-            tankConversions[tankId] = {
-              gross: data.gross || data.capacity || 0,
-              factor: data.factor || data.comment || 1,
-              min: data.min || 0,
-              max: data.max || 10000
-            };
-            loadedCount++;
-          });
-          
-          console.log(`✅ Loaded ${loadedCount} tanks from Firebase`);
-          updateDebugInfo(`Loaded ${loadedCount} tanks from Firebase`);
-          
-          // Apply permissions filtering
-          if (window.permissionsManager) {
-            tankConversions = window.permissionsManager.filterTankData(tankConversions, 'plcr');
-          }
-          
-        } else {
-          console.warn('⚠️ No tank data found in Firebase, loading fallback data');
-          loadFallbackData();
-        }
-        
-      } catch (error) {
-        console.error('❌ Error loading tank data from Firebase:', error);
-        updateDebugInfo(`Firebase Error: ${error.message}`);
-        loadFallbackData();
-      }
-    }
-
-    // Fallback data for when Firebase is unavailable
-    function loadFallbackData() {
-      console.log('🔄 Loading fallback tank data...');
-      
-      // Sample PLCR tank data - replace with actual data
-      tankConversions = {
-        "424": { gross: 50000, factor: 0.159, min: 100, max: 9500 },
-        "425": { gross: 50000, factor: 0.159, min: 100, max: 9500 },
-        "426": { gross: 50000, factor: 0.159, min: 100, max: 9500 },
-        "427": { gross: 50000, factor: 0.159, min: 100, max: 9500 },
-        "428": { gross: 50000, factor: 0.159, min: 100, max: 9500 }
-      };
-      
-      updateDebugInfo('Using fallback data (5 tanks)');
-      console.log('✅ Fallback data loaded');
-    }
-
-    // Update input label based on mode
-    function updateInputLabel() {
-      const mode = document.getElementById('mode').value;
-      const label = document.getElementById('inputLabel');
-      
-      switch(mode) {
-        case 'levelToBarrels':
-          label.textContent = 'Enter Level (mm):';
-          break;
-        case 'barrelsToLevel':
-          label.textContent = 'Enter Barrels:';
-          break;
-        case 'tonToLevel':
-          label.textContent = 'Enter Metric Ton:';
-          break;
-        case 'levelToTon':
-          label.textContent = 'Enter Level (mm):';
-          break;
-      }
-    }
-
-    // Enhanced calculation function
-    function calculate() {
-      const tankNumber = document.getElementById('tk').value;
-      const value = parseFloat(document.getElementById('value').value);
-      const mode = document.getElementById('mode').value;
-      const resultDiv = document.getElementById('result');
-      
-      if (!tankNumber || isNaN(value)) {
-        resultDiv.innerHTML = 'Enter tank number and value to calculate';
-        return;
-      }
-      
-      const tankData = tankConversions[tankNumber];
-      if (!tankData) {
-        resultDiv.innerHTML = `❌ Tank ${tankNumber} not found in database`;
-        updateDebugInfo(`Tank ${tankNumber} not found. Available tanks: ${Object.keys(tankConversions).join(', ')}`);
-        return;
-      }
-      
-      try {
-        let result;
-        
-        switch(mode) {
-          case 'levelToBarrels':
-            if (value < tankData.min || value > tankData.max) {
-              resultDiv.innerHTML = `⚠️ Level out of range (${tankData.min}-${tankData.max} mm)`;
-              return;
-            }
-            result = (value * tankData.factor).toFixed(2);
-            resultDiv.innerHTML = `📊 <strong>${result} Barrels</strong><br><small>Tank ${tankNumber} at ${value} mm</small>`;
-            break;
-            
-          case 'barrelsToLevel':
-            const maxBarrels = tankData.max * tankData.factor;
-            if (value > maxBarrels) {
-              resultDiv.innerHTML = `⚠️ Barrels exceed tank capacity (max: ${maxBarrels.toFixed(2)})`;
-              return;
-            }
-            result = (value / tankData.factor).toFixed(2);
-            resultDiv.innerHTML = `📏 <strong>${result} mm</strong><br><small>Tank ${tankNumber} for ${value} barrels</small>`;
-            break;
-            
-          case 'tonToLevel':
-            // Assuming density conversion factor (approximate)
-            const barrels = value * 7.33; // Approximate conversion from metric tons to barrels
-            result = (barrels / tankData.factor).toFixed(2);
-            resultDiv.innerHTML = `📏 <strong>${result} mm</strong><br><small>Tank ${tankNumber} for ${value} metric tons</small>`;
-            break;
-            
-          case 'levelToTon':
-            if (value < tankData.min || value > tankData.max) {
-              resultDiv.innerHTML = `⚠️ Level out of range (${tankData.min}-${tankData.max} mm)`;
-              return;
-            }
-            const barrels = value * tankData.factor;
-            result = (barrels / 7.33).toFixed(2); // Approximate conversion from barrels to metric tons
-            resultDiv.innerHTML = `⚖️ <strong>${result} Metric Tons</strong><br><small>Tank ${tankNumber} at ${value} mm</small>`;
-            break;
-        }
-        
-        updateDebugInfo(`Calculation: ${mode}, Tank: ${tankNumber}, Input: ${value}, Result: ${result}`);
-        
-      } catch (error) {
-        console.error('❌ Calculation error:', error);
-        resultDiv.innerHTML = '❌ Calculation error occurred';
-        updateDebugInfo(`Calculation error: ${error.message}`);
-      }
-    }
-
-    // Debug information display
-    function updateDebugInfo(message) {
-      if (debugMode) {
-        const debugDiv = document.getElementById('debugInfo');
-        debugDiv.style.display = 'block';
-        debugDiv.innerHTML = `Debug: ${message}<br>Tanks loaded: ${Object.keys(tankConversions).length}`;
-      }
-    }
-
-    // Show access denied screen
-    function showAccessDenied() {
-      document.getElementById('accessDenied').style.display = 'flex';
-      document.getElementById('mainContent').style.display = 'none';
-    }
-
-    // Navigation functions
+    // Function to navigate to login page
     function goToLogin() {
       window.location.href = 'login.html';
     }
 
+    // Logout function
     function logout() {
-      sessionStorage.removeItem('tanktools_session');
-      localStorage.removeItem('tanktools_current_user');
-      window.location.href = 'login.html';
-    }
-
-    // Font size controls
-    function increaseFontSize() {
-      document.body.style.fontSize = (parseFloat(getComputedStyle(document.body).fontSize) + 1) + 'px';
-    }
-
-    function decreaseFontSize() {
-      const currentSize = parseFloat(getComputedStyle(document.body).fontSize);
-      if (currentSize > 12) {
-        document.body.style.fontSize = (currentSize - 1) + 'px';
-      }
-    }
-
-    // Dark mode toggle
-    function setupDarkMode() {
-      const darkModeButton = document.getElementById('darkModeButton');
-      const isDarkMode = localStorage.getItem('darkMode') === 'true';
-      
-      if (isDarkMode) {
-        document.body.classList.add('dark-mode');
-        darkModeButton.textContent = '☀️';
-      }
-      
-      darkModeButton.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const isNowDark = document.body.classList.contains('dark-mode');
-        darkModeButton.textContent = isNowDark ? '☀️' : '🌙';
-        localStorage.setItem('darkMode', isNowDark);
+      window.auth.signOut().then(() => {
+        console.log('User signed out');
+        localStorage.removeItem('loggedInUser'); // Clear local storage
+        goToLogin();
+      }).catch((error) => {
+        console.error('Error signing out:', error);
       });
     }
 
-    // WhatsApp contact
-    function openWhatsApp() {
-      window.open('https://wa.me/96555222550?text=Hello%20Fahad,%20I%20need%20help%20with%20PLCR%20Tank%20Calculator', '_blank');
+    // Function to update user info in nav bar
+    function updateUserInfo() {
+      const userNameElement = document.getElementById('userName');
+      const userAvatarElement = document.getElementById('userAvatar');
+      const adminLink = document.getElementById('adminLink');
+      const liveTanksLink = document.getElementById('liveTanksLink');
+
+      if (currentUser) {
+        userNameElement.textContent = currentUser.displayName || currentUser.email.split('@')[0];
+        userAvatarElement.textContent = (currentUser.displayName || currentUser.email).charAt(0).toUpperCase();
+
+        // Check for admin access
+        if (userPermissions.role === 'admin') {
+          adminLink.style.display = 'block';
+        } else {
+          adminLink.style.display = 'none';
+        }
+
+        // Check for Live Tanks access
+        if (userPermissions.liveTanksAccess) {
+          liveTanksLink.style.display = 'block';
+        } else {
+          liveTanksLink.style.display = 'none';
+        }
+
+        document.getElementById('mainContent').style.display = 'block';
+        document.getElementById('accessDenied').style.display = 'none';
+      } else {
+        userNameElement.textContent = 'Guest';
+        userAvatarElement.textContent = 'G';
+        adminLink.style.display = 'none';
+        liveTanksLink.style.display = 'none';
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('accessDenied').style.display = 'flex';
+      }
     }
 
-    // Enable debug mode with URL parameter
-    if (window.location.search.includes('debug=true')) {
-      debugMode = true;
-      console.log('🐛 Debug mode enabled');
+    // Function to load tank calibration data from Firestore
+    async function loadTankCalibrationData() {
+      try {
+        const tankDocRef = doc(db, 'plcrTanks', 'tankCalibration'); // Assuming 'plcrTanks' collection and 'tankCalibration' document
+        const tankDocSnap = await getDoc(tankDocRef);
+
+        if (tankDocSnap.exists()) {
+          tankCalibrationData = tankDocSnap.data();
+          console.log('✅ Tank calibration data loaded:', tankCalibrationData);
+        } else {
+          console.warn('⚠️ Tank calibration data document not found!');
+          tankCalibrationData = {}; // Initialize as empty object
+        }
+      } catch (error) {
+        console.error('❌ Error loading tank calibration data:', error);
+        tankCalibrationData = {};
+      }
     }
 
-    // Initialize application
-    document.addEventListener('DOMContentLoaded', async () => {
-      console.log('🚀 PLCR Calculator initializing...');
-      
-      setupDarkMode();
-      updateInputLabel();
-      
-      // Check login and load data
-      const loginSuccess = await checkLogin();
-      if (loginSuccess) {
-        console.log('✅ PLCR Calculator ready');
+    // Initialize app and check permissions
+    async function checkPermissionsAndInitialize() {
+      if (window.permissions) {
+        await window.permissions.initApp();
+        currentUser = window.permissions.currentUser;
+        userPermissions = window.permissions.userPermissions;
+        updateUserInfo();
+
+        if (currentUser && userPermissions) {
+          // Load tank calibration data only if user is logged in and permissions are loaded
+          await loadTankCalibrationData();
+        }
+      } else {
+        console.error('Permissions module not loaded.');
+        goToLogin();
+      }
+    }
+
+    // Firebase Auth state change listener
+    onAuthStateChanged(window.auth, (user) => {
+      if (user) {
+        console.log('User is signed in:', user.email);
+        checkPermissionsAndInitialize();
+      } else {
+        console.log('No user is signed in.');
+        goToLogin();
       }
     });
+
+    // Function to calculate based on mode, tank number, and value
+    function calculate() {
+      const mode = document.getElementById('mode').value;
+      const tk = document.getElementById('tk').value;
+      const value = parseFloat(document.getElementById('value').value);
+      const resultDiv = document.getElementById('result');
+
+      if (!tk || isNaN(value)) {
+        resultDiv.textContent = 'Please enter Tank Number and Value.';
+        return;
+      }
+
+      const tankKey = 'tank' + tk; // e.g., 'tank424'
+      if (!tankCalibrationData[tankKey]) {
+        resultDiv.textContent = 'Calibration data not found for this tank.';
+        return;
+      }
+
+      const calibrationPoints = tankCalibrationData[tankKey];
+
+      let calculatedResult = 0;
+
+      switch (mode) {
+        case 'levelToBarrels':
+          calculatedResult = interpolate(calibrationPoints, 'level', 'barrels', value);
+          resultDiv.textContent = `Barrels: ${calculatedResult.toFixed(2)}`;
+          break;
+        case 'barrelsToLevel':
+          calculatedResult = interpolate(calibrationPoints, 'barrels', 'level', value);
+          resultDiv.textContent = `Level: ${calculatedResult.toFixed(2)}`;
+          break;
+        case 'tonToLevel':
+          calculatedResult = interpolate(calibrationPoints, 'ton', 'level', value);
+          resultDiv.textContent = `Level: ${calculatedResult.toFixed(2)}`;
+          break;
+        case 'levelToTon':
+          calculatedResult = interpolate(calibrationPoints, 'level', 'ton', value);
+          resultDiv.textContent = `Metric Ton: ${calculatedResult.toFixed(2)}`;
+          break;
+        default:
+          resultDiv.textContent = 'Invalid mode selected.';
+      }
+    }
+
+    // Linear interpolation function
+    function interpolate(points, xKey, yKey, xValue) {
+      if (points.length === 0) return 0;
+
+      // Sort points by xKey to ensure correct interpolation
+      points.sort((a, b) => a[xKey] - b[xKey]);
+
+      // Handle edge cases
+      if (xValue <= points[0][xKey]) return points[0][yKey];
+      if (xValue >= points[points.length - 1][xKey]) return points[points.length - 1][yKey];
+
+      // Find the two points that bracket xValue
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+
+        if (xValue >= p1[xKey] && xValue <= p2[xKey]) {
+          const slope = (p2[yKey] - p1[yKey]) / (p2[xKey] - p1[xKey]);
+          return p1[yKey] + slope * (xValue - p1[xKey]);
+        }
+      }
+      return 0; // Should not happen if xValue is within range
+    }
+
+    // Font size controls
+    function changeFontSize(change) {
+      const html = document.documentElement;
+      let currentSize = parseFloat(getComputedStyle(html).fontSize);
+      html.style.fontSize = `${currentSize + change}px`;
+    }
+
+    window.increaseFontSize = function() { changeFontSize(1); };
+    window.decreaseFontSize = function() { changeFontSize(-1); };
+
+    // Dark mode toggle
+    document.getElementById('darkModeButton').addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+
+    // WhatsApp link
+    window.openWhatsApp = function() {
+      window.open('https://wa.me/96555222550', '_blank');
+    };
   </script>
 </body>
 </html>
