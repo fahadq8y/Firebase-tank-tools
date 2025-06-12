@@ -403,7 +403,136 @@
     };
 
     // DEBUG VERSION: Load tank data from Firebase with detailed logging
-    async function loadTankDataFromFirebase() {
+    
+async function loadTankDataFromFirebase() {
+  try {
+    const statusDiv = document.getElementById("result");
+    if (statusDiv) statusDiv.textContent = "🔄 DEBUG: Loading PLCR tank data from Firebase...";
+    
+    console.log('🔄 DEBUG: Starting PLCR Firebase loading...');
+    
+    let dataLoaded = false;
+    
+    // الطريقة الصحيحة: قراءة Collection من tankData/plcr/tanks
+    try {
+      console.log('🔍 DEBUG: Reading tankData/plcr/tanks collection...');
+      
+      const tanksCollectionRef = collection(db, 'tankData', 'plcr', 'tanks');
+      const tanksSnapshot = await getDocs(tanksCollectionRef);
+      
+      console.log('📊 DEBUG: Collection size:', tanksSnapshot.size);
+      console.log('📊 DEBUG: Collection empty?', tanksSnapshot.empty);
+      
+      if (!tanksSnapshot.empty) {
+        tanksSnapshot.forEach((doc) => {
+          const tankId = doc.id;
+          const tankData = doc.data();
+          
+          console.log(`🔍 DEBUG: Processing tank ${tankId}:`, tankData);
+          
+          // الطريقة الصحيحة: استخدام gross و factor
+          if (tankData.gross && tankData.factor !== undefined) {
+            tanks[tankId] = {
+              comment: tankData.gross,    // gross becomes comment
+              min: tankData.factor,       // factor becomes min
+              max: tankData.factor        // factor becomes max
+            };
+            console.log(`✅ DEBUG: Added tank ${tankId} with gross=${tankData.gross}, factor=${tankData.factor}`);
+          }
+          // احتياط: للبيانات بصيغة مختلفة
+          else if (tankData.capacity && tankData.min !== undefined) {
+            tanks[tankId] = {
+              comment: tankData.capacity,
+              min: tankData.min,
+              max: tankData.max || tankData.min
+            };
+            console.log(`✅ DEBUG: Added tank ${tankId} with capacity format`);
+          }
+          else {
+            console.log(`❌ DEBUG: Tank ${tankId} missing required fields. Available:`, Object.keys(tankData));
+          }
+        });
+        
+        if (Object.keys(tanks).length > 0) {
+          dataLoaded = true;
+          const message = `✅ DEBUG: PLCR tanks loaded from Firebase: ${Object.keys(tanks).length} tanks`;
+          console.log(message);
+          if (statusDiv) statusDiv.textContent = message;
+        } else {
+          console.log('❌ DEBUG: No tanks were processed successfully');
+        }
+      } else {
+        console.log('❌ DEBUG: Collection is empty');
+      }
+    } catch (e) {
+      console.log('❌ DEBUG: Collection reading failed:', e.message);
+    }
+    
+    // Path 2: Fallback - محاولة قراءة من مسارات أخرى
+    if (!dataLoaded || Object.keys(tanks).length < 5) {
+      try {
+        console.log('🔍 DEBUG: Trying fallback paths...');
+        
+        // Try tanks/tanks path
+        const tanksSnapshot = await getDoc(doc(db, 'tanks', 'tanks'));
+        if (tanksSnapshot.exists()) {
+          const tanksData = tanksSnapshot.data();
+          
+          // Filter PLCR tanks
+          const plcrTankNumbers = ['101', '204', '255', '256', '272', '273', '274', '275', '281', '282', '301', '302', '424', '425', '426', '456', '460', '461', '462', '467', '468', '469', '470', '521', '522', '531', '532', '533', '534', '600', '601', '603', '620', '621', '622', '664', '665', '668', '669', '670', '671', '672', '702', '703', '705'];
+          
+          for (let tankId in tanksData) {
+            if (plcrTankNumbers.includes(tankId)) {
+              const tankData = tanksData[tankId];
+              
+              if (tankData.gross && tankData.factor !== undefined) {
+                tanks[tankId] = {
+                  comment: tankData.gross,
+                  min: tankData.factor,
+                  max: tankData.factor
+                };
+                console.log(`✅ DEBUG: Added PLCR tank ${tankId} from tanks/tanks`);
+              }
+            }
+          }
+        }
+        
+        if (Object.keys(tanks).length > 0) {
+          dataLoaded = true;
+          const message = `✅ DEBUG: PLCR tanks loaded from fallback: ${Object.keys(tanks).length} tanks`;
+          console.log(message);
+          if (statusDiv) statusDiv.textContent = message;
+        }
+      } catch (e) {
+        console.log('❌ DEBUG: Fallback failed:', e.message);
+      }
+    }
+    
+    // Debug final results
+    console.log('🎯 DEBUG: Final tanks loaded:', Object.keys(tanks));
+    console.log('🔍 DEBUG: Tank 467 exists?', tanks.hasOwnProperty('467'));
+    console.log('🔍 DEBUG: Tank 467 data:', tanks['467']);
+    
+    if (!dataLoaded || Object.keys(tanks).length === 0) {
+      const message = "❌ DEBUG: No PLCR tank data could be loaded";
+      console.error(message);
+      if (statusDiv) statusDiv.textContent = message;
+    }
+    
+    // Clear status after 5 seconds
+    setTimeout(() => {
+      if (statusDiv && statusDiv.textContent.includes('DEBUG')) {
+        statusDiv.textContent = "";
+      }
+    }, 5000);
+    
+  } catch (error) {
+    const statusDiv = document.getElementById("result");
+    const message = `❌ DEBUG: Firebase Error: ${error.message}`;
+    console.error('🔥 DEBUG: Firebase loading error:', error);
+    if (statusDiv) statusDiv.textContent = message;
+  }
+}
       try {
         const statusDiv = document.getElementById("result");
         if (statusDiv) statusDiv.textContent = "🔄 DEBUG: Loading PLCR tank data from Firebase...";
