@@ -3,16 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tank Tools - Dashboard</title>
+  <title>Tank Tools - Firebase Admin Dashboard</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="icon.png" type="image/png">
   <meta name="theme-color" content="#003366">
-  <script type="module">
-    import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import{getFirestore,doc,getDoc,collection,getDocs,query,orderBy,limit,where}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-    const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
-    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.collection=collection;window.getDocs=getDocs;window.query=query;window.orderBy=orderBy;window.limit=limit;window.where=where;
-  </script>
   <script src="permissions.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}body{background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;font-family:Arial,sans-serif;min-height:100vh;color:white}
@@ -134,6 +128,7 @@
         <a href="plcr.html" class="nav-btn">⚗️ PLCR</a>
         <a href="NMOGASBL.html" class="nav-btn">🔧 NMOGAS</a>
         <a href="live-tanks.html" class="nav-btn">🔴 Live Tanks</a>
+        <a href="user-management.html" class="nav-btn" id="user-management-link" style="display:none">👥 User Management</a>
       </div>
       <div class="user-section">
         <div class="user-top">
@@ -480,7 +475,7 @@
     let globalLiveTanksSettings = null;
 
     // Check admin access
-    async function checkAdminAccess() {
+    function checkAdminAccess() {
       console.log('Checking admin access...');
       
       const session = sessionStorage.getItem('tanktools_session');
@@ -498,50 +493,29 @@
       
       try {
         currentUser = JSON.parse(userData);
-        
-        // Initialize permissions manager
-        if (!window.permissionsManager) {
-          window.permissionsManager = new PermissionsManager();
-        }
-        
-        // Load user permissions
-        await window.permissionsManager.loadUserPermissions(currentUser.username);
-        
-        // Check permissions before initializing
-        const hasPermissions = await checkUserPermissions();
-        if (!hasPermissions) {
-          showMessage('❌ Access denied. Insufficient permissions.', 'error');
-          setTimeout(() => window.location.href = 'login.html', 3000);
-          return false;
-        }
-        
-        // Check dashboard access
-        if (!checkPageAccess('dashboard')) {
-          return false;
-        }
         console.log('Current user:', currentUser);
         
-        // Check admin permissions using permissions manager
-        if (!window.permissionsManager.hasPageAccess('admin') && 
-            !window.permissionsManager.hasPageAccess('dashboard')) {
+        // More flexible admin check - allow fam030 or admin role
+        if (currentUser.username === 'fam030' || currentUser.role === 'admin') {
+          console.log('Admin access granted');
+          
+          // Update UI with admin info
+          document.getElementById('userName').textContent = currentUser.fullName || currentUser.username;
+          document.getElementById('userEmail').textContent = currentUser.email || `${currentUser.username}@knpc.com`;
+          const firstLetter = (currentUser.fullName || currentUser.username).charAt(0).toUpperCase();
+          document.getElementById('userAvatar').textContent = firstLetter;
+          
+          return true;
+        } else {
           console.log('Access denied - not admin');
-          showMessage('❌ Access denied. Admin privileges required.', 'error');
+          showMessage('❌ Access Denied! Admin privileges required.', 'error');
           setTimeout(() => window.location.href = 'index.html', 3000);
           return false;
         }
-        console.log('Admin access granted');
         
-        // Update UI with admin info
-        document.getElementById('userName').textContent = currentUser.fullName || currentUser.username;
-        document.getElementById('userAvatar').textContent = (currentUser.fullName || currentUser.username).charAt(0).toUpperCase();
-        
-        // Apply UI restrictions based on permissions
-        window.permissionsManager.applyUIRestrictions();
-        
-        return true;
       } catch (error) {
-        console.error('Error checking admin access:', error);
-        showMessage('❌ Error checking access: ' + error.message, 'error');
+        console.error('Error parsing user data:', error);
+        showMessage('❌ Session error. Redirecting to login...', 'error');
         setTimeout(() => window.location.href = 'login.html', 3000);
         return false;
       }
@@ -1434,32 +1408,6 @@
       setTimeout(() => container.innerHTML = '', 7000);
     }
 
-    // Add missing permission functions
-    async function checkUserPermissions() {
-      try {
-        if (!window.permissionsManager) {
-          window.permissionsManager = new PermissionsManager();
-          await window.permissionsManager.loadUserPermissions(currentUser.username);
-        }
-        return true;
-      } catch (error) {
-        console.error('Error checking user permissions:', error);
-        return false;
-      }
-    }
-
-    function checkPageAccess(page) {
-      try {
-        if (!window.permissionsManager) {
-          return false;
-        }
-        return window.permissionsManager.hasPageAccess(page);
-      } catch (error) {
-        console.error('Error checking page access:', error);
-        return false;
-      }
-    }
-
     // Logout
     function logout() {
       localStorage.removeItem('tanktools_current_user');
@@ -1560,7 +1508,7 @@
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
 
-    console.log('%c🔥 FIREBASE ADMIN DASHBOARD v4.3', 'color:orange;font-size:20px;font-weight:bold');
+    console.log('%c🔥 FIREBASE ADMIN DASHBOARD v4.2', 'color:orange;font-size:20px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877', 'color:green;font-size:16px');
     console.log('%cLive Tanks Access Control System', 'color:blue;font-size:14px');
   </script>

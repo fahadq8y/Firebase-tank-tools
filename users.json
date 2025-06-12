@@ -1,0 +1,28 @@
+{
+  "users": {
+    "fam030": {
+      "username": "fam030",
+      "email": "fam030@knpc.com",
+      "fullName": "Fahad - 17877",
+      "userType": "admin",
+      "allowedPages": ["all"],
+      "permissions": {
+        "canViewLiveTanks": true,
+        "canEditLiveTanks": true,
+        "canAddToLiveTanks": true,
+        "canDeleteFromLiveTanks": true,
+        "canManageUsers": true
+      },
+      "isActive": true,
+      "isAdmin": true,
+      "createdAt": "2024-12-20T10:00:00Z",
+      "lastLogin": null
+    }
+  },
+  "activityLog": [],
+  "stats": {
+    "totalUsers": 1,
+    "totalLogins": 0,
+    "todayLogins": 0
+  }
+}

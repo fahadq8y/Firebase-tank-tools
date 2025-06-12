@@ -7,12 +7,6 @@
   <link href="icon.png" rel="icon" type="image/png"/>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#003366">
-  <script type="module">
-    import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import{getFirestore,doc,getDoc,collection,getDocs,query,orderBy,where,updateDoc,deleteDoc,onSnapshot}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-    const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
-    window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.collection=collection;window.getDocs=getDocs;window.query=query;window.orderBy=orderBy;window.where=where;window.updateDoc=updateDoc;window.deleteDoc=deleteDoc;window.onSnapshot=onSnapshot;
-  </script>
   <script src="permissions.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -141,7 +135,7 @@
         <a class="nav-link" href="index.html">PBCR</a>
         <a class="nav-link" href="plcr.html">PLCR</a>
         <a class="nav-link active" href="NMOGASBL.html">NMOGAS</a>
-        <a class="nav-link" href="live-tanks.html" id="liveTanksLink" style="display:none">🔴 Live Tanks</a>
+        <a class="nav-link" href="live-tanks.html" id="live-tanks-btn" style="display:none">🔴 Live Tanks</a>
         <a class="nav-admin" href="dashboard.html" id="adminLink" style="display:none">🔐 Dashboard</a>
       </div>
       <div class="nav-user" id="navUser">
@@ -174,7 +168,7 @@
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
 
     <footer>
-      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.3
+      By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v4.2
       <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
     </footer>
   </div>
@@ -290,26 +284,7 @@
     function checkLoginStatus(){
       const session=sessionStorage.getItem('tanktools_session'),userData=localStorage.getItem('tanktools_current_user');
       if(session!=='active'||!userData){showAccessDenied();return}
-      try{
-        currentUser=JSON.parse(userData);
-        
-        // Initialize permissions manager
-        if (!window.permissionsManager) {
-          window.permissionsManager = new PermissionsManager();
-        }
-        
-        // Load user permissions and check access
-        window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
-          if (!window.permissionsManager.hasPageAccess('nmogas')) {
-            showAccessDenied();
-            return;
-          }
-          initializeApp();
-          logActivity('nmogas_accessed',currentUser.username);
-        }).catch(() => {
-          showAccessDenied();
-        });
-      }catch{showAccessDenied()}
+      try{currentUser=JSON.parse(userData);initializeApp();logActivity('nmogas_accessed',currentUser.username)}catch{showAccessDenied()}
     }
     
     function showAccessDenied(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
@@ -328,7 +303,7 @@
       const userNameElement = document.getElementById('userName');
       const userAvatarElement = document.getElementById('userAvatar');
       const adminLinkElement = document.getElementById('adminLink');
-      const liveTanksLinkElement = document.getElementById('liveTanksLink');
+      const liveTanksLinkElement = document.getElementById('live-tanks-btn');
       
       if(userNameElement) {
         userNameElement.textContent = currentUser.username;
