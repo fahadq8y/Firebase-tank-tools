@@ -164,16 +164,21 @@
 
     // Listen for authentication state changes
     onAuthStateChanged(auth, async (user) => {
+      console.log("onAuthStateChanged triggered. User:", user);
       if (user) {
         // User is signed in, load permissions
         console.log("User signed in:", user.email);
         window.permissionsManager.currentUser = { uid: user.uid, email: user.email, username: user.email.split("@")[0] };
+        console.log("Attempting to load user permissions for:", window.permissionsManager.currentUser.username);
         const hasPermissions = await window.permissionsManager.loadUserPermissions(window.permissionsManager.currentUser.username);
+        console.log("Permissions loaded status:", hasPermissions);
         if (hasPermissions) {
           // Redirect to index.html or dashboard after successful login and permissions loaded
+          console.log("Redirecting to index.html");
           window.location.href = "index.html";
         } else {
           // Handle case where permissions could not be loaded
+          console.error("Login failed: Could not load user permissions.");
           showMessage("error", "Login failed: Could not load user permissions.");
           signOut(auth); // Sign out user if permissions fail to load
         }
