@@ -248,7 +248,8 @@
     window.loadTankCalibrationData = async function() {
       try {
         console.log('🔄 Loading tank calibration data...');
-        const docRef = window.doc(window.db, 'plcrTanks', 'tankCalibration');
+        // تعديل المسار ليكون tankData/plcr بدلاً من plcrTanks/tankCalibration
+        const docRef = window.doc(window.db, 'tankData', 'plcr');
         const docSnap = await window.getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -258,9 +259,22 @@
           window.calculate();
         } else {
           console.log('⚠️ No tank calibration data found!');
+          // محاولة تحميل البيانات من المسار القديم كاحتياط
+          const oldDocRef = window.doc(window.db, 'plcrTanks', 'tankCalibration');
+          const oldDocSnap = await window.getDoc(oldDocRef);
+          
+          if (oldDocSnap.exists()) {
+            window.tankCalibrationData = oldDocSnap.data();
+            console.log('✅ Tank calibration data loaded from old path:', window.tankCalibrationData);
+            window.calculate();
+          } else {
+            console.error('❌ Tank calibration data not found in any location!');
+            document.getElementById('result').textContent = 'Error: Tank calibration data not found.';
+          }
         }
       } catch (error) {
         console.error('❌ Error loading tank calibration data:', error);
+        document.getElementById('result').textContent = 'Error loading tank data: ' + error.message;
       }
     };
 
