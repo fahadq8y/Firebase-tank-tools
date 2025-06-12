@@ -50,17 +50,19 @@ class PermissionsManager {
       if (userDoc.exists()) {
         this.userPermissions = userDoc.data();
         console.log('✅ User permissions loaded from Firebase');
-        return this.userPermissions;
+        return true;
       } else {
-        // Use default permissions for new users
+        // Use default permissions for new users or if document doesn't exist
         this.userPermissions = { ...this.defaultPermissions };
         console.log('⚠️ Using default permissions for user:', username);
-        return this.userPermissions;
+        // Optionally, create the userPermissions document if it doesn't exist
+        // await setDoc(doc(db, 'userPermissions', username), this.defaultPermissions);
+        return true;
       }
     } catch (error) {
       console.error('❌ Error loading user permissions:', error);
       this.userPermissions = { ...this.defaultPermissions };
-      return this.userPermissions;
+      return false;
     }
   }
 
@@ -221,7 +223,11 @@ async function checkUserPermissions() {
     window.permissionsManager.currentUser = user;
     
     // Load user permissions from Firebase
-    await window.permissionsManager.loadUserPermissions(user.username);
+    const permissionsLoaded = await window.permissionsManager.loadUserPermissions(user.username);
+    if (!permissionsLoaded) {
+      console.error('❌ Failed to load user permissions.');
+      return false;
+    }
     
     // Check time restrictions
     if (!window.permissionsManager.isWithinTimeRestrictions()) {
@@ -263,4 +269,5 @@ function checkActionPermission(action) {
   }
   return true;
 }
+
 
