@@ -1262,7 +1262,7 @@
       
       // تعبئة القيم الحالية
       const specialization = user.specialization || user.role || 'planning';
-      document.getElementById('userSpecialization').value = specialization;
+      permissionsModal.querySelector('#userSpecialization').value = specialization;
       
       // تعبئة الصفحات المسموحة
       const currentPages = user.customPages || (window.TankToolsPermissions?.SPECIALIZATIONS[specialization]?.defaultPages) || [];
@@ -1273,30 +1273,36 @@
       
       // تعبئة صلاحيات Live Tanks
       const permissions = user.customPermissions || (window.TankToolsPermissions?.SPECIALIZATIONS[specialization]?.defaultPermissions) || {};
-      document.getElementById('canViewLiveTanks').checked = permissions.canViewLiveTanks || false;
-      document.getElementById('canEditLiveTanks').checked = permissions.canEditLiveTanks || false;
-      document.getElementById('canAddToLiveTanks').checked = permissions.canAddToLiveTanks || false;
-      document.getElementById('canDeleteFromLiveTanks').checked = permissions.canDeleteFromLiveTanks || false;
+      permissionsModal.querySelector('#canViewLiveTanks').checked = permissions.canViewLiveTanks || false;
+      permissionsModal.querySelector('#canEditLiveTanks').checked = permissions.canEditLiveTanks || false;
+      permissionsModal.querySelector('#canAddToLiveTanks').checked = permissions.canAddToLiveTanks || false;
+      permissionsModal.querySelector('#canDeleteFromLiveTanks').checked = permissions.canDeleteFromLiveTanks || false;
     }
 
     // Save user permissions
     async function saveUserPermissions(username, modal) {
       try {
-        const specialization = document.getElementById('userSpecialization').value;
+        // إضافة console.log للتشخيص
+        console.log('Saving permissions for:', username);
+        
+        const specialization = modal.querySelector('#userSpecialization').value;
+        console.log('Specialization:', specialization);
         
         // جمع الصفحات المحددة
         const selectedPages = [];
         const pageCheckboxes = modal.querySelectorAll('input[type="checkbox"][value]:checked');
         pageCheckboxes.forEach(checkbox => selectedPages.push(checkbox.value));
+        console.log('Selected pages:', selectedPages);
         
         // جمع صلاحيات Live Tanks
         const customPermissions = {
-          canViewLiveTanks: document.getElementById('canViewLiveTanks').checked,
-          canEditLiveTanks: document.getElementById('canEditLiveTanks').checked,
-          canAddToLiveTanks: document.getElementById('canAddToLiveTanks').checked,
-          canDeleteFromLiveTanks: document.getElementById('canDeleteFromLiveTanks').checked,
+          canViewLiveTanks: modal.querySelector('#canViewLiveTanks').checked,
+          canEditLiveTanks: modal.querySelector('#canEditLiveTanks').checked,
+          canAddToLiveTanks: modal.querySelector('#canAddToLiveTanks').checked,
+          canDeleteFromLiveTanks: modal.querySelector('#canDeleteFromLiveTanks').checked,
           canManageUsers: specialization === 'admin'
         };
+        console.log('Custom permissions:', customPermissions);
         
         // تحديث المستخدم في Firebase (استخدام Firebase v9 syntax)
         const userRef = doc(db, 'users', username);
@@ -1307,6 +1313,7 @@
           updatedAt: serverTimestamp()
         });
         
+        console.log('Permissions updated successfully in Firebase');
         showMessage('✅ Permissions updated successfully!', 'success');
         modal.remove();
         loadUsers(); // إعادة تحميل قائمة المستخدمين
