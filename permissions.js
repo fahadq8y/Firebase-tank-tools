@@ -208,51 +208,63 @@ function checkUserPageAccess(user, pageName) {
 }
 
 // تطبيق صلاحيات الوظائف على الصفحة
-function applyFeaturePermissions(user) {
-  // إذا كان المستخدم يستخدم النظام القديم
-  if (user.role && !user.specialization) {
-    // تطبيق الصلاحيات الافتراضية للنظام القديم
-    const isAdmin = user.role === 'admin' || user.isAdmin;
-    const canAccessLiveTanks = ['admin', 'panel_operator', 'supervisor'].includes(user.role);
-    const canEditLiveTanks = ['admin', 'panel_operator'].includes(user.role);
+async function applyFeaturePermissions(user) {
+  try {
+    // التأكد من أن لدينا بيانات المستخدم المحدثة
+    if (!user) {
+      user = await getCurrentUser();
+      if (!user) return;
+    }
     
-    hideElementIfNoPermission('live-tanks-btn', canAccessLiveTanks);
-    hideElementIfNoPermission('add-to-live-tanks-btn', canEditLiveTanks);
-    hideElementIfNoPermission('add-to-live-tanks-help', canEditLiveTanks); // إخفاء علامة التعجب
-    hideElementIfNoPermission('user-management-link', isAdmin);
-    hideElementIfNoPermission('nav-admin', isAdmin);
-    return;
-  }
+    // إذا كان المستخدم يستخدم النظام القديم
+    if (user.role && !user.specialization) {
+      // تطبيق الصلاحيات الافتراضية للنظام القديم
+      const isAdmin = user.role === 'admin' || user.isAdmin;
+      const canAccessLiveTanks = ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+      const canEditLiveTanks = ['admin', 'panel_operator'].includes(user.role);
+      
+      hideElementIfNoPermission('live-tanks-btn', canAccessLiveTanks);
+      hideElementIfNoPermission('add-to-live-tanks-btn', canEditLiveTanks);
+      hideElementIfNoPermission('add-to-live-tanks-help', canEditLiveTanks); // إخفاء علامة التعجب
+      hideElementIfNoPermission('user-management-link', isAdmin);
+      hideElementIfNoPermission('nav-admin', isAdmin);
+      return;
+    }
 
-  // للمستخدمين الجدد مع نظام specialization
-  let permissions = {};
-  
-  // إذا كان للمستخدم صلاحيات مخصصة
-  if (user.customPermissions) {
-    permissions = user.customPermissions;
-  } else {
-    // استخدام الصلاحيات الافتراضية للتخصص
-    const specialization = SPECIALIZATIONS[user.specialization];
-    permissions = specialization ? specialization.defaultPermissions : {};
-  }
+    // للمستخدمين الجدد مع نظام specialization
+    let permissions = {};
+    
+    // إذا كان للمستخدم صلاحيات مخصصة
+    if (user.customPermissions) {
+      permissions = user.customPermissions;
+    } else {
+      // استخدام الصلاحيات الافتراضية للتخصص
+      const specialization = SPECIALIZATIONS[user.specialization];
+      permissions = specialization ? specialization.defaultPermissions : {};
+    }
 
-  // إخفاء أزرار Live Tanks حسب الصلاحيات
-  hideElementIfNoPermission('live-tanks-btn', permissions.canViewLiveTanks);
-  hideElementIfNoPermission('add-to-live-tanks-btn', permissions.canAddToLiveTanks);
-  hideElementIfNoPermission('add-to-live-tanks-help', permissions.canAddToLiveTanks); // إخفاء علامة التعجب
-  hideElementIfNoPermission('edit-live-tanks-btn', permissions.canEditLiveTanks);
-  hideElementIfNoPermission('delete-live-tanks-btn', permissions.canDeleteFromLiveTanks);
-  
-  // إخفاء رابط إدارة المستخدمين
-  hideElementIfNoPermission('user-management-link', permissions.canManageUsers);
-  hideElementIfNoPermission('nav-admin', permissions.canManageUsers);
+    // إخفاء أزرار Live Tanks حسب الصلاحيات
+    hideElementIfNoPermission('live-tanks-btn', permissions.canViewLiveTanks);
+    hideElementIfNoPermission('add-to-live-tanks-btn', permissions.canAddToLiveTanks);
+    hideElementIfNoPermission('add-to-live-tanks-help', permissions.canAddToLiveTanks); // إخفاء علامة التعجب
+    hideElementIfNoPermission('edit-live-tanks-btn', permissions.canEditLiveTanks);
+    hideElementIfNoPermission('delete-live-tanks-btn', permissions.canDeleteFromLiveTanks);
+    
+    // إخفاء رابط إدارة المستخدمين
+    hideElementIfNoPermission('user-management-link', permissions.canManageUsers);
+    hideElementIfNoPermission('nav-admin', permissions.canManageUsers);
 
-  // تطبيق صلاحيات على الروابط في القائمة العلوية
-  applyNavigationPermissions(user);
-  
-  // تطبيق صلاحيات على صفحة Live Tanks إذا كنا فيها
-  if (getCurrentPageName() === 'live-tanks.html') {
-    applyLiveTanksPermissions(permissions);
+    // تطبيق صلاحيات على الروابط في القائمة العلوية
+    await applyNavigationPermissions(user);
+    
+    // تطبيق صلاحيات على صفحة Live Tanks إذا كنا فيها
+    if (getCurrentPageName() === 'live-tanks.html') {
+      applyLiveTanksPermissions(permissions);
+    }
+    
+    console.log('✅ تم تطبيق الصلاحيات بنجاح للمستخدم:', user.username);
+  } catch (error) {
+    console.error('خطأ في تطبيق الصلاحيات:', error);
   }
 }
 
@@ -294,21 +306,46 @@ function hideElementIfNoPermission(elementId, hasPermission) {
 }
 
 // تطبيق صلاحيات على القائمة العلوية
-function applyNavigationPermissions(user) {
-  const userConfig = USER_TYPES[user.userType] || {};
-  const allowedPages = userConfig.allowedPages || [];
-
-  // إخفاء الروابط غير المسموحة
-  const navLinks = document.querySelectorAll('.nav-link');
-  navLinks.forEach(link => {
-    const href = link.getAttribute('href');
-    if (href && !allowedPages.includes('all')) {
-      const isAllowed = allowedPages.some(page => href.includes(page.replace('.html', '')));
-      if (!isAllowed) {
-        link.style.display = 'none';
-      }
+async function applyNavigationPermissions(user) {
+  try {
+    // التأكد من أن لدينا بيانات المستخدم المحدثة
+    if (!user) {
+      user = await getCurrentUser();
+      if (!user) return;
     }
-  });
+    
+    // تعريف USER_TYPES إذا لم يكن موجوداً
+    const USER_TYPES = window.USER_TYPES || {};
+    const userConfig = USER_TYPES[user.userType] || {};
+    const allowedPages = userConfig.allowedPages || [];
+
+    // إخفاء الروابط غير المسموحة
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && !allowedPages.includes('all')) {
+        const isAllowed = allowedPages.some(page => href.includes(page.replace('.html', '')));
+        if (!isAllowed) {
+          link.style.display = 'none';
+        }
+      }
+    });
+    
+    // إظهار الروابط المسموحة بناءً على صلاحيات المستخدم المحدثة
+    if (user.customPages && Array.isArray(user.customPages)) {
+      navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href) {
+          const pageName = href.split('/').pop();
+          if (user.customPages.includes(pageName) || user.customPages.includes('all')) {
+            link.style.display = 'block';
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('خطأ في تطبيق صلاحيات القائمة:', error);
+  }
 }
 
 // إظهار رسالة منع الوصول
@@ -386,31 +423,35 @@ async function hasPermission(permissionName) {
 }
 
 // تسجيل نشاط المستخدم
-function logUserActivity(action, details = '') {
-  const user = getCurrentUser();
-  if (!user) return;
+async function logUserActivity(action, details = '') {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return;
 
-  const activity = {
-    username: user.username,
-    action: action,
-    details: details,
-    timestamp: new Date().toISOString(),
-    page: getCurrentPageName(),
-    userAgent: navigator.userAgent
-  };
+    const activity = {
+      username: user.username,
+      action: action,
+      details: details,
+      timestamp: new Date().toISOString(),
+      page: getCurrentPageName(),
+      userAgent: navigator.userAgent
+    };
 
-  // حفظ النشاط في localStorage مؤقتاً
-  const activities = JSON.parse(localStorage.getItem('tanktools_activities') || '[]');
-  activities.push(activity);
-  
-  // الاحتفاظ بآخر 100 نشاط فقط
-  if (activities.length > 100) {
-    activities.splice(0, activities.length - 100);
+    // حفظ النشاط في localStorage مؤقتاً
+    const activities = JSON.parse(localStorage.getItem('tanktools_activities') || '[]');
+    activities.push(activity);
+    
+    // الاحتفاظ بآخر 100 نشاط فقط
+    if (activities.length > 100) {
+      activities.splice(0, activities.length - 100);
+    }
+    
+    localStorage.setItem('tanktools_activities', JSON.stringify(activities));
+    
+    console.log('تم تسجيل النشاط:', activity);
+  } catch (error) {
+    console.error('خطأ في تسجيل النشاط:', error);
   }
-  
-  localStorage.setItem('tanktools_activities', JSON.stringify(activities));
-  
-  console.log('تم تسجيل النشاط:', activity);
 }
 
 // تهيئة نظام الصلاحيات عند تحميل الصفحة
@@ -433,9 +474,35 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
+// إضافة دالة مساعدة للتحقق من الصلاحيات بشكل متزامن (للتوافق مع الكود القديم)
+function getCurrentUserSync() {
+  // استخدام البيانات المخزنة محلياً فقط بدون تحديث من Firebase
+  const session = sessionStorage.getItem('tanktools_session');
+  if (session !== 'active') {
+    return null;
+  }
+  
+  const userData = localStorage.getItem('tanktools_current_user');
+  if (!userData) {
+    return null;
+  }
+  
+  try {
+    const user = JSON.parse(userData);
+    if (user && user.username && (user.role || user.userType)) {
+      return user;
+    }
+    return null;
+  } catch (e) {
+    console.error('خطأ في قراءة بيانات المستخدم:', e);
+    return null;
+  }
+}
+
 // تصدير الوظائف للاستخدام العام
 window.TankToolsPermissions = {
   getCurrentUser,
+  getCurrentUserSync, // إضافة الدالة المتزامنة للتوافق مع الكود القديم
   checkPageAccess,
   hasPermission,
   logUserActivity,
