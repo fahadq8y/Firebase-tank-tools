@@ -129,15 +129,13 @@ async function handleRequest(request) {
 async function networkFirst(request) {
   try {
     const networkResponse = await fetch(request);
-    const responseForCache = networkResponse.clone();
-    const responseForClient = networkResponse.clone();
     
-    if (responseForCache.ok) {
+    if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
-      cache.put(request, responseForCache);
+      cache.put(request, networkResponse.clone());
     }
     
-    return responseForClient;
+    return networkResponse;
   } catch (error) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
@@ -156,7 +154,7 @@ async function cacheFirst(request) {
     fetch(request).then(networkResponse => {
       if (networkResponse.ok) {
         caches.open(CACHE_NAME).then(cache => {
-          cache.put(request, networkResponse.clone());
+          cache.put(request, networkResponse);
         });
       }
     }).catch(() => {

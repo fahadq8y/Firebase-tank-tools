@@ -364,13 +364,11 @@
     // Enhanced login function with Firebase
     async function handleLogin(event) {
       event.preventDefault();
-      showMessage("", "");
-      showLoading("registerBtn", "registerLoading", true);Loading", true);
-      const username = document.getElementById("loginUsername").value.toLowerCase();ssword = document.getElementById("loginPassword").value;
-      const rememberMe = document.getElementById("rememberMe").checked;
-
-      // Convert username to lowercase
-      const username = usernameInput.value.toLowerCase();
+      
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
+      
       console.log('🔐 Login attempt for:', username);
       
       if (!username || !password) {
@@ -426,11 +424,9 @@
         
         const userData = userDoc.data();
         
-        // Check passwo        if (userDoc.exists()) {
-          console.log("User found:", userDoc.data());
-          console.log("Entered password:", password);
-          console.log("Stored password:", userDoc.data().password);
-          if (userDoc.data().password === password) {      showMessage('❌ Invalid password', 'error');
+        // Check password
+        if (userData.password !== password) {
+          showMessage('❌ Invalid password', 'error');
           await addActivity('failed_login_attempt', username);
           return;
         }
@@ -512,8 +508,8 @@
     async function handleRegister(event) {
       event.preventDefault();
       
-      const fullName = document.getElementById("fullName").value.trim();
-      const username = document.getElementById("username").value.toLowerCase();
+      const fullName = document.getElementById('fullName').value.trim();
+      const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirmPassword').value;
       
@@ -742,20 +738,16 @@ Thank you.`;
       }
     }
 
-    function showLoading(btnId, loadingId, show) {
-      const btn = document.getElementById(btnId);
-      const loading = document.getElementById(loadingId);
+    function showLoading(form, show) {
+      const btn = document.getElementById(form + 'Btn');
+      const loading = document.getElementById(form + 'Loading');
       
-      if (btn && loading) {
-        if (show) {
-          btn.style.display = 'none';
-          loading.style.display = 'block';
-        } else {
-          btn.style.display = 'block';
-          loading.style.display = 'none';
-        }
+      if (show) {
+        btn.style.display = 'none';
+        loading.style.display = 'block';
       } else {
-        console.error("Error: Button or loading element not found for IDs:", btnId, loadingId);
+        btn.style.display = 'block';
+        loading.style.display = 'none';
       }
     }
 
