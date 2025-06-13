@@ -155,9 +155,10 @@
       <!-- الحقول الجديدة لوضع Level to Metric Ton -->
       <div id="advancedFields" style="display:none">
         <div class="row">
-          <input type="number" id="amountToWithdraw" placeholder="Amount to Withdraw (MT)" oninput="calculateAdvanced()">
+          <input type="number" id="amountToWithdraw" placeholder="Request Quantity (MT)" oninput="calculateAdvanced()">
           <input type="number" id="withdrawalRate" placeholder="Rate (MT/hr)" oninput="calculateAdvanced()">
         </div>
+        <div class="result" id="currentWeight"></div>
         <div class="result" id="finalLevel"></div>
         <div class="result" id="timeNeeded"></div>
         <div class="result" id="finishTime"></div>
@@ -531,8 +532,8 @@
           const tank = tankConversions[tk];
           const currentWeight = currentLevel * tank.factor;
           
-          // عرض الوزن الحالي
-          document.getElementById('result').textContent = `Current Weight: ${currentWeight.toFixed(2)} MT`;
+          // عرض الوزن الحالي في العنصر المخصص
+          document.getElementById('currentWeight').textContent = `Current Weight: ${currentWeight.toFixed(2)} MT`;
           
           // حساب متقدم إذا تم إدخال البيانات
           calculateAdvanced();
@@ -582,10 +583,20 @@
         fd = `${finishTime.getDate()}/${finishTime.getMonth()+1}/${finishTime.getFullYear()}`;
       }
       
-      // عرض النتائج
+      // تحديد لون النتيجة حسب الشفت
+      const now = new Date();
+      const isCurrentShift = isSameShift(now, finishTime);
+      const shiftColor = isCurrentShift ? 'red' : 'lightgreen';
+      
+      // عرض النتائج مع الألوان
       document.getElementById('finalLevel').textContent = `Final Level: ${finalLevel.toFixed(2)} m`;
+      document.getElementById('finalLevel').style.color = shiftColor;
+      
       document.getElementById('timeNeeded').textContent = `Time Needed: ${hours} hr ${minutes} min`;
+      document.getElementById('timeNeeded').style.color = shiftColor;
+      
       document.getElementById('finishTime').textContent = `Finish Time: ${ft} | Finish Date: ${fd}`;
+      document.getElementById('finishTime').style.color = shiftColor;
       
       // حفظ بيانات الحساب
       calcData = {
@@ -651,7 +662,7 @@
             </div>
             <div class="form-row" style="display:flex;gap:10px">
               <div class="form-group" style="flex:1">
-                <label class="form-label">📊 Amount to Withdraw:</label>
+                <label class="form-label">📊 Request Quantity:</label>
                 <input type="number" step="any" class="form-input" id="ltTargetValue" value="${calcData.amountToWithdraw}" readonly style="background:#f5f5f5">
               </div>
               <div class="form-group" style="flex:1">
@@ -714,9 +725,9 @@
       sel.innerHTML = '<option value="">Select Product</option>';
       
       const products = {
-        "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
+        "PBCR": ["NAPHA", "PCNA", "HSD-EGO", "EGO", "F.OIL", "MOGAS", "VGO", "KKERO", "ARDR", "METHANOL", "OTHER"],
         "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
-        "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
+        "PLCR": ["NAPHA", "PCNA", "HSD-EGO", "EGO", "F.OIL", "MOGAS", "VGO", "KKERO", "ARDR", "METHANOL", "OTHER"]
       };
       
       if (dept && products[dept]) {
@@ -832,6 +843,43 @@
       }
     }
 
+    // دالة تحديد الشفت (نسخة من PBCR)
+    function isSameShift(now, finish) {
+      const getShift = (date) => {
+        const minutes = date.getHours() * 60 + date.getMinutes();
+        if (minutes >= 360 && minutes < 840) return "morning";  // 6:00-14:00
+        if (minutes >= 840 && minutes < 1320) return "evening"; // 14:00-22:00
+        return "night"; // 22:00-6:00
+      };
+      
+      const currentShift = getShift(now);
+      const finishShift = getShift(finish);
+      
+      if (currentShift !== finishShift) return false;
+      
+      if (currentShift === "night") {
+        const nowHour = now.getHours();
+        const finishHour = finish.getHours();
+        
+        if (nowHour >= 0 && nowHour < 6) {
+          if (finishHour >= 0 && finishHour < 6) {
+            return Math.floor((finish.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) <= 1;
+          } else if (finishHour >= 22) {
+            return Math.floor((finish.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) === 0;
+          }
+        } else if (nowHour >= 22) {
+          if (finishHour >= 22) {
+            return now.toDateString() === finish.toDateString();
+          } else if (finishHour >= 0 && finishHour < 6) {
+            return Math.floor((finish.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) === 1;
+          }
+        }
+        return false;
+      }
+      
+      return now.toDateString() === finish.toDateString();
+    }
+
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
   </script>
@@ -900,6 +948,27 @@
         }
         
         try {
+          // تحسين تحويل التاريخ والوقت
+          let finishDateTime;
+          try {
+            // تحويل التاريخ من DD/MM/YYYY إلى YYYY-MM-DD
+            const dateParts = date.split('/');
+            if (dateParts.length === 3) {
+              const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+              finishDateTime = new Date(`${formattedDate}T${time}:00`);
+            } else {
+              finishDateTime = new Date(`${date}T${time}:00`);
+            }
+            
+            // التحقق من صحة التاريخ
+            if (isNaN(finishDateTime.getTime())) {
+              throw new Error('Invalid date format');
+            }
+          } catch (error) {
+            console.error('Date conversion error:', error);
+            finishDateTime = new Date(); // استخدام التاريخ الحالي كبديل
+          }
+
           await addDoc(collection(window.db, 'liveTanks'), {
             department: dept,
             tankNumber: tank,
@@ -913,7 +982,7 @@
             userName: currentUser.fullName || currentUser.username,
             finishTime: time,
             finishDate: date,
-            finishDateTime: new Date(date + ' ' + time),
+            finishDateTime: finishDateTime,
             addedAt: serverTimestamp(),
             lastLevelUpdate: serverTimestamp(),
             status: 'active',
