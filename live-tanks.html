@@ -822,6 +822,12 @@
         canEdit: false,
         canDelete: false
       };
+      
+      // معالجة كل تانك في حلقة
+      tanks.forEach(tank => {
+        const finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+        const urgencyLevel = getUrgencyLevel(finishDateTime);
+        const rowClass = getRowClass(urgencyLevel);
         
         // Format date to DD-MM
         const dateObj = new Date(tank.finishDate);
