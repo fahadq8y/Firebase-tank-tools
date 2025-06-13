@@ -1144,6 +1144,13 @@
         const docRef = await window.addDoc(window.collection(window.db, 'liveTanks'), tankData);
         console.log('Successfully added to Firebase with ID:', docRef.id);
         
+        // إعادة تفعيل الزر
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.textContent = '💾 Add to Live Tanks';
+          submitBtn.disabled = false;
+        }
+        
         // رسالة نجاح
         alert('✅ Tank added to Live Tanks successfully!');
         closeLTModal();
@@ -1158,6 +1165,13 @@
       } catch (error) {
         console.error('Error adding to Live Tanks:', error);
         
+        // إعادة تفعيل الزر في حالة الخطأ
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.textContent = '💾 Add to Live Tanks';
+          submitBtn.disabled = false;
+        }
+        
         // رسائل خطأ أكثر تفصيلاً
         let errorMessage = 'Error adding to Live Tanks: ';
         if (error.code === 'permission-denied') {
@@ -1171,10 +1185,10 @@
         }
         
         alert('❌ ' + errorMessage);
-        
-        // إعادة تفعيل الزر
+      } finally {
+        // ضمان إعادة تفعيل الزر في جميع الحالات
         const submitBtn = document.querySelector('button[type="submit"]');
-        if (submitBtn) {
+        if (submitBtn && submitBtn.disabled) {
           submitBtn.textContent = '💾 Add to Live Tanks';
           submitBtn.disabled = false;
         }
