@@ -4,98 +4,88 @@
  * Version: 1.0
  */
 
-// تعريف أنواع المستخدمين والصلاحيات الافتراضية
-const USER_TYPES = {
+// تعريف التخصصات والصلاحيات الافتراضية
+const SPECIALIZATIONS = {
+  supervisor: {
+    name: 'Supervisor',
+    nameAr: 'مشرف',
+    defaultPages: ['index.html', 'plcr.html', 'NMOGASBL.html', 'dashboard.html'],
+    defaultPermissions: {
+      canViewLiveTanks: true,
+      canEditLiveTanks: false,  // مشاهدة فقط في Live Tanks
+      canAddToLiveTanks: false, // لا يقدر يضيف للـ Live Tanks
+      canDeleteFromLiveTanks: false,
+      canManageUsers: false
+    }
+  },
+  planning: {
+    name: 'Planning',
+    nameAr: 'تخطيط',
+    defaultPages: ['index.html', 'plcr.html', 'NMOGASBL.html', 'dashboard.html'],
+    defaultPermissions: {
+      canViewLiveTanks: false,  // لا يشوف Live Tanks أصلاً
+      canEditLiveTanks: false,
+      canAddToLiveTanks: false, // لا يقدر يضيف للـ Live Tanks
+      canDeleteFromLiveTanks: false,
+      canManageUsers: false
+    }
+  },
+  control_panel: {
+    name: 'Control Panel',
+    nameAr: 'غرفة التحكم',
+    defaultPages: ['live-tanks.html', 'dashboard.html'],
+    defaultPermissions: {
+      canViewLiveTanks: true,
+      canEditLiveTanks: true,   // يقدر يعدل في Live Tanks
+      canAddToLiveTanks: true,  // يقدر يضيف للـ Live Tanks
+      canDeleteFromLiveTanks: true,
+      canManageUsers: false
+    }
+  },
+  field_operator: {
+    name: 'Field Operator',
+    nameAr: 'مشغل ميداني',
+    defaultPages: ['dashboard.html'],
+    defaultPermissions: {
+      canViewLiveTanks: false,
+      canEditLiveTanks: false,
+      canAddToLiveTanks: false,
+      canDeleteFromLiveTanks: false,
+      canManageUsers: false
+    }
+  },
   admin: {
-    allowedPages: ['all'],
-    permissions: {
+    name: 'Administrator',
+    nameAr: 'مدير النظام',
+    defaultPages: ['all'],
+    defaultPermissions: {
       canViewLiveTanks: true,
       canEditLiveTanks: true,
       canAddToLiveTanks: true,
       canDeleteFromLiveTanks: true,
       canManageUsers: true
     }
-  },
-  control_panel: {
-    allowedPages: ['live-tanks.html', 'dashboard.html'],
-    permissions: {
-      canViewLiveTanks: true,
-      canEditLiveTanks: true,
-      canAddToLiveTanks: true,
-      canDeleteFromLiveTanks: true,
-      canManageUsers: false
-    }
-  },
-  pbcr_supervisor: {
-    allowedPages: ['index.html', 'dashboard.html'],
-    permissions: {
-      canViewLiveTanks: false,
-      canEditLiveTanks: false,
-      canAddToLiveTanks: true,
-      canDeleteFromLiveTanks: false,
-      canManageUsers: false
-    }
-  },
-  pbcr_planning: {
-    allowedPages: ['index.html', 'dashboard.html'],
-    permissions: {
-      canViewLiveTanks: false,
-      canEditLiveTanks: false,
-      canAddToLiveTanks: false,
-      canDeleteFromLiveTanks: false,
-      canManageUsers: false
-    }
-  },
-  plcr_supervisor: {
-    allowedPages: ['plcr.html', 'dashboard.html'],
-    permissions: {
-      canViewLiveTanks: false,
-      canEditLiveTanks: false,
-      canAddToLiveTanks: true,
-      canDeleteFromLiveTanks: false,
-      canManageUsers: false
-    }
-  },
-  plcr_planning: {
-    allowedPages: ['plcr.html', 'dashboard.html'],
-    permissions: {
-      canViewLiveTanks: false,
-      canEditLiveTanks: false,
-      canAddToLiveTanks: false,
-      canDeleteFromLiveTanks: false,
-      canManageUsers: false
-    }
-  },
-  nmogas_supervisor: {
-    allowedPages: ['NMOGASBL.html', 'dashboard.html'],
-    permissions: {
-      canViewLiveTanks: false,
-      canEditLiveTanks: false,
-      canAddToLiveTanks: true,
-      canDeleteFromLiveTanks: false,
-      canManageUsers: false
-    }
-  },
-  nmogas_planning: {
-    allowedPages: ['NMOGASBL.html', 'dashboard.html'],
-    permissions: {
-      canViewLiveTanks: false,
-      canEditLiveTanks: false,
-      canAddToLiveTanks: false,
-      canDeleteFromLiveTanks: false,
-      canManageUsers: false
-    }
-  },
-  viewer: {
-    allowedPages: ['dashboard.html'],
-    permissions: {
-      canViewLiveTanks: false,
-      canEditLiveTanks: false,
-      canAddToLiveTanks: false,
-      canDeleteFromLiveTanks: false,
-      canManageUsers: false
-    }
   }
+};
+
+// تعريف مستويات الصلاحيات لكل صفحة
+const PAGE_PERMISSIONS = {
+  'index.html': ['view', 'edit', 'delete'],
+  'plcr.html': ['view', 'edit', 'delete'],
+  'NMOGASBL.html': ['view', 'edit', 'delete'],
+  'live-tanks.html': ['view', 'edit', 'delete'],
+  'dashboard.html': ['view'],
+  'verify.html': ['view', 'edit']
+};
+
+// أسماء الصفحات بالعربية
+const PAGE_NAMES = {
+  'index.html': 'PBCR',
+  'plcr.html': 'PLCR', 
+  'NMOGASBL.html': 'NMOGAS',
+  'live-tanks.html': 'Live Tanks',
+  'dashboard.html': 'Dashboard',
+  'verify.html': 'Verification'
 };
 
 // الحصول على بيانات المستخدم الحالي
@@ -156,55 +146,72 @@ function getCurrentPageName() {
 // فحص صلاحية المستخدم للصفحة
 function checkUserPageAccess(user, pageName) {
   // الأدمن يصل لكل شيء
-  if (user.userType === 'admin' || user.isAdmin || user.role === 'admin') {
+  if (user.specialization === 'admin' || user.isAdmin || user.role === 'admin') {
     return true;
   }
 
-  // إذا كان المستخدم يستخدم النظام القديم (role بدلاً من userType)
-  if (user.role && !user.userType) {
+  // إذا كان المستخدم يستخدم النظام القديم (role بدلاً من specialization)
+  if (user.role && !user.specialization) {
     // السماح للمستخدمين القدامى بالوصول للصفحات الأساسية
     const allowedPagesForOldUsers = ['index.html', 'plcr.html', 'NMOGASBL.html', 'dashboard.html', 'live-tanks.html'];
     return allowedPagesForOldUsers.includes(pageName);
   }
 
-  // فحص الصفحات المسموحة للمستخدمين الجدد
-  const userConfig = USER_TYPES[user.userType];
-  if (!userConfig) {
-    console.error('نوع مستخدم غير معروف:', user.userType);
+  // للمستخدمين الجدد مع نظام specialization
+  if (user.customPages && Array.isArray(user.customPages)) {
+    // إذا كان للمستخدم صفحات مخصصة
+    return user.customPages.includes(pageName) || user.customPages.includes('all');
+  }
+
+  // استخدام الصفحات الافتراضية للتخصص
+  const specialization = SPECIALIZATIONS[user.specialization];
+  if (!specialization) {
+    console.error('تخصص غير معروف:', user.specialization);
     return false;
   }
 
   // إذا كان المستخدم له صلاحية "all"
-  if (userConfig.allowedPages.includes('all')) {
+  if (specialization.defaultPages.includes('all')) {
     return true;
   }
 
   // فحص الصفحة المحددة
-  return userConfig.allowedPages.includes(pageName);
+  return specialization.defaultPages.includes(pageName);
 }
 
 // تطبيق صلاحيات الوظائف على الصفحة
 function applyFeaturePermissions(user) {
   // إذا كان المستخدم يستخدم النظام القديم
-  if (user.role && !user.userType) {
+  if (user.role && !user.specialization) {
     // تطبيق الصلاحيات الافتراضية للنظام القديم
     const isAdmin = user.role === 'admin' || user.isAdmin;
     const canAccessLiveTanks = ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+    const canEditLiveTanks = ['admin', 'panel_operator'].includes(user.role);
     
     hideElementIfNoPermission('live-tanks-btn', canAccessLiveTanks);
-    hideElementIfNoPermission('add-to-live-tanks-btn', canAccessLiveTanks);
+    hideElementIfNoPermission('add-to-live-tanks-btn', canEditLiveTanks);
+    hideElementIfNoPermission('add-to-live-tanks-help', canEditLiveTanks); // إخفاء علامة التعجب
     hideElementIfNoPermission('user-management-link', isAdmin);
     hideElementIfNoPermission('nav-admin', isAdmin);
     return;
   }
 
-  // للمستخدمين الجدد مع نظام userType
-  const userConfig = USER_TYPES[user.userType] || {};
-  const permissions = userConfig.permissions || {};
+  // للمستخدمين الجدد مع نظام specialization
+  let permissions = {};
+  
+  // إذا كان للمستخدم صلاحيات مخصصة
+  if (user.customPermissions) {
+    permissions = user.customPermissions;
+  } else {
+    // استخدام الصلاحيات الافتراضية للتخصص
+    const specialization = SPECIALIZATIONS[user.specialization];
+    permissions = specialization ? specialization.defaultPermissions : {};
+  }
 
   // إخفاء أزرار Live Tanks حسب الصلاحيات
   hideElementIfNoPermission('live-tanks-btn', permissions.canViewLiveTanks);
   hideElementIfNoPermission('add-to-live-tanks-btn', permissions.canAddToLiveTanks);
+  hideElementIfNoPermission('add-to-live-tanks-help', permissions.canAddToLiveTanks); // إخفاء علامة التعجب
   hideElementIfNoPermission('edit-live-tanks-btn', permissions.canEditLiveTanks);
   hideElementIfNoPermission('delete-live-tanks-btn', permissions.canDeleteFromLiveTanks);
   
@@ -214,6 +221,40 @@ function applyFeaturePermissions(user) {
 
   // تطبيق صلاحيات على الروابط في القائمة العلوية
   applyNavigationPermissions(user);
+  
+  // تطبيق صلاحيات على صفحة Live Tanks إذا كنا فيها
+  if (getCurrentPageName() === 'live-tanks.html') {
+    applyLiveTanksPermissions(permissions);
+  }
+}
+
+// تطبيق صلاحيات على صفحة Live Tanks
+function applyLiveTanksPermissions(permissions) {
+  // إخفاء أزرار التعديل والحذف إذا لم تكن هناك صلاحية
+  const editButtons = document.querySelectorAll('.edit-btn, .update-btn, .save-btn');
+  const deleteButtons = document.querySelectorAll('.delete-btn, .remove-btn');
+  const addButtons = document.querySelectorAll('.add-btn, .create-btn');
+  
+  if (!permissions.canEditLiveTanks) {
+    editButtons.forEach(btn => btn.style.display = 'none');
+    // تعطيل الحقول القابلة للتعديل
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+      if (!input.readOnly) {
+        input.readOnly = true;
+        input.style.backgroundColor = '#f5f5f5';
+        input.style.cursor = 'not-allowed';
+      }
+    });
+  }
+  
+  if (!permissions.canDeleteFromLiveTanks) {
+    deleteButtons.forEach(btn => btn.style.display = 'none');
+  }
+  
+  if (!permissions.canAddToLiveTanks) {
+    addButtons.forEach(btn => btn.style.display = 'none');
+  }
 }
 
 // إخفاء عنصر إذا لم تكن هناك صلاحية
@@ -279,26 +320,36 @@ function hasPermission(permissionName) {
   if (!user) return false;
   
   // الأدمن له كل الصلاحيات
-  if (user.userType === 'admin' || user.isAdmin || user.role === 'admin') return true;
+  if (user.specialization === 'admin' || user.isAdmin || user.role === 'admin') return true;
   
   // إذا كان المستخدم يستخدم النظام القديم
-  if (user.role && !user.userType) {
+  if (user.role && !user.specialization) {
     // صلاحيات افتراضية للنظام القديم
     switch (permissionName) {
       case 'canManageUsers':
         return user.role === 'admin' || user.isAdmin;
       case 'canViewLiveTanks':
+        return ['admin', 'panel_operator', 'supervisor'].includes(user.role);
       case 'canEditLiveTanks':
       case 'canAddToLiveTanks':
-        return ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+      case 'canDeleteFromLiveTanks':
+        return ['admin', 'panel_operator'].includes(user.role);
       default:
         return false;
     }
   }
   
-  // للمستخدمين الجدد مع نظام userType
-  const userConfig = USER_TYPES[user.userType];
-  return userConfig && userConfig.permissions && userConfig.permissions[permissionName];
+  // للمستخدمين الجدد مع نظام specialization
+  let permissions = {};
+  
+  if (user.customPermissions) {
+    permissions = user.customPermissions;
+  } else {
+    const specialization = SPECIALIZATIONS[user.specialization];
+    permissions = specialization ? specialization.defaultPermissions : {};
+  }
+  
+  return permissions[permissionName] || false;
 }
 
 // تسجيل نشاط المستخدم
@@ -349,6 +400,9 @@ window.TankToolsPermissions = {
   hasPermission,
   logUserActivity,
   redirectToLogin,
-  USER_TYPES
+  SPECIALIZATIONS,
+  PAGE_PERMISSIONS,
+  PAGE_NAMES,
+  applyLiveTanksPermissions
 };
 

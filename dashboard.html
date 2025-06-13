@@ -776,7 +776,8 @@
               <th>Full Name</th>
               <th>Username</th>
               <th>Email</th>
-              <th>Role</th>
+              <th>Specialization</th>
+              <th>Pages Access</th>
               <th>Live Tanks</th>
               <th>Status</th>
               <th>Last Login</th>
@@ -788,38 +789,42 @@
       
       users.forEach(user => {
         const avatar = (user.fullName || user.username).charAt(0).toUpperCase();
-        const role = user.role || 'operator';
-        const roleClass = getRoleBadgeClass(role);
+        const specialization = user.specialization || user.role || 'planning';
+        const specializationClass = getSpecializationBadgeClass(specialization);
         const statusClass = user.isActive ? 'badge-active' : 'badge-inactive';
         const statusText = user.isActive ? 'Active' : 'Pending';
         
         // Check Live Tanks access
-        const hasLiveTanksAccess = checkUserLiveTanksAccess(user);
+        const liveTanksAccess = getUserLiveTanksAccess(user);
+        
+        // Get pages access
+        const pagesAccess = getUserPagesAccess(user);
         
         const lastLoginDate = user.lastLogin?.toDate?.() || (user.lastLogin ? new Date(user.lastLogin?.seconds * 1000) : null);
         
         html += `
           <tr>
             <td>
-              <div style="width:35px;height:35px;border-radius:50%;background:${role === 'admin' ? '#FFD700' : '#4CAF50'};display:flex;align-items:center;justify-content:center;color:${role === 'admin' ? '#003366' : 'white'};font-weight:bold;">
+              <div style="width:35px;height:35px;border-radius:50%;background:${specialization === 'admin' ? '#FFD700' : '#4CAF50'};display:flex;align-items:center;justify-content:center;color:${specialization === 'admin' ? '#003366' : 'white'};font-weight:bold;">
                 ${avatar}
               </div>
             </td>
             <td><strong>${user.fullName || user.username}</strong></td>
             <td>${user.username}</td>
             <td>${user.email}</td>
-            <td><span class="status-badge ${roleClass}">${formatRoleName(role)}</span></td>
-            <td><span class="status-badge ${hasLiveTanksAccess ? 'badge-active' : 'badge-inactive'}">${hasLiveTanksAccess ? 'Yes' : 'No'}</span></td>
+            <td><span class="status-badge ${specializationClass}">${formatSpecializationName(specialization)}</span></td>
+            <td><small>${pagesAccess}</small></td>
+            <td><span class="status-badge ${liveTanksAccess.class}">${liveTanksAccess.text}</span></td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>${lastLoginDate ? lastLoginDate.toLocaleString() : 'Never'}</td>
             <td>
               <div class="action-buttons">
                 ${user.username !== 'fam030' ? `
-                  <button class="action-btn btn-primary" onclick="editUser('${user.username}')" title="Edit User">✏️ Edit</button>
+                  <button class="action-btn btn-primary" onclick="editUserPermissions('${user.username}')" title="Edit Permissions">🔧 Permissions</button>
                   <button class="action-btn ${user.isActive ? 'btn-warning' : 'btn-primary'}" onclick="toggleUserStatus('${user.username}')" title="${user.isActive ? 'Deactivate' : 'Activate'} User">
-                    ${user.isActive ? '❌ Deactivate' : '✅ Activate'}
+                    ${user.isActive ? '❌' : '✅'}
                   </button>
-                  <button class="action-btn btn-danger" onclick="deleteUser('${user.username}')" title="Delete User">🗑️ Delete</button>
+                  <button class="action-btn btn-danger" onclick="deleteUser('${user.username}')" title="Delete User">🗑️</button>
                 ` : '<span class="status-badge badge-admin">🔒 MASTER</span>'}
               </div>
             </td>

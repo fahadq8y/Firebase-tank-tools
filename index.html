@@ -1,9 +1,11 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PBCR & WASHERY</title>
 <link href="icon.png" rel="icon" type="image/png"/>
+<script src="permissions.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}body{background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;color:white;font-family:Arial,sans-serif;padding:20px;min-height:100vh}
 .nav-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:rgba(0,0,0,0.5);border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
@@ -69,14 +71,14 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <button class="login-btn" onclick="goToLogin()">Go to Login</button>
 </div>
 </div>
-<div id="mainContent" style="display:none;">
+<div id="mainContent">
 <div class="nav-bar">
 <div class="nav-logo">Tank Tools</div>
 <div class="nav-links">
 <a class="nav-link active" href="index.html">PBCR</a>
 <a class="nav-link" href="plcr.html">PLCR</a>
 <a class="nav-link" href="NMOGASBL.html">NMOGAS</a>
-<a class="nav-link" href="live-tanks.html" id="liveTanksLink" style="display:none">🔴 Live Tanks</a>
+<a class="nav-link" href="live-tanks.html" id="live-tanks-btn" style="display:none">🔴 Live Tanks</a>
 <a class="nav-admin" href="dashboard.html" id="adminLink" style="display:none">🔐 Dashboard</a>
 </div>
 <div class="nav-user">
@@ -89,7 +91,7 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <button class="logout-btn" onclick="logout()">Logout</button>
 </div>
 </div>
-    <h2>PBCR & WASHERY</h2>
+<h2 style="text-align:center">PBCR & WASHERY</h2>
 <div style="text-align:center;padding:20px">
 <input id="tankInput" oninput="loadTank()" placeholder="Enter Tank Number" type="number"/>
 <input id="level" oninput="calculate()" placeholder="Current Level (m)" type="number"/>
@@ -116,7 +118,7 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <div class="result" id="output"></div>
 <div class="buttons-section">
 <div class="button-row">
-<button onclick="openLTModal()" class="action-btn live-tanks-btn" id="liveTanksBtn" style="display:none">🔴 Add to Live Tanks</button>
+<button onclick="openLTModal()" class="action-btn live-tanks-btn" id="add-to-live-tanks-btn" style="display:none">🔴 Add to Live Tanks</button>
 <button onclick="showLiveTanksHelp()" class="help-btn" title="About Live Tanks">ℹ️</button>
 </div>
 <div class="button-row">
@@ -219,504 +221,26 @@ import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app
 const app=initializeApp({apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",projectId:"tank-tools-knpc-c2d95",storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",messagingSenderId:"510062594324",appId:"1:510062594324:web:b892fd02007a5ca2f0da01"});
 window.db=getFirestore(app);window.doc=doc;window.getDoc=getDoc;window.setDoc=setDoc;window.addDoc=addDoc;window.serverTimestamp=serverTimestamp;window.collection=collection;
 </script>
-<script src="permissions.js"></script>
 <script>
 let currentUser=null,c=0,m=0,x=0,calcData=null;
-let tanks={};
-let products={};
-
-window.addEventListener('load',()=>{
-  setTimeout(() => {
-    checkLogin();
-    // Load data after a short delay to ensure Firebase is ready
-    setTimeout(() => {
-      loadTankDataFromFirebase();
-      loadProductsFromFirebase();
-    }, 1000);
-  }, 100);
-});
-
-function checkLogin(){
-  const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');
-  if(s!=='active'||!u){
-    showAccess();
-    return;
+const tanks={"225":{comment:12879,min:3.353,max:15.24},"226":{comment:12879,min:3.353,max:15.24},"227":{comment:11327,min:2,max:17.95},"253":{comment:10781,min:2,max:17.093},"254":{comment:12288,min:2,max:14.96},"255":{comment:12287,min:2,max:14.96},"256":{comment:12287,min:2,max:14.96},"260":{comment:2249,min:2,max:13},"272":{comment:7217,min:2,max:15.309},"273":{comment:4198,min:2,max:13.468},"274":{comment:4198,min:2,max:13.458},"275":{comment:9563,min:2,max:17.897},"276":{comment:7236,min:2,max:15.442},"277":{comment:4188,min:2,max:13.714},"278":{comment:9506,min:1.98,max:17.89},"279":{comment:4118,min:1.98,max:15.977},"301":{comment:7756,min:3.048,max:18.54},"302":{comment:7756,min:3.048,max:18.54},"303":{comment:6070,min:2.59,max:14.173},"304":{comment:6070,min:2.59,max:14.173},"305":{comment:7171,min:0.533,max:18.797},"450":{comment:3155,min:2,max:14.2},"451":{comment:930,min:2,max:13},"452":{comment:4587,min:2,max:13},"453":{comment:5067,min:2,max:17.8},"454":{comment:1653,min:2,max:11.36},"455":{comment:1654,min:2,max:11.36},"456":{comment:11574,min:2.68,max:13.41},"457":{comment:9697,min:5.4,max:16.45},"458":{comment:9697,min:5.4,max:16.45},"459":{comment:9466,min:2,max:14.35},"460":{comment:14213,min:2,max:17.65},"461":{comment:14213,min:2,max:17.653},"462":{comment:12354,min:2,max:16.46},"463":{comment:9578,min:2,max:17.89},"464":{comment:9578,min:2,max:17.889},"465":{comment:9572,min:2,max:17.89},"467":{comment:12375,min:2,max:17.771},"468":{comment:12375,min:2,max:17.771},"469":{comment:12375,min:2,max:17.771},"470":{comment:12375,min:2,max:17.77},"503":{comment:2888,min:2.13,max:10.97},"504":{comment:2888,min:2.13,max:10.97},"506":{comment:930,min:0.92,max:14.33},"507":{comment:413,min:2,max:6.5},"508":{comment:1130,min:1.67,max:12.65},"509":{comment:1130,min:1.67,max:12.65},"510":{comment:529,min:2,max:10.363},"511":{comment:4531,min:0.198,max:9},"512":{comment:2939,min:0.92,max:11.6},"514":{comment:2942,min:0.92,max:12},"515":{comment:2942,min:0.92,max:12},"520":{comment:4142,min:1.88,max:14.29},"521":{comment:4142,min:1.88,max:14.29},"522":{comment:11990,min:1.61,max:15.6},"531":{comment:12377,min:2,max:17.77},"532":{comment:12377,min:2,max:17.772},"533":{comment:12377,min:2,max:17.772},"534":{comment:12377,min:2,max:17.772},"600":{comment:9490,min:2,max:13.3},"601":{comment:9490,min:2,max:13.3},"602":{comment:9512,min:2,max:13.73},"603":{comment:11695,min:2,max:13.325},"605":{comment:12964,min:2,max:14.325},"608":{comment:1060,min:2,max:11.887},"620":{comment:11981,min:1.65,max:16.5},"621":{comment:11981,min:1.65,max:16.5},"622":{comment:5019,min:2,max:15.76},"623":{comment:5050,min:1.6,max:15.76},"633":{comment:412,min:2,max:6},"634":{comment:412,min:2,max:6},"651":{comment:6543,min:2,max:13.325},"652":{comment:6543,min:2,max:13.32},"661":{comment:12354,min:2,max:17.759},"662":{comment:5074,min:2,max:14.802},"663":{comment:1507,min:2,max:10.23},"664":{comment:7250,min:2,max:15.22},"665":{comment:7250,min:2,max:15.22},"667":{comment:12278,min:2,max:17.922},"668":{comment:16858,min:2,max:18.165},"669":{comment:16858,min:2,max:18.17},"670":{comment:16856,min:2,max:18.165},"671":{comment:12863,min:2,max:16.45},"672":{comment:13046,min:2,max:16.45},"703":{comment:12931,min:2,max:14.88},"705":{comment:12931,min:2,max:14.88},"725":{comment:1080,min:0.914,max:11.887},"751":{comment:12834,min:2,max:15.1},"752":{comment:12834,min:2,max:15.1},"753":{comment:12834,min:2,max:15.1},"754":{comment:12834,min:2,max:15.1},"755":{comment:12834,min:2,max:15.1},"756":{comment:12962,min:2,max:15.1},"757":{comment:10989,min:2,max:17.8},"761":{comment:20546,min:2,max:14.2},"762":{comment:20546,min:2,max:18.798},"820":{comment:16656,min:1.6,max:18.48},"821":{comment:16656,min:1.6,max:18.48},"822":{comment:16856,min:1.6,max:18.48},"831":{comment:11297,min:2,max:18.41},"832":{comment:11297,min:2,max:18.409},"833":{comment:7279,min:3.25,max:18.012},"834":{comment:7279,min:3.25,max:18.012},"835":{comment:7305,min:2,max:15.226},"836":{comment:7305,min:2,max:15.226},"900":{comment:2644,min:1.6,max:11.9},"901":{comment:2692,min:2,max:12.02},"760":{comment:20546,min:2,max:18.798},"702":{comment:12931,min:2,max:16.15},"758":{comment:20546,min:2,max:14.5},"759":{comment:20546,min:2,max:14.5}};
+const products={"PBCR":["LSFO","EGO 10PPM","EGO 500PPM","RHN","PCNA","NMOGAS","OLMOGAS","ATK","ARDR","IC5","ISOM","SLOP"],"WASHERY":["MOGAS 98","MOGAS 95","MOGAS 91","GO","KERO","ATK","Slop"],"PLCR":["Heavy Oil","Light Product","Mixed Product","Refined Oil","Final Product","Blended Oil"]};
+window.addEventListener('load',()=>setTimeout(checkLogin,100));
+function checkLogin(){const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');if(s!=='active'||!u){showAccess();return}try{currentUser=JSON.parse(u);if(!currentUser||!currentUser.username){showAccess();return}initApp()}catch{showAccess()}}
+function showAccess(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
+window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','index.html');window.location.href='login.html'};
+function initApp(){document.getElementById('mainContent').style.display='block';document.getElementById('accessDenied').style.display='none';loadUser();loadData();setupDark()}
+function loadUser(){if(!currentUser)return;document.getElementById('userName').textContent=currentUser.username;document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();if(currentUser.username==='fam030'||currentUser.role==='admin')document.getElementById('adminLink').style.display='inline-block';const roles=["admin","panel_operator","supervisor","section_head","operator","planning"];if(roles.includes(currentUser.role))document.getElementById('live-tanks-btn').style.display='inline-block'}
+window.logout=()=>{sessionStorage.removeItem('tanktools_session');localStorage.removeItem('tanktools_current_user');window.location.href='login.html'};
+window.loadTank=()=>{const id=document.getElementById("tankInput").value.trim();if(tanks[id]){c=tanks[id].comment;m=tanks[id].min;x=tanks[id].max}else{c=m=x=0}calculate()};
+window.calculate=()=>{const level=parseFloat(document.getElementById("level").value||0),target=parseFloat(document.getElementById("target").value||0),flowRaw=parseFloat(document.getElementById("flowrate").value||0),unit=document.getElementById("flowUnit").value,mode=document.getElementById("mode").value;const available=document.getElementById("availablePumpable"),ullageDiv=document.getElementById("currentUllage"),levelEst=document.getElementById("levelEstimate"),valueDiff=document.getElementById("valueDiff"),output=document.getElementById("output"),calendar=document.getElementById("calendarLink");calcData=null;document.getElementById('add-to-live-tanks-btn').style.display='none';if(!c||isNaN(level)){available.innerText=ullageDiv.innerText=valueDiff.innerText=levelEst.innerText=output.innerHTML="";return}const availablePumpable=(level-m)*c,currentUllage=(x-level)*c;available.innerText=`Available Pumpable: ${availablePumpable.toFixed(2)} bbl`;ullageDiv.innerText=`Current Ullage: ${currentUllage.toFixed(2)} bbl`;if(!isNaN(target)){let estLevel=0;if(mode==="pumpable")estLevel=(target/c)+m;else if(mode==="ullage")estLevel=x-(target/c);else if(mode==="level")estLevel=target;const levelDiff=estLevel-level;let estText=`Level Estimate: ${estLevel.toFixed(2)} m\nLevel Difference: ${levelDiff.toFixed(2)} m`;if(estLevel>=x-0.5||estLevel<m){levelEst.style.color="#ff5555";estText+=`\nHigh Level = ${x.toFixed(2)} m`}else{levelEst.style.color="#00ffff"}levelEst.innerText=estText;let diff=0;if(mode==="pumpable"){diff=target-availablePumpable;valueDiff.innerText=`Difference: ${diff.toLocaleString()} bbl`}else if(mode==="ullage"){diff=currentUllage-target;valueDiff.innerText=`To leave ${target.toLocaleString()} bbl ullage, fill: ${diff.toLocaleString()} bbl`}else if(mode==="level"){const meters=level-target;diff=meters*c;valueDiff.innerText=`Level Difference: ${Math.abs(meters).toFixed(2)} m`}const flow=unit==="m3"?flowRaw*6.28:unit==="mtr"?flowRaw:flowRaw;let time=0;if(unit==="mtr"&&mode!=="level"){time=Math.abs(diff/c)/flowRaw}else if(mode==="level"&&unit==="mtr"){time=Math.abs(level-target)/flowRaw}else{time=Math.abs(diff)/flow}if(!isNaN(time)&&time>0){const hrs=Math.floor(time),mins=Math.round((time%1)*60),now=new Date(),finish=new Date(now.getTime()+time*3600000);let ft,fd;try{ft=finish.toLocaleTimeString('en-GB',{hour:"2-digit",minute:"2-digit",hour12:false});fd=finish.toLocaleDateString('en-GB')}catch{ft=`${finish.getHours().toString().padStart(2,'0')}:${finish.getMinutes().toString().padStart(2,'0')}`;fd=`${finish.getDate()}/${finish.getMonth()+1}/${finish.getFullYear()}`}output.innerHTML=`Time Needed: ${hrs} hr ${mins} min<br>Finish Time: ${ft}<br>Finish Date: ${fd}`;const s=new Date(finish.getTime()-600000),e=new Date(s.getTime()+900000);calendar.href=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=Tank+${document.getElementById("tankInput").value||"Tank"}+Reminder&dates=${s.toISOString().replace(/[-:]|\.\d{3}/g,"")}/${e.toISOString().replace(/[-:]|\.\d{3}/g,"")}`;output.style.color=isSameShift(now,finish)?"red":"lightgreen";calcData={tankNumber:document.getElementById("tankInput").value,finishDate:`${finish.getFullYear()}-${String(finish.getMonth()+1).padStart(2,'0')}-${String(finish.getDate()).padStart(2,'0')}`,finishTime:ft};if(currentUser&&["admin","panel_operator"].includes(currentUser.role))document.getElementById('add-to-live-tanks-btn').style.display='inline-flex';
+  // Log calculation activity
+  if(currentUser && document.getElementById("tankInput").value) {
+    logPBCRCalculation(document.getElementById("tankInput").value, hrs, mins, ft, fd);
   }
-  try{
-    currentUser=JSON.parse(u);
-    if(!currentUser||!currentUser.username){
-      showAccess();
-      return;
-    }
-    
-    // Initialize permissions manager if available
-    if (window.PermissionsManager) {
-      window.permissionsManager = new PermissionsManager();
-      window.permissionsManager.loadUserPermissions(currentUser.username).then(() => {
-        initApp();
-      }).catch(() => {
-        initApp(); // Continue even if permissions fail
-      });
-    } else {
-      initApp();
-    }
-  }catch{
-    showAccess();
-  }
-}
-
-function showAccess(){
-  document.getElementById('mainContent').style.display='none';
-  document.getElementById('accessDenied').style.display='flex';
-}
-
-window.goToLogin=()=>{
-  sessionStorage.setItem('tanktools_redirect','index.html');
-  window.location.href='login.html';
-};
-
-function initApp(){
-  document.getElementById('mainContent').style.display='block';
-  document.getElementById('accessDenied').style.display='none';
-  loadUser();
-  loadData();
-  setupDark();
-}
-
-function loadUser(){
-  if(!currentUser)return;
-  document.getElementById('userName').textContent=currentUser.fullName || currentUser.username;
-  document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
-  
-  if(currentUser.username==='fam030'||currentUser.role==='admin')
-    document.getElementById('adminLink').style.display='inline-block';
-  
-  const roles=["admin","panel_operator","supervisor","section_head","operator","planning"];
-  if(roles.includes(currentUser.role))
-    document.getElementById('liveTanksLink').style.display='inline-block';
-}
-
-window.logout=()=>{
-  sessionStorage.removeItem('tanktools_session');
-  localStorage.removeItem('tanktools_current_user');
-  window.location.href='login.html';
-};
-
-window.loadTank=()=>{
-  const id=document.getElementById("tankInput").value.trim();
-  
-  // Show loading message
-  document.getElementById("availablePumpable").innerText = "🔄 Loading tank data...";
-  
-  if(tanks[id]){
-    c=tanks[id].comment;
-    m=tanks[id].min;
-    x=tanks[id].max;
-    document.getElementById("availablePumpable").innerText = "✅ Tank data loaded";
-  }else{
-    c=m=x=0;
-    document.getElementById("availablePumpable").innerText = `❌ Tank ${id} not found in database`;
-    document.getElementById("currentUllage").innerText = `📊 Available tanks: ${Object.keys(tanks).length}`;
-  }
-  
-  setTimeout(calculate, 500);
-};
-
-// Load tank data from Firebase (secure version)
-async function loadTankDataFromFirebase() {
-  try {
-    // Show loading status
-    const statusDiv = document.getElementById("availablePumpable");
-    if (statusDiv) statusDiv.innerText = "🔄 Loading all tank data from Firebase...";
-    
-    // Try multiple paths to find tank data
-    let dataLoaded = false;
-    
-    // Path 1: tanks/tanks
-    try {
-      const tanksSnapshot = await getDoc(doc(db, 'tanks', 'tanks'));
-      if (tanksSnapshot.exists()) {
-        const tanksData = tanksSnapshot.data();
-        
-        // Convert Firebase structure to our format
-        for (let tankId in tanksData) {
-          const tankData = tanksData[tankId];
-          if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-            tanks[tankId] = {
-              comment: tankData.capacity,  // capacity becomes comment
-              min: tankData.min,
-              max: tankData.max
-            };
-          }
-        }
-        
-        if (Object.keys(tanks).length > 0) {
-          dataLoaded = true;
-          if (statusDiv) statusDiv.innerText = `✅ Tanks loaded from main path: ${Object.keys(tanks).length} tanks`;
-        }
-      }
-    } catch (e) {
-      console.log('Main path failed:', e.message);
-    }
-    
-    // Path 2: Load from individual collections
-    if (!dataLoaded || Object.keys(tanks).length < 50) {
-      try {
-        if (statusDiv) statusDiv.innerText = "🔄 Loading from individual collections...";
-        
-        // Load PBCR tanks
-        const pbcrSnapshot = await getDoc(doc(db, 'pbcr', 'tanks'));
-        if (pbcrSnapshot.exists()) {
-          const pbcrData = pbcrSnapshot.data();
-          
-          for (let tankId in pbcrData) {
-            const tankData = pbcrData[tankId];
-            if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-              tanks[tankId] = {
-                comment: tankData.capacity,
-                min: tankData.min,
-                max: tankData.max
-              };
-            }
-          }
-        }
-        
-        // Load PLCR tanks
-        const plcrSnapshot = await getDoc(doc(db, 'plcr', 'tanks'));
-        if (plcrSnapshot.exists()) {
-          const plcrData = plcrSnapshot.data();
-          
-          for (let tankId in plcrData) {
-            const tankData = plcrData[tankId];
-            if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-              tanks[tankId] = {
-                comment: tankData.capacity,
-                min: tankData.min,
-                max: tankData.max
-              };
-            }
-          }
-        }
-        
-        // Load from tankData collections
-        const pbcrTankDataSnapshot = await getDoc(doc(db, 'tankData', 'pbcr'));
-        if (pbcrTankDataSnapshot.exists()) {
-          const pbcrTankData = pbcrTankDataSnapshot.data();
-          if (pbcrTankData.tanks) {
-            for (let tankId in pbcrTankData.tanks) {
-              const tankData = pbcrTankData.tanks[tankId];
-              if (tankData.capacity && tankData.min !== undefined && tankData.max !== undefined) {
-                tanks[tankId] = {
-                  comment: tankData.capacity,
-                  min: tankData.min,
-                  max: tankData.max
-                };
-              }
-            }
-          }
-        }
-        
-        if (Object.keys(tanks).length > 0) {
-          dataLoaded = true;
-          if (statusDiv) statusDiv.innerText = `✅ Total tanks loaded: ${Object.keys(tanks).length} tanks`;
-        }
-        
-      } catch (e) {
-        console.log('Individual collections failed:', e.message);
-      }
-    }
-    
-    // If still insufficient data, use complete fallback
-    if (!dataLoaded || Object.keys(tanks).length < 50) {
-      // Add complete tank database as fallback
-      const completeTanks = {
-        "225": {comment: 12879, min: 3.353, max: 15.24},
-        "226": {comment: 12879, min: 3.353, max: 15.24},
-        "227": {comment: 11327, min: 2, max: 17.95},
-        "253": {comment: 10781, min: 2, max: 17.093},
-        "254": {comment: 12288, min: 2, max: 14.96},
-        "255": {comment: 12287, min: 2, max: 14.96},
-        "256": {comment: 12287, min: 2, max: 14.96},
-        "260": {comment: 2249, min: 2, max: 13},
-        "272": {comment: 7217, min: 2, max: 15.309},
-        "273": {comment: 4198, min: 2, max: 13.468},
-        "274": {comment: 4198, min: 2, max: 13.458},
-        "275": {comment: 9563, min: 2, max: 17.897},
-        "276": {comment: 7236, min: 2, max: 15.442},
-        "277": {comment: 4188, min: 2, max: 13.714},
-        "278": {comment: 9506, min: 1.98, max: 17.89},
-        "279": {comment: 4118, min: 1.98, max: 15.977},
-        "301": {comment: 7756, min: 3.048, max: 18.54},
-        "302": {comment: 7756, min: 3.048, max: 18.54},
-        "303": {comment: 6070, min: 2.59, max: 14.173},
-        "304": {comment: 6070, min: 2.59, max: 14.173},
-        "305": {comment: 7171, min: 0.533, max: 18.797},
-        "450": {comment: 3155, min: 2, max: 14.2},
-        "451": {comment: 930, min: 2, max: 13},
-        "452": {comment: 4587, min: 2, max: 13},
-        "453": {comment: 5067, min: 2, max: 17.8},
-        "454": {comment: 1653, min: 2, max: 11.36},
-        "455": {comment: 1654, min: 2, max: 11.36},
-        "456": {comment: 11574, min: 2.68, max: 13.41},
-        "457": {comment: 9697, min: 5.4, max: 16.45},
-        "458": {comment: 9697, min: 5.4, max: 16.45},
-        "459": {comment: 9466, min: 2, max: 14.35},
-        "460": {comment: 14213, min: 2, max: 17.65},
-        "461": {comment: 14213, min: 2, max: 17.653},
-        "462": {comment: 12354, min: 2, max: 16.46},
-        "463": {comment: 9578, min: 2, max: 17.89},
-        "464": {comment: 9578, min: 2, max: 17.889},
-        "465": {comment: 9572, min: 2, max: 17.89},
-        "467": {comment: 12375, min: 2, max: 17.771},
-        "468": {comment: 12375, min: 2, max: 17.771},
-        "469": {comment: 12375, min: 2, max: 17.771},
-        "470": {comment: 12375, min: 2, max: 17.77},
-        "503": {comment: 2888, min: 2.13, max: 10.97},
-        "504": {comment: 2888, min: 2.13, max: 10.97},
-        "506": {comment: 930, min: 0.92, max: 14.33},
-        "507": {comment: 413, min: 2, max: 6.5},
-        "508": {comment: 1130, min: 1.67, max: 12.65},
-        "509": {comment: 1130, min: 1.67, max: 12.65},
-        "510": {comment: 529, min: 2, max: 10.363},
-        "511": {comment: 4531, min: 0.198, max: 9},
-        "512": {comment: 2939, min: 0.92, max: 11.6},
-        "514": {comment: 2942, min: 0.92, max: 12},
-        "515": {comment: 2942, min: 0.92, max: 12},
-        "520": {comment: 4142, min: 1.88, max: 14.29},
-        "521": {comment: 4142, min: 1.88, max: 14.29},
-        "522": {comment: 11990, min: 1.61, max: 15.6},
-        "531": {comment: 12377, min: 2, max: 17.77},
-        "532": {comment: 12377, min: 2, max: 17.772},
-        "533": {comment: 12377, min: 2, max: 17.772},
-        "534": {comment: 12377, min: 2, max: 17.772},
-        "600": {comment: 9490, min: 2, max: 13.3},
-        "601": {comment: 9490, min: 2, max: 13.3},
-        "602": {comment: 9512, min: 2, max: 13.73},
-        "603": {comment: 11695, min: 2, max: 13.325},
-        "605": {comment: 12964, min: 2, max: 14.325},
-        "608": {comment: 1060, min: 2, max: 11.887},
-        "620": {comment: 11981, min: 1.65, max: 16.5},
-        "621": {comment: 11981, min: 1.65, max: 16.5},
-        "622": {comment: 5019, min: 2, max: 15.76},
-        "623": {comment: 5050, min: 1.6, max: 15.76},
-        "633": {comment: 412, min: 2, max: 6},
-        "634": {comment: 412, min: 2, max: 6},
-        "651": {comment: 6543, min: 2, max: 13.325},
-        "652": {comment: 6543, min: 2, max: 13.32},
-        "661": {comment: 12354, min: 2, max: 17.759},
-        "662": {comment: 5074, min: 2, max: 14.802},
-        "663": {comment: 1507, min: 2, max: 10.23},
-        "664": {comment: 7250, min: 2, max: 15.22},
-        "665": {comment: 7250, min: 2, max: 15.22},
-        "667": {comment: 12278, min: 2, max: 17.922},
-        "668": {comment: 16858, min: 2, max: 18.165},
-        "669": {comment: 16858, min: 2, max: 18.17},
-        "670": {comment: 16856, min: 2, max: 18.165},
-        "671": {comment: 12863, min: 2, max: 16.45},
-        "672": {comment: 13046, min: 2, max: 16.45},
-        "703": {comment: 12931, min: 2, max: 14.88},
-        "705": {comment: 12931, min: 2, max: 14.88},
-        "725": {comment: 1080, min: 0.914, max: 11.887},
-        "751": {comment: 12834, min: 2, max: 15.1},
-        "752": {comment: 12834, min: 2, max: 15.1},
-        "753": {comment: 12834, min: 2, max: 15.1},
-        "754": {comment: 12834, min: 2, max: 15.1},
-        "755": {comment: 12834, min: 2, max: 15.1},
-        "756": {comment: 12962, min: 2, max: 15.1},
-        "757": {comment: 10989, min: 2, max: 17.8},
-        "761": {comment: 20546, min: 2, max: 14.2},
-        "762": {comment: 20546, min: 2, max: 18.798},
-        "820": {comment: 16656, min: 1.6, max: 18.48},
-        "821": {comment: 16656, min: 1.6, max: 18.48},
-        "822": {comment: 16856, min: 1.6, max: 18.48},
-        "831": {comment: 11297, min: 2, max: 18.41},
-        "832": {comment: 11297, min: 2, max: 18.409},
-        "833": {comment: 7279, min: 3.25, max: 18.012},
-        "834": {comment: 7279, min: 3.25, max: 18.012},
-        "835": {comment: 7305, min: 2, max: 15.226},
-        "836": {comment: 7305, min: 2, max: 15.226},
-        "900": {comment: 2644, min: 1.6, max: 11.9},
-        "901": {comment: 2692, min: 2, max: 12.02},
-        "760": {comment: 20546, min: 2, max: 18.798},
-        "702": {comment: 12931, min: 2, max: 16.15},
-        "758": {comment: 20546, min: 2, max: 14.5},
-        "759": {comment: 20546, min: 2, max: 14.5}
-      };
-      
-      // Merge with existing data
-      Object.assign(tanks, completeTanks);
-      
-      if (statusDiv) statusDiv.innerText = `⚠️ Using complete database: ${Object.keys(tanks).length} tanks`;
-    }
-    
-    // Clear status after 3 seconds
-    setTimeout(() => {
-      if (statusDiv && (statusDiv.innerText.includes('loaded') || statusDiv.innerText.includes('database'))) {
-        statusDiv.innerText = "";
-      }
-    }, 3000);
-    
-  } catch (error) {
-    const statusDiv = document.getElementById("availablePumpable");
-    if (statusDiv) statusDiv.innerText = `❌ Firebase Error: ${error.message}`;
-    console.error('Firebase loading error:', error);
-  }
-}
-
-// Load products from Firebase
-async function loadProductsFromFirebase() {
-  try {
-    console.log('🔄 Loading products from Firebase...');
-    
-    // Try to load from system collection first
-    const systemSnapshot = await getDoc(doc(db, 'system', 'products'));
-    if (systemSnapshot.exists()) {
-      products = systemSnapshot.data().products || {};
-      console.log('✅ Products loaded from system collection');
-      return;
-    }
-    
-    // Fallback: use default products if not found in Firebase
-    products = {
-      "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
-      "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
-      "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
-    };
-    console.log('✅ Using default products');
-  } catch (error) {
-    console.error('❌ Error loading products:', error);
-    // Use default products on error
-    products = {
-      "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
-      "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
-      "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
-    };
-  }
-}
-
-window.calculate=()=>{
-  const level=parseFloat(document.getElementById("level").value||0),target=parseFloat(document.getElementById("target").value||0),flowRaw=parseFloat(document.getElementById("flowrate").value||0),unit=document.getElementById("flowUnit").value,mode=document.getElementById("mode").value;
-  const available=document.getElementById("availablePumpable"),ullageDiv=document.getElementById("currentUllage"),levelEst=document.getElementById("levelEstimate"),valueDiff=document.getElementById("valueDiff"),output=document.getElementById("output"),calendar=document.getElementById("calendarLink");
-  
-  calcData=null;
-  document.getElementById('liveTanksBtn').style.display='none';
-  
-  if(!c||isNaN(level)){
-    available.innerText=ullageDiv.innerText=valueDiff.innerText=levelEst.innerText=output.innerHTML="";
-    return;
-  }
-  
-  const availablePumpable=(level-m)*c,currentUllage=(x-level)*c;
-  available.innerText=`Available Pumpable: ${availablePumpable.toFixed(2)} bbl`;
-  ullageDiv.innerText=`Current Ullage: ${currentUllage.toFixed(2)} bbl`;
-  
-  if(!isNaN(target)){
-    let estLevel=0;
-    if(mode==="pumpable")estLevel=(target/c)+m;
-    else if(mode==="ullage")estLevel=x-(target/c);
-    else if(mode==="level")estLevel=target;
-    
-    const levelDiff=estLevel-level;
-    let estText=`Level Estimate: ${estLevel.toFixed(2)} m\nLevel Difference: ${levelDiff.toFixed(2)} m`;
-    
-    if(estLevel>=x-0.5||estLevel<m){
-      levelEst.style.color="#ff5555";
-      estText+=`\nHigh Level = ${x.toFixed(2)} m`;
-    }else{
-      levelEst.style.color="#00ffff";
-    }
-    levelEst.innerText=estText;
-    
-    let diff=0;
-    if(mode==="pumpable"){
-      diff=target-availablePumpable;
-      valueDiff.innerText=`Difference: ${diff.toLocaleString()} bbl`;
-    }else if(mode==="ullage"){
-      diff=currentUllage-target;
-      valueDiff.innerText=`To leave ${target.toLocaleString()} bbl ullage, fill: ${diff.toLocaleString()} bbl`;
-    }else if(mode==="level"){
-      const meters=level-target;
-      diff=meters*c;
-      valueDiff.innerText=`Level Difference: ${Math.abs(meters).toFixed(2)} m`;
-    }
-    
-    const flow=unit==="m3"?flowRaw*6.28:unit==="mtr"?flowRaw:flowRaw;
-    let time=0;
-    
-    if(unit==="mtr"&&mode!=="level"){
-      time=Math.abs(diff/c)/flowRaw;
-    }else if(mode==="level"&&unit==="mtr"){
-      time=Math.abs(level-target)/flowRaw;
-    }else{
-      time=Math.abs(diff)/flow;
-    }
-    
-    if(!isNaN(time)&&time>0){
-      const hrs=Math.floor(time),mins=Math.round((time%1)*60),now=new Date(),finish=new Date(now.getTime()+time*3600000);
-      let ft,fd;
-      try{
-        ft=finish.toLocaleTimeString('en-GB',{hour:"2-digit",minute:"2-digit",hour12:false});
-        fd=finish.toLocaleDateString('en-GB');
-      }catch{
-        ft=`${finish.getHours().toString().padStart(2,'0')}:${finish.getMinutes().toString().padStart(2,'0')}`;
-        fd=`${finish.getDate()}/${finish.getMonth()+1}/${finish.getFullYear()}`;
-      }
-      
-      output.innerHTML=`Time Needed: ${hrs} hr ${mins} min<br>Finish Time: ${ft}<br>Finish Date: ${fd}`;
-      
-      const s=new Date(finish.getTime()-600000),e=new Date(s.getTime()+900000);
-      calendar.href=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=Tank+${document.getElementById("tankInput").value||"Tank"}+Reminder&dates=${s.toISOString().replace(/[-:]|\.\d{3}/g,"")}/${e.toISOString().replace(/[-:]|\.\d{3}/g,"")}`;
-      
-      output.style.color=isSameShift(now,finish)?"red":"lightgreen";
-      
-      calcData={
-        tankNumber:document.getElementById("tankInput").value,
-        finishDate:`${finish.getFullYear()}-${String(finish.getMonth()+1).padStart(2,'0')}-${String(finish.getDate()).padStart(2,'0')}`,
-        finishTime:ft
-      };
-      
-      // Show Live Tanks button for authorized users
-      if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'panel_operator' || 
-         (window.permissionsManager && window.permissionsManager.hasActionAccess && window.permissionsManager.hasActionAccess('addToLiveTanks')))) {
-        document.getElementById('liveTanksBtn').style.display='inline-flex';
-      }
-      
-      // Log calculation activity
-      if(currentUser && document.getElementById("tankInput").value) {
-        logPBCRCalculation(document.getElementById("tankInput").value, hrs, mins, ft, fd);
-      }
-    }
-  }
-  saveData();
-};
-
-function isSameShift(now,finish){
-  const getShift=h=>{
-    const m=h.getHours()*60+h.getMinutes();
-    return m>=360&&m<840?"morning":m>=840&&m<1320?"evening":"night";
-  };
-  const currentShift=getShift(now),finishShift=getShift(finish);
-  if(currentShift!==finishShift)return false;
-  if(currentShift==="night"){
-    const nowHour=now.getHours(),finishHour=finish.getHours();
-    if(nowHour>=0&&nowHour<6){
-      if(finishHour>=0&&finishHour<6)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))<=1;
-      else if(finishHour>=22)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))===0;
-    }else if(nowHour>=22){
-      if(finishHour>=22)return now.toDateString()===finish.toDateString();
-      else if(finishHour>=0&&finishHour<6)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))===1;
-    }
-    return false;
-  }
-  return now.toDateString()===finish.toDateString();
-}
-
-window.openLTModal=()=>{
-  if(!calcData){
-    alert('❌ Please calculate tank finish time first!');
-    return;
-  }
-  
+}}saveData()};
+function isSameShift(now,finish){const getShift=h=>{const m=h.getHours()*60+h.getMinutes();return m>=360&&m<840?"morning":m>=840&&m<1320?"evening":"night"};const currentShift=getShift(now),finishShift=getShift(finish);if(currentShift!==finishShift)return false;if(currentShift==="night"){const nowHour=now.getHours(),finishHour=finish.getHours();if(nowHour>=0&&nowHour<6){if(finishHour>=0&&finishHour<6)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))<=1;else if(finishHour>=22)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))===0}else if(nowHour>=22){if(finishHour>=22)return now.toDateString()===finish.toDateString();else if(finishHour>=0&&finishHour<6)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))===1}return false}return now.toDateString()===finish.toDateString()}
+window.openLTModal=()=>{if(!calcData){alert('❌ Please calculate tank finish time first!');return}
   // Fill basic data
   document.getElementById('ltTank').value=calcData.tankNumber;
   document.getElementById('ltDate').value=calcData.finishDate;
@@ -743,169 +267,16 @@ window.openLTModal=()=>{
   document.getElementById('ltProduct').innerHTML='<option value="">Select Product</option>';
   document.getElementById('ltNotes').value='';
   
-  document.getElementById('ltModal').classList.add('show');
+  document.getElementById('ltModal').classList.add('show')
 };
-
 window.closeLTModal=()=>document.getElementById('ltModal').classList.remove('show');
-
-window.updateLTProducts=()=>{
-  const dept=document.getElementById('ltDept').value,sel=document.getElementById('ltProduct');
-  sel.innerHTML='<option value="">Select Product</option>';
-  if(dept&&products[dept])
-    products[dept].forEach(p=>{
-      const opt=document.createElement('option');
-      opt.value=p;
-      opt.textContent=p;
-      sel.appendChild(opt);
-    });
-};
-
-document.getElementById('ltForm').addEventListener('submit',async function(e){
-  e.preventDefault();
-  const dept=document.getElementById('ltDept').value,tank=document.getElementById('ltTank').value,product=document.getElementById('ltProduct').value,targetValue=document.getElementById('ltTargetValue').value,targetType=document.getElementById('ltTargetType').value,rate=document.getElementById('ltRate').value,rateUnit=document.getElementById('ltRateUnit').value,date=document.getElementById('ltDate').value,time=document.getElementById('ltTime').value,notes=document.getElementById('ltNotes').value;
-  
-  if(!dept||!product){
-    alert('❌ Please select department and product!');
-    return;
-  }
-  
-  const currentLevel=parseFloat(document.getElementById('level').value)||null;
-  
-  try{
-    await addDoc(collection(db,'liveTanks'),{
-      department:dept,
-      tankNumber:tank,
-      product:product,
-      targetValue:parseFloat(targetValue)||null,
-      targetType:targetType||null,
-      currentLevel:currentLevel,
-      rate:parseFloat(rate)||null,
-      rateUnit:rateUnit||null,
-      addedBy:currentUser.username,
-      userName:currentUser.fullName||currentUser.username,
-      finishTime:time,
-      finishDate:date,
-      finishDateTime:new Date(date+' '+time),
-      addedAt:serverTimestamp(),
-      lastLevelUpdate:serverTimestamp(),
-      status:'active',
-      notes:notes,
-      source:'PBCR_Calculator'
-    });
-    alert(`✅ Tank ${tank} added to Live Tanks!`);
-    closeLTModal();
-  }catch(err){
-    alert('❌ Error: '+err.message);
-  }
-});
-
-window.addToTable=()=>{
-  const tankNum=document.getElementById("tankInput").value,output=document.getElementById("output").innerHTML;
-  if(!tankNum||!output.includes("Finish Time"))return;
-  
-  const timeMatch=output.match(/Finish Time: (.*?)<br>/),dateMatch=output.match(/Finish Date: (.*?)($|<br>)/);
-  if(!timeMatch||!dateMatch)return;
-  
-  const time=timeMatch[1].trim(),date=dateMatch[1].trim(),table=document.querySelector("#tankTable tbody"),newRowData={tankNum,date,time,finishDateTime:new Date(date+" "+time)};
-  const existingRows=Array.from(table.rows).map(row=>({row:row,tankNum:row.cells[0].textContent,date:row.cells[1].textContent,time:row.cells[2].textContent,finishDateTime:new Date(row.cells[1].textContent+" "+row.cells[2].textContent)}));
-  
-  existingRows.push(newRowData);
-  existingRows.sort((a,b)=>a.finishDateTime-b.finishDateTime);
-  table.innerHTML='';
-  
-  existingRows.forEach(item=>{
-    const row=table.insertRow();
-    row.insertCell().textContent=item.tankNum;
-    row.insertCell().textContent=item.date;
-    row.insertCell().textContent=item.time;
-    const cell4=row.insertCell(),delBtn=document.createElement("button");
-    delBtn.innerHTML="🗑️";
-    delBtn.style.cssText="background:none;border:none;cursor:pointer;font-size:16px";
-    delBtn.onclick=()=>{row.remove();saveData()};
-    cell4.appendChild(delBtn);
-  });
-  saveData();
-};
-
-async function saveData(){
-  if(!currentUser)return;
-  try{
-    await setDoc(doc(db,'userTables',currentUser.username),{
-      pbcrData:{
-        tankInput:document.getElementById('tankInput').value,
-        level:document.getElementById('level').value,
-        target:document.getElementById('target').value,
-        mode:document.getElementById('mode').value,
-        flowrate:document.getElementById('flowrate').value,
-        flowUnit:document.getElementById('flowUnit').value
-      },
-      pbcrTables:Array.from(document.querySelector('#tankTable tbody').rows).map(row=>({
-        tankNum:row.cells[0].textContent,
-        date:row.cells[1].textContent,
-        time:row.cells[2].textContent
-      }))
-    },{merge:true});
-  }catch{}
-}
-
-async function loadData(){
-  if(!currentUser)return;
-  try{
-    const docSnap=await getDoc(window.doc(db,'userTables',currentUser.username));
-    if(docSnap.exists()){
-      const data=docSnap.data();
-      if(data.pbcrData){
-        const d=data.pbcrData;
-        document.getElementById('tankInput').value=d.tankInput||'';
-        document.getElementById('level').value=d.level||'';
-        document.getElementById('target').value=d.target||'';
-        document.getElementById('mode').value=d.mode||'pumpable';
-        document.getElementById('flowrate').value=d.flowrate||'';
-        document.getElementById('flowUnit').value=d.flowUnit||'bbl';
-        if(d.tankInput)loadTank();
-      }
-      if(data.pbcrTables){
-        data.pbcrTables.forEach(item=>{
-          const row=document.querySelector('#tankTable tbody').insertRow();
-          row.insertCell().textContent=item.tankNum;
-          row.insertCell().textContent=item.date;
-          row.insertCell().textContent=item.time;
-          const cell4=row.insertCell(),delBtn=document.createElement('button');
-          delBtn.innerHTML='🗑️';
-          delBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:16px';
-          delBtn.onclick=()=>{row.remove();saveData()};
-          cell4.appendChild(delBtn);
-        });
-      }
-    }
-  }catch{}
-}
-
-function setupDark(){
-  let dark=localStorage.getItem('darkMode')==='true';
-  const btn=document.getElementById('darkModeButton');
-  function update(){
-    if(dark){
-      document.body.style.background='linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url("background.jpg")';
-      btn.innerHTML='☀️';
-    }else{
-      document.body.style.background='linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url("background.jpg")';
-      btn.innerHTML='🌙';
-    }
-  }
-  btn.addEventListener('click',()=>{
-    dark=!dark;
-    localStorage.setItem('darkMode',dark);
-    update();
-  });
-  update();
-}
-
-document.addEventListener('input',e=>{
-  if(e.target.matches('#tankInput,#level,#target,#flowrate'))
-    clearTimeout(window.saveTimeout),window.saveTimeout=setTimeout(saveData,2000);
-});
-
+window.updateLTProducts=()=>{const dept=document.getElementById('ltDept').value,sel=document.getElementById('ltProduct');sel.innerHTML='<option value="">Select Product</option>';if(dept&&products[dept])products[dept].forEach(p=>{const opt=document.createElement('option');opt.value=p;opt.textContent=p;sel.appendChild(opt)})};
+document.getElementById('ltForm').addEventListener('submit',async function(e){e.preventDefault();const dept=document.getElementById('ltDept').value,tank=document.getElementById('ltTank').value,product=document.getElementById('ltProduct').value,targetValue=document.getElementById('ltTargetValue').value,targetType=document.getElementById('ltTargetType').value,rate=document.getElementById('ltRate').value,rateUnit=document.getElementById('ltRateUnit').value,date=document.getElementById('ltDate').value,time=document.getElementById('ltTime').value,notes=document.getElementById('ltNotes').value;if(!dept||!product){alert('❌ Please select department and product!');return}const currentLevel=parseFloat(document.getElementById('level').value)||null;try{await addDoc(collection(db,'liveTanks'),{department:dept,tankNumber:tank,product:product,targetValue:parseFloat(targetValue)||null,targetType:targetType||null,currentLevel:currentLevel,rate:parseFloat(rate)||null,rateUnit:rateUnit||null,addedBy:currentUser.username,userName:currentUser.fullName||currentUser.username,finishTime:time,finishDate:date,finishDateTime:new Date(date+' '+time),addedAt:serverTimestamp(),lastLevelUpdate:serverTimestamp(),status:'active',notes:notes,source:'PBCR_Calculator'});alert(`✅ Tank ${tank} added to Live Tanks!`);closeLTModal()}catch(err){alert('❌ Error: '+err.message)}});
+window.addToTable=()=>{const tankNum=document.getElementById("tankInput").value,output=document.getElementById("output").innerHTML;if(!tankNum||!output.includes("Finish Time"))return;const timeMatch=output.match(/Finish Time: (.*?)<br>/),dateMatch=output.match(/Finish Date: (.*?)($|<br>)/);if(!timeMatch||!dateMatch)return;const time=timeMatch[1].trim(),date=dateMatch[1].trim(),table=document.querySelector("#tankTable tbody"),newRowData={tankNum,date,time,finishDateTime:new Date(date+" "+time)};const existingRows=Array.from(table.rows).map(row=>({row:row,tankNum:row.cells[0].textContent,date:row.cells[1].textContent,time:row.cells[2].textContent,finishDateTime:new Date(row.cells[1].textContent+" "+row.cells[2].textContent)}));existingRows.push(newRowData);existingRows.sort((a,b)=>a.finishDateTime-b.finishDateTime);table.innerHTML='';existingRows.forEach(item=>{const row=table.insertRow();row.insertCell().textContent=item.tankNum;row.insertCell().textContent=item.date;row.insertCell().textContent=item.time;const cell4=row.insertCell(),delBtn=document.createElement("button");delBtn.innerHTML="🗑️";delBtn.style.cssText="background:none;border:none;cursor:pointer;font-size:16px";delBtn.onclick=()=>{row.remove();saveData()};cell4.appendChild(delBtn)});saveData()};
+async function saveData(){if(!currentUser)return;try{await setDoc(doc(db,'userTables',currentUser.username),{pbcrData:{tankInput:document.getElementById('tankInput').value,level:document.getElementById('level').value,target:document.getElementById('target').value,mode:document.getElementById('mode').value,flowrate:document.getElementById('flowrate').value,flowUnit:document.getElementById('flowUnit').value},pbcrTables:Array.from(document.querySelector('#tankTable tbody').rows).map(row=>({tankNum:row.cells[0].textContent,date:row.cells[1].textContent,time:row.cells[2].textContent}))},{merge:true})}catch{}}
+async function loadData(){if(!currentUser)return;try{const doc=await getDoc(window.doc(db,'userTables',currentUser.username));if(doc.exists()){const data=doc.data();if(data.pbcrData){const d=data.pbcrData;document.getElementById('tankInput').value=d.tankInput||'';document.getElementById('level').value=d.level||'';document.getElementById('target').value=d.target||'';document.getElementById('mode').value=d.mode||'pumpable';document.getElementById('flowrate').value=d.flowrate||'';document.getElementById('flowUnit').value=d.flowUnit||'bbl';if(d.tankInput)loadTank()}if(data.pbcrTables){data.pbcrTables.forEach(item=>{const row=document.querySelector('#tankTable tbody').insertRow();row.insertCell().textContent=item.tankNum;row.insertCell().textContent=item.date;row.insertCell().textContent=item.time;const cell4=row.insertCell(),delBtn=document.createElement('button');delBtn.innerHTML='🗑️';delBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:16px';delBtn.onclick=()=>{row.remove();saveData()};cell4.appendChild(delBtn)})}}}catch{}}
+function setupDark(){let dark=localStorage.getItem('darkMode')==='true';const btn=document.getElementById('darkModeButton');function update(){if(dark){document.body.style.background='linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url("background.jpg")';btn.innerHTML='☀️'}else{document.body.style.background='linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url("background.jpg")';btn.innerHTML='🌙'}}btn.addEventListener('click',()=>{dark=!dark;localStorage.setItem('darkMode',dark);update()});update()}
+document.addEventListener('input',e=>{if(e.target.matches('#tankInput,#level,#target,#flowrate'))clearTimeout(window.saveTimeout),window.saveTimeout=setTimeout(saveData,2000)});
 // Font size control functions
 let currentFontSize = parseInt(localStorage.getItem('tanktools_font_size_index') || '16');
 
@@ -962,8 +333,7 @@ applyFontSize();
 window.increaseFontSize = increaseFontSize;
 window.decreaseFontSize = decreaseFontSize;
 
-console.log('%c🔥 PBCR Live Tanks Integration v4.3 - Secure Edition','color:green;font-size:16px;font-weight:bold');
-console.log('%c🔒 Tank data and algorithms protected in Firebase','color:blue;font-size:14px;font-weight:bold');
+console.log('%c🔥 PBCR Live Tanks Integration v4.2','color:green;font-size:16px;font-weight:bold');
 
 // Calendar Help Function
 function showCalendarHelp() {
@@ -1053,7 +423,7 @@ window.showTableHelp = showTableHelp;
 </script>
 
 <footer>
-  By <a href="#" class="whatsapp-link" onclick="window.open('https://wa.me/96555222550','_blank'); return false;">Fahad - 17877</a> – Version v4.3
+  By <a href="#" class="whatsapp-link" onclick="window.open('https://wa.me/96555222550','_blank'); return false;">Fahad - 17877</a> – Version v4.2
   <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
 </footer>
 
@@ -1065,4 +435,3 @@ footer{margin-top:40px;color:#ccc;text-align:center}
 
 </body>
 </html>
-
