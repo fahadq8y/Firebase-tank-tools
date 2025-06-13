@@ -976,11 +976,7 @@
               </div>
               <div class="form-group" style="flex:1">
                 <label class="form-label">🎯 Target Type:</label>
-                <select class="form-select" id="ltTargetType" required>
-                  <option value="Withdrawal">Withdrawal</option>
-                  <option value="Transfer">Transfer</option>
-                  <option value="Loading">Loading</option>
-                </select>
+                <input type="text" class="form-input" id="ltTargetType" value="Quantity MT" readonly style="background:#f5f5f5">
               </div>
             </div>
             
@@ -1120,7 +1116,7 @@
           tankNumber: calcData.tankNumber,
           product: finalProduct,
           targetValue: parseFloat(document.getElementById('ltTargetValue').value) || null,
-          targetType: document.getElementById('ltTargetType').value || null,
+          targetType: 'Quantity MT',
           currentLevel: null, // PLCR doesn't track current level like PBCR
           rate: parseFloat(document.getElementById('ltRate').value) || null,
           rateUnit: 'MT/hr',
@@ -1129,8 +1125,8 @@
           finishTime: timeStr,
           finishDate: dateStr,
           finishDateTime: finishDateTime,
-          addedAt: window.serverTimestamp(),
-          lastLevelUpdate: window.serverTimestamp(),
+          addedAt: new Date(),
+          lastLevelUpdate: new Date(),
           status: 'active',
           notes: document.getElementById('ltNotes').value,
           source: 'PLCR_Calculator'
