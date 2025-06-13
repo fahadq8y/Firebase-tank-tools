@@ -136,6 +136,34 @@
       <input type="number" id="value" placeholder="Enter number" oninput="calculate()">
 
       <div class="result" id="result"></div>
+      
+      <!-- الحقول الجديدة للوضع المتقدم -->
+      <div id="advancedFields" style="display:none;">
+        <div id="currentWeight" style="margin:10px 0;font-weight:bold;color:#00ffff;text-align:center;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"></div>
+        
+        <label for="amountToWithdraw">Request Quantity (MT):</label>
+        <input type="number" id="amountToWithdraw" placeholder="Enter amount to withdraw" oninput="calculateAdvanced()">
+        
+        <label for="withdrawalRate">Rate (MT/hr):</label>
+        <input type="number" id="withdrawalRate" placeholder="Enter withdrawal rate" oninput="calculateAdvanced()">
+        
+        <div id="finalLevel" style="margin:10px 0;font-weight:bold;text-align:center;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"></div>
+        <div id="timeNeeded" style="margin:10px 0;font-weight:bold;text-align:center;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"></div>
+        <div id="finishTime" style="margin:10px 0;font-weight:bold;text-align:center;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"></div>
+      </div>
+      
+      <!-- الأزرار الجديدة -->
+      <div id="buttonsSection" style="display:none;margin-top:20px;">
+        <button id="addToLiveTanksBtn" onclick="showAddToLiveTanksModal()" style="background:linear-gradient(45deg,#f44336,#d32f2f);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">🔴 Add to Live Tanks</button>
+        <button id="addReminderBtn" onclick="addReminder()" style="background:linear-gradient(45deg,#2196F3,#1976D2);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📅 Add Reminder</button>
+        <button id="addToTableBtn" onclick="addToPersonalTable()" style="background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📊 Add to Table</button>
+      </div>
+      
+      <!-- الجدول الشخصي -->
+      <div id="personalTable" style="display:none;margin-top:20px;">
+        <h3 style="color:#00ffff;text-align:center;margin-bottom:15px;">Your tanks finishing in current shift</h3>
+        <div id="personalTableContent" style="background:rgba(0,0,0,0.3);border-radius:8px;padding:15px;max-height:300px;overflow-y:auto;"></div>
+      </div>
     </div>
     
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
@@ -445,6 +473,378 @@
     
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
+
+    // إضافة الوظائف الجديدة لـ PLCR
+    let calcData = null;
+
+    // تحديث دالة calculate لتشمل الحقول الجديدة
+    const originalCalculate = window.calculate;
+    window.calculate = () => {
+      originalCalculate();
+      
+      const mode = document.getElementById('mode').value;
+      const advancedFields = document.getElementById('advancedFields');
+      const buttonsSection = document.getElementById('buttonsSection');
+      const personalTable = document.getElementById('personalTable');
+      
+      // إظهار الحقول الجديدة فقط في وضع Level to Metric Ton
+      if (mode === 'levelToTon') {
+        advancedFields.style.display = 'block';
+        buttonsSection.style.display = 'block';
+        personalTable.style.display = 'block';
+        
+        // حساب الوزن الحالي
+        const tk = document.getElementById("tk").value.trim();
+        const currentLevel = parseFloat(document.getElementById("value").value);
+        
+        if (tankConversions[tk] && !isNaN(currentLevel)) {
+          const tank = tankConversions[tk];
+          const currentWeight = currentLevel * tank.factor;
+          
+          // عرض الوزن الحالي في العنصر المخصص
+          document.getElementById('currentWeight').textContent = `Current Weight: ${currentWeight.toFixed(2)} MT`;
+          
+          // حساب متقدم إذا تم إدخال البيانات
+          calculateAdvanced();
+        }
+      } else {
+        advancedFields.style.display = 'none';
+        buttonsSection.style.display = 'none';
+        personalTable.style.display = 'none';
+      }
+      
+      // تحديث الجدول الشخصي
+      updatePersonalTable();
+    };
+
+    // دالة الحساب المتقدم
+    window.calculateAdvanced = () => {
+      const tk = document.getElementById("tk").value.trim();
+      const currentLevel = parseFloat(document.getElementById("value").value);
+      const amountToWithdraw = parseFloat(document.getElementById("amountToWithdraw").value);
+      const withdrawalRate = parseFloat(document.getElementById("withdrawalRate").value);
+      
+      if (!tankConversions[tk] || isNaN(currentLevel) || isNaN(amountToWithdraw) || isNaN(withdrawalRate)) {
+        document.getElementById('finalLevel').textContent = '';
+        document.getElementById('timeNeeded').textContent = '';
+        document.getElementById('finishTime').textContent = '';
+        return;
+      }
+      
+      const tank = tankConversions[tk];
+      const currentWeight = currentLevel * tank.factor;
+      const finalWeight = currentWeight - amountToWithdraw;
+      const finalLevel = finalWeight / tank.factor;
+      const timeNeededHours = amountToWithdraw / withdrawalRate;
+      
+      // حساب وقت الانتهاء
+      const now = new Date();
+      const finishTime = new Date(now.getTime() + timeNeededHours * 60 * 60 * 1000);
+      
+      const hours = Math.floor(timeNeededHours);
+      const minutes = Math.round((timeNeededHours - hours) * 60);
+      
+      const date = finishTime.toLocaleDateString('en-GB');
+      const time = finishTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      
+      // تحديد لون النتيجة بناءً على الشفت
+      const isCurrentShift = isSameShift(finishTime);
+      const color = isCurrentShift ? '#ff4444' : '#44ff44';
+      
+      try {
+        ft = `${date} ${time}`;
+      } catch {
+        ft = `${date} ${time}`;
+      }
+      
+      document.getElementById('finalLevel').innerHTML = `<span style="color:${color}">Final Level: ${finalLevel.toFixed(2)} m</span>`;
+      document.getElementById('timeNeeded').innerHTML = `<span style="color:${color}">Time Needed: ${hours}h ${minutes}min</span>`;
+      document.getElementById('finishTime').innerHTML = `<span style="color:${color}">Finish Time: ${ft}</span>`;
+      
+      // حفظ البيانات للاستخدام في الأزرار
+      calcData = {
+        tankNumber: tk,
+        currentLevel: currentLevel,
+        currentWeight: currentWeight,
+        amountToWithdraw: amountToWithdraw,
+        withdrawalRate: withdrawalRate,
+        finalLevel: finalLevel,
+        timeNeeded: timeNeededHours,
+        finishTime: finishTime,
+        finishTimeString: ft
+      };
+    };
+
+    // دالة تحديد الشفت
+    function isSameShift(targetTime) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const targetHour = targetTime.getHours();
+      
+      let currentShift, targetShift;
+      
+      if (currentHour >= 6 && currentHour < 14) currentShift = 'morning';
+      else if (currentHour >= 14 && currentHour < 22) currentShift = 'afternoon';
+      else currentShift = 'night';
+      
+      if (targetHour >= 6 && targetHour < 14) targetShift = 'morning';
+      else if (targetHour >= 14 && targetHour < 22) targetShift = 'afternoon';
+      else targetShift = 'night';
+      
+      return currentShift === targetShift && now.toDateString() === targetTime.toDateString();
+    }
+
+    // دالة إضافة تذكير
+    window.addReminder = () => {
+      if (!calcData) {
+        alert('Please complete the calculation first');
+        return;
+      }
+      
+      const title = `Tank ${calcData.tankNumber} - Withdrawal Complete`;
+      const details = `Tank: ${calcData.tankNumber}\\nWithdrawal: ${calcData.amountToWithdraw} MT\\nFinal Level: ${calcData.finalLevel.toFixed(2)} m`;
+      const startDate = calcData.finishTime.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const endDate = new Date(calcData.finishTime.getTime() + 30 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      
+      const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(details)}`;
+      
+      window.open(googleCalendarUrl, '_blank');
+    };
+
+    // دالة إضافة للجدول الشخصي
+    window.addToPersonalTable = () => {
+      if (!calcData) {
+        alert('Please complete the calculation first');
+        return;
+      }
+      
+      const personalData = JSON.parse(localStorage.getItem('plcr_personal_table') || '[]');
+      const newEntry = {
+        id: Date.now(),
+        tankNumber: calcData.tankNumber,
+        currentLevel: calcData.currentLevel,
+        amountToWithdraw: calcData.amountToWithdraw,
+        finalLevel: calcData.finalLevel,
+        finishTime: calcData.finishTimeString,
+        timestamp: new Date().toISOString()
+      };
+      
+      personalData.unshift(newEntry);
+      personalData.splice(10); // Keep only last 10 entries
+      localStorage.setItem('plcr_personal_table', JSON.stringify(personalData));
+      
+      updatePersonalTable();
+      alert('Added to personal table successfully!');
+    };
+
+    // دالة تحديث الجدول الشخصي
+    function updatePersonalTable() {
+      const personalData = JSON.parse(localStorage.getItem('plcr_personal_table') || '[]');
+      const tableContent = document.getElementById('personalTableContent');
+      
+      if (personalData.length === 0) {
+        tableContent.innerHTML = '<p style="text-align:center;color:#999;">No entries yet</p>';
+        return;
+      }
+      
+      let html = '';
+      personalData.forEach(entry => {
+        const isCurrentShift = isSameShift(new Date(entry.timestamp));
+        const color = isCurrentShift ? '#ff4444' : '#44ff44';
+        
+        html += `
+          <div style="border-bottom:1px solid rgba(255,255,255,0.2);padding:10px 0;">
+            <div style="color:${color};font-weight:bold;">Tank ${entry.tankNumber}</div>
+            <div style="font-size:12px;color:#ccc;">
+              Level: ${entry.currentLevel}m → ${entry.finalLevel.toFixed(2)}m<br>
+              Withdrawal: ${entry.amountToWithdraw} MT<br>
+              Finish: ${entry.finishTime}
+            </div>
+          </div>
+        `;
+      });
+      
+      tableContent.innerHTML = html;
+    }
+
+    // دالة إظهار نافذة Add to Live Tanks
+    window.showAddToLiveTanksModal = () => {
+      if (!calcData) {
+        alert('Please complete the calculation first');
+        return;
+      }
+      
+      // فحص الصلاحيات
+      if (!currentUser || !hasPermission(currentUser.role, 'add_to_live_tanks')) {
+        alert('You do not have permission to add to Live Tanks');
+        return;
+      }
+      
+      // إنشاء النافذة المنبثقة
+      const modal = document.createElement('div');
+      modal.id = 'addToLiveTanksModal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+      `;
+      
+      const products = ["NAPHA", "PCNA", "HSD-EGO", "EGO", "F.OIL", "MOGAS", "VGO", "KKERO", "ARDR", "METHANOL", "OTHER"];
+      let productOptions = '';
+      products.forEach(product => {
+        productOptions += `<option value="${product}">${product}</option>`;
+      });
+      
+      modal.innerHTML = `
+        <div style="background: rgba(255,255,255,0.95); padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; color: #003366;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #f44336;">🔴 Add to Live Tanks</h3>
+            <button onclick="closeAddToLiveTanksModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">🏭 Department:</label>
+            <input type="text" id="modalDepartment" value="PLCR" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #f5f5f5;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">🔢 Tank Number:</label>
+            <input type="text" id="modalTankNumber" value="${calcData.tankNumber}" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #f5f5f5;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">🛢️ Product:</label>
+            <select id="modalProduct" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+              ${productOptions}
+            </select>
+          </div>
+          
+          <div id="otherProductDiv" style="display: none; margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">📝 Specify Product:</label>
+            <input type="text" id="modalOtherProduct" placeholder="Enter product name" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">📊 Amount to Withdraw:</label>
+            <input type="text" id="modalAmount" value="${calcData.amountToWithdraw}" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #f5f5f5;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">🎯 Target Type:</label>
+            <select id="modalTargetType" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+              <option value="Withdrawal">Withdrawal</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Loading">Loading</option>
+            </select>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">📅 Finish Date:</label>
+            <input type="text" id="modalFinishDate" value="${calcData.finishTime.toLocaleDateString('en-GB')}" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #f5f5f5;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">⏰ Finish Time:</label>
+            <input type="text" id="modalFinishTime" value="${calcData.finishTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' })}" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #f5f5f5;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">📝 Notes (Optional):</label>
+            <textarea id="modalNotes" placeholder="Additional information..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; height: 80px; resize: vertical;"></textarea>
+          </div>
+          
+          <div style="display: flex; gap: 10px;">
+            <button onclick="closeAddToLiveTanksModal()" style="flex: 1; padding: 12px; background: #999; color: white; border: none; border-radius: 5px; cursor: pointer;">❌ Cancel</button>
+            <button onclick="submitToLiveTanks()" style="flex: 1; padding: 12px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">📋 Add to Live Tanks</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // إضافة مستمع للمنتج OTHER
+      document.getElementById('modalProduct').addEventListener('change', function() {
+        const otherDiv = document.getElementById('otherProductDiv');
+        if (this.value === 'OTHER') {
+          otherDiv.style.display = 'block';
+        } else {
+          otherDiv.style.display = 'none';
+        }
+      });
+    };
+
+    // دالة إغلاق النافذة المنبثقة
+    window.closeAddToLiveTanksModal = () => {
+      const modal = document.getElementById('addToLiveTanksModal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+
+    // دالة إرسال البيانات إلى Live Tanks
+    window.submitToLiveTanks = async () => {
+      try {
+        const product = document.getElementById('modalProduct').value;
+        const finalProduct = product === 'OTHER' ? document.getElementById('modalOtherProduct').value : product;
+        
+        if (!finalProduct) {
+          alert('Please specify the product');
+          return;
+        }
+        
+        // تحسين تحويل التاريخ والوقت
+        const dateStr = document.getElementById('modalFinishDate').value;
+        const timeStr = document.getElementById('modalFinishTime').value;
+        
+        // تحويل التاريخ من DD/MM/YYYY إلى YYYY-MM-DD
+        const dateParts = dateStr.split('/');
+        const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+        
+        let finishDateTime;
+        try {
+          finishDateTime = new Date(`${formattedDate}T${timeStr}:00`);
+          if (isNaN(finishDateTime.getTime())) {
+            throw new Error('Invalid date');
+          }
+        } catch (error) {
+          alert('Error: Invalid date or time format');
+          return;
+        }
+        
+        const tankData = {
+          department: 'PLCR',
+          tankNumber: calcData.tankNumber,
+          product: finalProduct,
+          amount: parseFloat(calcData.amountToWithdraw),
+          targetType: document.getElementById('modalTargetType').value,
+          finishDate: dateStr,
+          finishTime: timeStr,
+          finishDateTime: finishDateTime,
+          notes: document.getElementById('modalNotes').value,
+          addedBy: currentUser.username,
+          addedAt: new Date(),
+          source: 'PLCR_Calculator'
+        };
+        
+        // إضافة إلى Firebase
+        await addDoc(collection(db, 'liveTanks'), tankData);
+        
+        alert('Tank added to Live Tanks successfully!');
+        closeAddToLiveTanksModal();
+        
+      } catch (error) {
+        console.error('Error adding to Live Tanks:', error);
+        alert('Error adding to Live Tanks: ' + error.message);
+      }
+    };
 
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
