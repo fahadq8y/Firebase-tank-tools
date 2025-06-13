@@ -365,9 +365,8 @@
     async function handleLogin(event) {
       event.preventDefault();
       showMessage("", "");
-      showLoading("loginLoading");
-      const usernameInput = document.getElementById("loginUsername");
-      const password = document.getElementById("loginPassword").value;
+      showLoading("registerBtn", "registerLoading", true);Loading", true);
+      const username = document.getElementById("loginUsername").value.toLowerCase();ssword = document.getElementById("loginPassword").value;
       const rememberMe = document.getElementById("rememberMe").checked;
 
       // Convert username to lowercase
@@ -743,16 +742,20 @@ Thank you.`;
       }
     }
 
-    function showLoading(form, show) {
-      const btn = document.getElementById(form + 'Btn');
-      const loading = document.getElementById(form + 'Loading');
+    function showLoading(btnId, loadingId, show) {
+      const btn = document.getElementById(btnId);
+      const loading = document.getElementById(loadingId);
       
-      if (show) {
-        btn.style.display = 'none';
-        loading.style.display = 'block';
+      if (btn && loading) {
+        if (show) {
+          btn.style.display = 'none';
+          loading.style.display = 'block';
+        } else {
+          btn.style.display = 'block';
+          loading.style.display = 'none';
+        }
       } else {
-        btn.style.display = 'block';
-        loading.style.display = 'none';
+        console.error("Error: Button or loading element not found for IDs:", btnId, loadingId);
       }
     }
 
