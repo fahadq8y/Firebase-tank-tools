@@ -1304,14 +1304,34 @@
         };
         console.log('Custom permissions:', customPermissions);
         
-        // تحديث المستخدم في Firebase (استخدام setDoc مع merge لإنشاء أو تحديث)
+        // قراءة البيانات الحالية أولاً
         const userRef = doc(db, 'users', username);
-        await setDoc(userRef, {
-          specialization: specialization,
-          customPages: selectedPages,
-          customPermissions: customPermissions,
-          updatedAt: serverTimestamp()
-        }, { merge: true }); // merge: true يحافظ على البيانات الموجودة
+        const userDoc = await getDoc(userRef);
+        
+        let updateData = {};
+        
+        if (userDoc.exists()) {
+          // المستخدم موجود - تحديث الصلاحيات فقط
+          updateData = {
+            specialization: specialization,
+            customPages: selectedPages,
+            customPermissions: customPermissions,
+            updatedAt: serverTimestamp()
+          };
+          await updateDoc(userRef, updateData);
+        } else {
+          // المستخدم غير موجود - إنشاء مستند جديد مع البيانات الأساسية
+          updateData = {
+            username: username,
+            specialization: specialization,
+            customPages: selectedPages,
+            customPermissions: customPermissions,
+            isActive: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+          await setDoc(userRef, updateData);
+        }
         
         console.log('Permissions updated successfully in Firebase');
         showMessage('✅ Permissions updated successfully!', 'success');
