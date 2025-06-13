@@ -971,12 +971,16 @@
             
             <div class="form-row" style="display:flex;gap:10px">
               <div class="form-group" style="flex:1">
-                <label class="form-label">📊 Request Quantity (MT):</label>
+                <label class="form-label">📊 Target Value:</label>
                 <input type="number" step="any" class="form-input" id="ltTargetValue" value="${calcData.amountToWithdraw}" readonly style="background:#f5f5f5">
               </div>
               <div class="form-group" style="flex:1">
                 <label class="form-label">🎯 Target Type:</label>
-                <input type="text" class="form-input" id="ltTargetType" value="Quantity MT" readonly style="background:#f5f5f5">
+                <select class="form-select" id="ltTargetType" required>
+                  <option value="Withdrawal">Withdrawal</option>
+                  <option value="Transfer">Transfer</option>
+                  <option value="Loading">Loading</option>
+                </select>
               </div>
             </div>
             
@@ -987,7 +991,11 @@
               </div>
               <div class="form-group" style="flex:1">
                 <label class="form-label">📏 Rate Unit:</label>
-                <input type="text" class="form-input" id="ltRateUnit" value="MT/hr" readonly style="background:#f5f5f5">
+                <select class="form-select" id="ltRateUnit" required>
+                  <option value="MT/hr">MT/hr</option>
+                  <option value="bbl/hr">bbl/hr</option>
+                  <option value="m³/hr">m³/hr</option>
+                </select>
               </div>
             </div>
             
@@ -1115,20 +1123,14 @@
           department: 'PLCR',
           tankNumber: calcData.tankNumber,
           product: finalProduct,
-          targetValue: parseFloat(document.getElementById('ltTargetValue').value) || null,
-          targetType: 'Quantity MT',
-          currentLevel: null, // PLCR doesn't track current level like PBCR
-          rate: parseFloat(document.getElementById('ltRate').value) || null,
-          rateUnit: 'MT/hr',
-          addedBy: currentUser.username,
-          userName: currentUser.fullName || currentUser.username,
-          finishTime: timeStr,
+          amount: parseFloat(calcData.amountToWithdraw),
+          targetType: document.getElementById('ltTargetType').value,
           finishDate: dateStr,
+          finishTime: timeStr,
           finishDateTime: finishDateTime,
-          addedAt: new Date(),
-          lastLevelUpdate: new Date(),
-          status: 'active',
           notes: document.getElementById('ltNotes').value,
+          addedBy: currentUser.username,
+          addedAt: new Date(),
           source: 'PLCR_Calculator'
         };
         
@@ -1144,13 +1146,6 @@
         const docRef = await window.addDoc(window.collection(window.db, 'liveTanks'), tankData);
         console.log('Successfully added to Firebase with ID:', docRef.id);
         
-        // إعادة تفعيل الزر
-        const submitBtn = document.querySelector('button[type="submit"]');
-        if (submitBtn) {
-          submitBtn.textContent = '💾 Add to Live Tanks';
-          submitBtn.disabled = false;
-        }
-        
         // رسالة نجاح
         alert('✅ Tank added to Live Tanks successfully!');
         closeLTModal();
@@ -1165,13 +1160,6 @@
       } catch (error) {
         console.error('Error adding to Live Tanks:', error);
         
-        // إعادة تفعيل الزر في حالة الخطأ
-        const submitBtn = document.querySelector('button[type="submit"]');
-        if (submitBtn) {
-          submitBtn.textContent = '💾 Add to Live Tanks';
-          submitBtn.disabled = false;
-        }
-        
         // رسائل خطأ أكثر تفصيلاً
         let errorMessage = 'Error adding to Live Tanks: ';
         if (error.code === 'permission-denied') {
@@ -1185,10 +1173,10 @@
         }
         
         alert('❌ ' + errorMessage);
-      } finally {
-        // ضمان إعادة تفعيل الزر في جميع الحالات
+        
+        // إعادة تفعيل الزر
         const submitBtn = document.querySelector('button[type="submit"]');
-        if (submitBtn && submitBtn.disabled) {
+        if (submitBtn) {
           submitBtn.textContent = '💾 Add to Live Tanks';
           submitBtn.disabled = false;
         }
