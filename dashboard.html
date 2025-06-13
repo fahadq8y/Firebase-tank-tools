@@ -877,6 +877,99 @@
       return nameMap[role] || 'User';
     }
 
+    // Get specialization badge class
+    function getSpecializationBadgeClass(specialization) {
+      const classMap = {
+        'admin': 'badge-admin',
+        'supervisor': 'badge-supervisor',
+        'planning': 'badge-planning',
+        'control_panel': 'badge-panel-operator',
+        'field_operator': 'badge-operator'
+      };
+      return classMap[specialization] || 'badge-user';
+    }
+
+    // Format specialization name
+    function formatSpecializationName(specialization) {
+      const nameMap = {
+        'admin': 'Administrator',
+        'supervisor': 'Supervisor',
+        'planning': 'Planning',
+        'control_panel': 'Control Panel',
+        'field_operator': 'Field Operator'
+      };
+      return nameMap[specialization] || 'User';
+    }
+
+    // Get user Live Tanks access
+    function getUserLiveTanksAccess(user) {
+      // إذا كان المستخدم يستخدم النظام القديم
+      if (user.role && !user.specialization) {
+        const canView = ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+        const canEdit = ['admin', 'panel_operator'].includes(user.role);
+        
+        if (!canView) return { class: 'badge-inactive', text: 'No Access' };
+        if (canEdit) return { class: 'badge-active', text: 'Full Access' };
+        return { class: 'badge-warning', text: 'View Only' };
+      }
+
+      // للمستخدمين الجدد
+      let permissions = {};
+      if (user.customPermissions) {
+        permissions = user.customPermissions;
+      } else if (window.TankToolsPermissions && window.TankToolsPermissions.SPECIALIZATIONS[user.specialization]) {
+        permissions = window.TankToolsPermissions.SPECIALIZATIONS[user.specialization].defaultPermissions;
+      }
+
+      if (!permissions.canViewLiveTanks) return { class: 'badge-inactive', text: 'No Access' };
+      if (permissions.canEditLiveTanks) return { class: 'badge-active', text: 'Full Access' };
+      return { class: 'badge-warning', text: 'View Only' };
+    }
+
+    // Get user pages access
+    function getUserPagesAccess(user) {
+      // إذا كان المستخدم يستخدم النظام القديم
+      if (user.role && !user.specialization) {
+        if (user.role === 'admin') return 'All Pages';
+        return 'Basic Pages';
+      }
+
+      // للمستخدمين الجدد
+      if (user.customPages && Array.isArray(user.customPages)) {
+        if (user.customPages.includes('all')) return 'All Pages';
+        return user.customPages.map(page => {
+          const pageNames = {
+            'index.html': 'PBCR',
+            'plcr.html': 'PLCR',
+            'NMOGASBL.html': 'NMOGAS',
+            'live-tanks.html': 'Live Tanks',
+            'dashboard.html': 'Dashboard',
+            'verify.html': 'Verify'
+          };
+          return pageNames[page] || page;
+        }).join(', ');
+      }
+
+      // استخدام الصفحات الافتراضية للتخصص
+      if (window.TankToolsPermissions && window.TankToolsPermissions.SPECIALIZATIONS[user.specialization]) {
+        const defaultPages = window.TankToolsPermissions.SPECIALIZATIONS[user.specialization].defaultPages;
+        if (defaultPages.includes('all')) return 'All Pages';
+        return defaultPages.map(page => {
+          const pageNames = {
+            'index.html': 'PBCR',
+            'plcr.html': 'PLCR',
+            'NMOGASBL.html': 'NMOGAS',
+            'live-tanks.html': 'Live Tanks',
+            'dashboard.html': 'Dashboard',
+            'verify.html': 'Verify'
+          };
+          return pageNames[page] || page;
+        }).join(', ');
+      }
+
+      return 'Dashboard';
+    }
+
     // Display activities in table format
     function displayActivities(activities) {
       const tbody = document.getElementById('activitiesTableBody');
@@ -1104,6 +1197,124 @@
       document.getElementById('editPassword').value = '';
       
       document.getElementById('userModal').classList.add('show');
+    }
+
+    // Edit user permissions (new function)
+    function editUserPermissions(username) {
+      const user = allUsers.find(u => u.username === username);
+      if (!user) {
+        showMessage('❌ User not found!', 'error');
+        return;
+      }
+      
+      // إنشاء نافذة منبثقة لتعديل الصلاحيات
+      const permissionsModal = document.createElement('div');
+      permissionsModal.className = 'modal show';
+      permissionsModal.innerHTML = `
+        <div class="modal-content" style="max-width: 800px;">
+          <div class="modal-header">
+            <h2 class="modal-title">🔧 Edit Permissions: ${user.username}</h2>
+            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+          </div>
+          <div style="padding: 20px;">
+            <div class="form-group">
+              <label class="form-label">Specialization:</label>
+              <select id="userSpecialization" class="form-select">
+                <option value="admin">Administrator</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="planning">Planning</option>
+                <option value="control_panel">Control Panel</option>
+                <option value="field_operator">Field Operator</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Pages Access:</label>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <label><input type="checkbox" value="index.html"> PBCR</label>
+                <label><input type="checkbox" value="plcr.html"> PLCR</label>
+                <label><input type="checkbox" value="NMOGASBL.html"> NMOGAS</label>
+                <label><input type="checkbox" value="live-tanks.html"> Live Tanks</label>
+                <label><input type="checkbox" value="dashboard.html"> Dashboard</label>
+                <label><input type="checkbox" value="verify.html"> Verification</label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Live Tanks Permissions:</label>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <label><input type="checkbox" id="canViewLiveTanks"> View Live Tanks</label>
+                <label><input type="checkbox" id="canEditLiveTanks"> Edit Live Tanks</label>
+                <label><input type="checkbox" id="canAddToLiveTanks"> Add to Live Tanks</label>
+                <label><input type="checkbox" id="canDeleteFromLiveTanks"> Delete from Live Tanks</label>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+              <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveUserPermissions('${username}', this.closest('.modal'))">Save Permissions</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(permissionsModal);
+      
+      // تعبئة القيم الحالية
+      const specialization = user.specialization || user.role || 'planning';
+      document.getElementById('userSpecialization').value = specialization;
+      
+      // تعبئة الصفحات المسموحة
+      const currentPages = user.customPages || (window.TankToolsPermissions?.SPECIALIZATIONS[specialization]?.defaultPages) || [];
+      const pageCheckboxes = permissionsModal.querySelectorAll('input[type="checkbox"][value]');
+      pageCheckboxes.forEach(checkbox => {
+        checkbox.checked = currentPages.includes(checkbox.value) || currentPages.includes('all');
+      });
+      
+      // تعبئة صلاحيات Live Tanks
+      const permissions = user.customPermissions || (window.TankToolsPermissions?.SPECIALIZATIONS[specialization]?.defaultPermissions) || {};
+      document.getElementById('canViewLiveTanks').checked = permissions.canViewLiveTanks || false;
+      document.getElementById('canEditLiveTanks').checked = permissions.canEditLiveTanks || false;
+      document.getElementById('canAddToLiveTanks').checked = permissions.canAddToLiveTanks || false;
+      document.getElementById('canDeleteFromLiveTanks').checked = permissions.canDeleteFromLiveTanks || false;
+    }
+
+    // Save user permissions
+    async function saveUserPermissions(username, modal) {
+      try {
+        const specialization = document.getElementById('userSpecialization').value;
+        
+        // جمع الصفحات المحددة
+        const selectedPages = [];
+        const pageCheckboxes = modal.querySelectorAll('input[type="checkbox"][value]:checked');
+        pageCheckboxes.forEach(checkbox => selectedPages.push(checkbox.value));
+        
+        // جمع صلاحيات Live Tanks
+        const customPermissions = {
+          canViewLiveTanks: document.getElementById('canViewLiveTanks').checked,
+          canEditLiveTanks: document.getElementById('canEditLiveTanks').checked,
+          canAddToLiveTanks: document.getElementById('canAddToLiveTanks').checked,
+          canDeleteFromLiveTanks: document.getElementById('canDeleteFromLiveTanks').checked,
+          canManageUsers: specialization === 'admin'
+        };
+        
+        // تحديث المستخدم في Firebase
+        const userRef = db.collection('users').doc(username);
+        await userRef.update({
+          specialization: specialization,
+          customPages: selectedPages,
+          customPermissions: customPermissions,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showMessage('✅ Permissions updated successfully!', 'success');
+        modal.remove();
+        loadUsers(); // إعادة تحميل قائمة المستخدمين
+        
+      } catch (error) {
+        console.error('Error updating permissions:', error);
+        showMessage('❌ Error updating permissions: ' + error.message, 'error');
+      }
     }
 
     // Close modal
@@ -1440,6 +1651,8 @@
     // Make functions globally available
     window.loadDashboardData = loadDashboardData;
     window.editUser = editUser;
+    window.editUserPermissions = editUserPermissions;
+    window.saveUserPermissions = saveUserPermissions;
     window.closeModal = closeModal;
     window.toggleUserStatus = toggleUserStatus;
     window.deleteUser = deleteUser;
