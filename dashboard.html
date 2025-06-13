@@ -768,6 +768,19 @@
         return;
       }
       
+      // تنظيف المستخدمين المكررين قبل العرض
+      const uniqueUsers = [];
+      const userMap = new Map();
+      
+      // تجميع المستخدمين حسب اسم المستخدم (بغض النظر عن حالة الأحرف)
+      users.forEach(user => {
+        const normalizedUsername = user.username.toLowerCase();
+        if (!userMap.has(normalizedUsername)) {
+          userMap.set(normalizedUsername, user);
+          uniqueUsers.push(user);
+        }
+      });
+      
       let html = `
         <table class="users-table">
           <thead>
@@ -787,7 +800,7 @@
           <tbody>
       `;
       
-      users.forEach(user => {
+      uniqueUsers.forEach(user => {
         const avatar = (user.fullName || user.username).charAt(0).toUpperCase();
         const specialization = user.specialization || user.role || 'planning';
         const specializationClass = getSpecializationBadgeClass(specialization);
@@ -811,7 +824,7 @@
             </td>
             <td><strong>${user.fullName || user.username}</strong></td>
             <td>${user.username}</td>
-            <td>${user.email}</td>
+            <td>${user.email || `${user.username}@example.com`}</td>
             <td><span class="status-badge ${specializationClass}">${formatSpecializationName(specialization)}</span></td>
             <td><small>${pagesAccess}</small></td>
             <td><span class="status-badge ${liveTanksAccess.class}">${liveTanksAccess.text}</span></td>
@@ -917,7 +930,7 @@
       let permissions = {};
       if (user.customPermissions) {
         permissions = user.customPermissions;
-      } else if (window.TankToolsPermissions && window.TankToolsPermissions.SPECIALIZATIONS[user.specialization]) {
+      } else if (window.TankToolsPermissions && window.TankToolsPermissions.SPECIALIZATIONS && window.TankToolsPermissions.SPECIALIZATIONS[user.specialization]) {
         permissions = window.TankToolsPermissions.SPECIALIZATIONS[user.specialization].defaultPermissions;
       }
 
@@ -1201,7 +1214,11 @@
 
     // Edit user permissions (new function)
     function editUserPermissions(username) {
-      const user = allUsers.find(u => u.username === username);
+      // توحيد حالة الأحرف في معرف المستخدم للبحث
+      const normalizedUsername = username.toLowerCase();
+      
+      // البحث عن المستخدم بغض النظر عن حالة الأحرف
+      const user = allUsers.find(u => u.username.toLowerCase() === normalizedUsername);
       if (!user) {
         showMessage('❌ User not found!', 'error');
         return;
@@ -1252,7 +1269,7 @@
             
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
               <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
-              <button class="btn btn-primary" onclick="saveUserPermissions('${username}', this.closest('.modal'))">Save Permissions</button>
+              <button class="btn btn-primary" onclick="saveUserPermissions('${user.username}', this.closest('.modal'))">Save Permissions</button>
             </div>
           </div>
         </div>
@@ -1285,6 +1302,10 @@
         // إضافة console.log للتشخيص
         console.log('Saving permissions for:', username);
         
+        // توحيد حالة الأحرف في معرف المستخدم (تحويله إلى lowercase)
+        const normalizedUsername = username.toLowerCase();
+        console.log('Normalized username:', normalizedUsername);
+        
         const specialization = modal.querySelector('#userSpecialization').value;
         console.log('Specialization:', specialization);
         
@@ -1304,28 +1325,60 @@
         };
         console.log('Custom permissions:', customPermissions);
         
-        // قراءة البيانات الحالية أولاً
-        const userRef = doc(db, 'users', username);
+        // البحث عن المستخدم بغض النظر عن حالة الأحرف
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('username', '==', username));
+        const querySnapshot = await getDocs(q);
+        
+        let existingUser = null;
+        let existingDocId = null;
+        
+        // التحقق من وجود المستخدم بأي حالة أحرف
+        if (!querySnapshot.empty) {
+          querySnapshot.forEach((doc) => {
+            existingUser = doc.data();
+            existingDocId = doc.id;
+          });
+          console.log('Found existing user with ID:', existingDocId);
+        }
+        
+        // التحقق من وجود المستخدم بالمعرف المحدد
+        const userRef = doc(db, 'users', normalizedUsername);
         const userDoc = await getDoc(userRef);
         
-        if (userDoc.exists()) {
+        if (userDoc.exists() || existingUser) {
           // المستخدم موجود - تحديث الصلاحيات مع الحفاظ على البيانات الأصلية
-          const userData = userDoc.data();
+          const userData = userDoc.exists() ? userDoc.data() : existingUser;
           const updateData = {
+            username: normalizedUsername, // تخزين المعرف بحالة موحدة
             specialization: specialization,
             customPages: selectedPages,
             customPermissions: customPermissions,
             updatedAt: serverTimestamp()
           };
           
-          await updateDoc(userRef, updateData);
+          // استخدام المعرف الموجود أو المعرف الموحد
+          const targetRef = existingDocId ? doc(db, 'users', existingDocId) : userRef;
+          await updateDoc(targetRef, updateData);
           console.log('User permissions updated successfully');
+          
+          // إذا كان المستخدم موجود بمعرف مختلف، نحذف المستند المكرر
+          if (existingDocId && existingDocId !== normalizedUsername) {
+            console.log('Cleaning up duplicate user document');
+            // نقل جميع البيانات إلى المستند الموحد
+            await setDoc(userRef, {
+              ...userData,
+              ...updateData
+            });
+            // حذف المستند القديم
+            await deleteDoc(doc(db, 'users', existingDocId));
+          }
         } else {
           // المستخدم غير موجود - إنشاء مستند جديد مع البيانات الأساسية
           const updateData = {
-            username: username,
+            username: normalizedUsername, // تخزين المعرف بحالة موحدة
             fullName: username, // قيمة افتراضية
-            email: `${username}@example.com`, // قيمة افتراضية
+            email: `${normalizedUsername}@example.com`, // قيمة افتراضية
             specialization: specialization,
             customPages: selectedPages,
             customPermissions: customPermissions,
