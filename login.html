@@ -363,13 +363,16 @@
 
     // Enhanced login function with Firebase
     async function handleLogin(event) {
-      event.preventDefault(      showLoading("loginLoading");
+      event.preventDefault();
+      showMessage("", "");
+      showLoading("loginLoading");
       const usernameInput = document.getElementById("loginUsername");
       const password = document.getElementById("loginPassword").value;
       const rememberMe = document.getElementById("rememberMe").checked;
 
       // Convert username to lowercase
-      const username = usernameInput.value.toLowerCase();ole.log('🔐 Login attempt for:', username);
+      const username = usernameInput.value.toLowerCase();
+      console.log('🔐 Login attempt for:', username);
       
       if (!username || !password) {
         showMessage('❌ Please enter username and password', 'error');
@@ -508,7 +511,8 @@
     async function handleRegister(event) {
       event.preventDefault();
       
-      const fullName = document.getElementById('fullName').value.trim();      const username = document.getElementById("username").value.toLowerCase();.trim();
+      const fullName = document.getElementById("fullName").value.trim();
+      const username = document.getElementById("username").value.toLowerCase();
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirmPassword').value;
       
