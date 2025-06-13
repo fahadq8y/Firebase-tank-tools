@@ -1298,13 +1298,13 @@
           canManageUsers: specialization === 'admin'
         };
         
-        // تحديث المستخدم في Firebase
-        const userRef = db.collection('users').doc(username);
-        await userRef.update({
+        // تحديث المستخدم في Firebase (استخدام Firebase v9 syntax)
+        const userRef = doc(db, 'users', username);
+        await updateDoc(userRef, {
           specialization: specialization,
           customPages: selectedPages,
           customPermissions: customPermissions,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          updatedAt: serverTimestamp()
         });
         
         showMessage('✅ Permissions updated successfully!', 'success');
