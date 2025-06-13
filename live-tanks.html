@@ -930,7 +930,12 @@
         remainingText = `${daysRemaining}d ${remainingHours}h`;
       }
       
-      const permissions = rolePermissions[currentUser.role] || {};
+      // استخدام الصلاحيات المحدثة من setupPermissions
+      const permissions = window.userLiveTanksPermissions || {
+        canAdd: false,
+        canEdit: false,
+        canDelete: false
+      };
       
       document.getElementById('tankDetailsTitle').textContent = `Tank ${tank.tankNumber} Details`;
       
@@ -1046,12 +1051,10 @@
           </div>
         </div>
         
-        ${permissions.canEdit ? `
-          <div class="tank-actions">
-            <button class="btn btn-primary" onclick="editTank('${tank.id}')">✏️ Edit Tank</button>
-            <button class="btn btn-danger" onclick="deleteTank('${tank.id}')">🗑️ Delete Tank</button>
-          </div>
-        ` : ''}
+        <div class="tank-actions">
+          ${permissions.canEdit ? `<button class="btn btn-primary" onclick="editTank('${tank.id}')">✏️ Edit Tank</button>` : ''}
+          ${permissions.canDelete ? `<button class="btn btn-danger" onclick="deleteTank('${tank.id}')">🗑️ Delete Tank</button>` : ''}
+        </div>
       `;
       document.getElementById('tankDetailsBody').innerHTML = detailsHTML;
       document.getElementById('tankDetailsModal').classList.add('show');
