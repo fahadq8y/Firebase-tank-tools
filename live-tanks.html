@@ -856,7 +856,16 @@
       
       // معالجة كل تانك في حلقة
       tanks.forEach(tank => {
-        const finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+        // إصلاح مشكلة finishDateTime للتوافق مع PLCR و PBCR
+        let finishDateTime;
+        if (tank.finishDateTime) {
+          // PLCR يرسل finishDateTime جاهز
+          finishDateTime = new Date(tank.finishDateTime);
+        } else {
+          // PBCR يرسل finishDate و finishTime منفصلين
+          finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+        }
+        
         const urgencyLevel = getUrgencyLevel(finishDateTime);
         const rowClass = getRowClass(urgencyLevel);
         
@@ -1084,6 +1093,7 @@
         
         <div class="tank-actions">
           ${permissions.canEdit ? `<button class="btn btn-primary" onclick="editTank('${tank.id}')">✏️ Edit Tank</button>` : ''}
+          <button class="btn btn-info" onclick="addTankReminder('${tank.id}')" style="background:linear-gradient(45deg,#2196F3,#1976D2)">📅 Add Reminder</button>
           ${permissions.canDelete ? `<button class="btn btn-danger" onclick="deleteTank('${tank.id}')">🗑️ Delete Tank</button>` : ''}
         </div>
       `;
@@ -1433,7 +1443,7 @@
       currentEditingTank = null;
     }
 
-    // Calculate actual rate based on level difference and time
+    // Calculate actual rate based on level difference and time (من آخر تعديل)
     function calculateActualRate() {
       const currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
       const previousLevel = parseFloat(document.getElementById('editPreviousLevel').value);
@@ -1441,59 +1451,92 @@
       
       if (!currentLevel || !previousLevel || !currentEditingTank) return;
       
-      console.log('📊 Calculating actual rate:', {
+      console.log('📊 Calculating actual rate from last update:', {
         currentLevel,
         previousLevel,
-        rateUnit
+        rateUnit,
+        department: currentEditingTank.department
       });
       
-      // Get time difference
+      // Get time difference from last update (أو من البداية إذا لم يكن هناك تحديث سابق)
       const now = new Date();
-      const lastUpdateTime = currentEditingTank.lastLevelUpdate ? 
-        new Date(currentEditingTank.lastLevelUpdate.seconds * 1000) : 
-        new Date(currentEditingTank.addedAt.seconds * 1000);
+      let lastUpdateTime;
+      
+      // إذا كان هناك تحديث سابق، احسب من آخر تحديث
+      if (currentEditingTank.lastLevelUpdate && currentEditingTank.lastLevelUpdate.seconds) {
+        lastUpdateTime = new Date(currentEditingTank.lastLevelUpdate.seconds * 1000);
+        console.log('⏰ Using last update time:', lastUpdateTime);
+      } else {
+        // إذا لم يكن هناك تحديث سابق، احسب من بداية العملية
+        lastUpdateTime = new Date(currentEditingTank.addedAt.seconds * 1000);
+        console.log('⏰ Using initial time (no previous updates):', lastUpdateTime);
+      }
       
       const timeDiffHours = (now - lastUpdateTime) / (1000 * 60 * 60);
       
-      if (timeDiffHours <= 0) return;
+      if (timeDiffHours <= 0) {
+        console.log('⚠️ Invalid time difference:', timeDiffHours);
+        return;
+      }
       
       // Calculate level difference (previous - current for consumption)
       const levelDiff = Math.abs(previousLevel - currentLevel);
       
       console.log('📏 Level difference:', levelDiff, 'meters');
-      console.log('⏰ Time difference:', timeDiffHours, 'hours');
-      
-      // Get tank data for capacity calculation
-      const tankNumber = document.getElementById('editTankNumber').value;
-      const tankData = tanks[tankNumber];
-      
-      if (!tankData) return;
-      
-      const c = tankData.comment; // capacity factor
+      console.log('⏰ Time difference:', timeDiffHours.toFixed(2), 'hours');
       
       let actualRate = 0;
       
-      // Calculate rate based on the selected unit
-      if (rateUnit === "mtr/hr") {
-        // Rate in meters per hour
-        actualRate = levelDiff / timeDiffHours;
-        console.log('📐 Calculated rate (mtr/hr):', actualRate);
-      } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
-        // Rate in cubic meters per hour
-        // First calculate volume in barrels
-        const volumeDiffBarrels = levelDiff * c;
-        const rateBarrels = volumeDiffBarrels / timeDiffHours;
-        // Convert from barrels to m³ (1 barrel = 6.28 m³ approximately)
-        actualRate = rateBarrels / 6.28;
-        console.log('🧊 Volume in barrels:', volumeDiffBarrels);
-        console.log('🧊 Rate in barrels:', rateBarrels);
-        console.log('🧊 Rate Unit detected:', rateUnit);
-        console.log('🧊 Calculated rate (m³/hr):', actualRate);
+      // حساب Rate حسب نوع القسم والوحدة
+      if (currentEditingTank.department === 'PLCR') {
+        // PLCR دائماً MT/hr (أطنان مترية)
+        // نحتاج لمعرفة كثافة المنتج لتحويل من متر إلى طن
+        // للتبسيط، سنستخدم كثافة تقريبية (0.8 طن/متر مكعب)
+        const tankNumber = document.getElementById('editTankNumber').value;
+        const tankData = tanks[tankNumber];
+        
+        if (tankData) {
+          const c = tankData.comment; // capacity factor (bbl/m)
+          const volumeDiffBarrels = levelDiff * c;
+          const volumeDiffM3 = volumeDiffBarrels / 6.28; // تحويل من برميل إلى متر مكعب
+          const volumeDiffMT = volumeDiffM3 * 0.8; // تحويل إلى طن (كثافة تقريبية)
+          actualRate = volumeDiffMT / timeDiffHours;
+          console.log('🏭 PLCR Rate calculation:', {
+            volumeDiffBarrels,
+            volumeDiffM3,
+            volumeDiffMT,
+            actualRate: actualRate.toFixed(2) + ' MT/hr'
+          });
+        }
       } else {
-        // Default: bbl/hr (barrels per hour)
-        const volumeDiff = levelDiff * c;
-        actualRate = volumeDiff / timeDiffHours;
-        console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
+        // PBCR - حسب الاختيار الأصلي
+        const tankNumber = document.getElementById('editTankNumber').value;
+        const tankData = tanks[tankNumber];
+        
+        if (!tankData) return;
+        
+        const c = tankData.comment; // capacity factor
+        
+        if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+          // Rate in meters per hour
+          actualRate = levelDiff / timeDiffHours;
+          console.log('📐 PBCR Calculated rate (meter/hr):', actualRate);
+        } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
+          // Rate in cubic meters per hour
+          const volumeDiffBarrels = levelDiff * c;
+          const rateBarrels = volumeDiffBarrels / timeDiffHours;
+          actualRate = rateBarrels / 6.28; // تحويل من برميل إلى متر مكعب
+          console.log('🧊 PBCR Rate calculation (m³/hr):', {
+            volumeDiffBarrels,
+            rateBarrels,
+            actualRate: actualRate.toFixed(2) + ' m³/hr'
+          });
+        } else {
+          // Default: bbl/hr (barrels per hour)
+          const volumeDiff = levelDiff * c;
+          actualRate = volumeDiff / timeDiffHours;
+          console.log('🛢️ PBCR Calculated rate (bbl/hr):', actualRate);
+        }
       }
       
       // Update rate field
@@ -2058,6 +2101,38 @@
         deleteTankConfirmed();
       }
     }
+    
+    // Add Tank Reminder Function
+    window.addTankReminder = function(tankId) {
+      const tank = window.currentTanks?.find(t => t.id === tankId);
+      if (!tank) {
+        alert('Tank not found');
+        return;
+      }
+      
+      // إصلاح مشكلة finishDateTime للتوافق مع PLCR و PBCR
+      let finishDateTime;
+      if (tank.finishDateTime) {
+        // PLCR يرسل finishDateTime جاهز
+        finishDateTime = new Date(tank.finishDateTime);
+      } else {
+        // PBCR يرسل finishDate و finishTime منفصلين
+        finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+      }
+      
+      const title = `Tank ${tank.tankNumber} - ${tank.product} Completion`;
+      const details = `Tank: ${tank.tankNumber}\\nProduct: ${tank.product}\\nTarget: ${tank.targetValue || '-'} ${tank.targetType || ''}\\nRate: ${tank.rate || '-'} ${tank.rateUnit || ''}\\nDepartment: ${tank.department}`;
+      
+      const startDate = finishDateTime.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const endDate = new Date(finishDateTime.getTime() + 30 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      
+      const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(details)}`;
+      
+      window.open(googleCalendarUrl, '_blank');
+      
+      // إظهار رسالة تأكيد
+      showMessage('📅 Calendar reminder opened in new tab!', 'success');
+    };
     
     async function deleteTankConfirmed() {
       if (!currentEditingTank) return;
