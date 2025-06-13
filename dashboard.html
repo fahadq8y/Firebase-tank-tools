@@ -1304,14 +1304,14 @@
         };
         console.log('Custom permissions:', customPermissions);
         
-        // تحديث المستخدم في Firebase (استخدام Firebase v9 syntax)
+        // تحديث المستخدم في Firebase (استخدام setDoc مع merge لإنشاء أو تحديث)
         const userRef = doc(db, 'users', username);
-        await updateDoc(userRef, {
+        await setDoc(userRef, {
           specialization: specialization,
           customPages: selectedPages,
           customPermissions: customPermissions,
           updatedAt: serverTimestamp()
-        });
+        }, { merge: true }); // merge: true يحافظ على البيانات الموجودة
         
         console.log('Permissions updated successfully in Firebase');
         showMessage('✅ Permissions updated successfully!', 'success');
