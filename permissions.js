@@ -89,7 +89,7 @@ const PAGE_NAMES = {
 };
 
 // الحصول على بيانات المستخدم الحالي
-async function getCurrentUser() {
+function getCurrentUser() {
   // فحص الجلسة أولاً
   const session = sessionStorage.getItem('tanktools_session');
   if (session !== 'active') {
@@ -106,28 +106,6 @@ async function getCurrentUser() {
     const user = JSON.parse(userData);
     // التأكد من صحة بيانات المستخدم
     if (user && user.username && (user.role || user.userType)) {
-      // تحديث بيانات المستخدم من Firebase قبل إرجاعها
-      try {
-        // التحقق من وجود Firebase
-        if (window.db && window.doc && window.getDoc) {
-          console.log('🔄 تحديث بيانات المستخدم من Firebase...');
-          const userRef = window.doc(window.db, 'users', user.username.toLowerCase());
-          const userDoc = await window.getDoc(userRef);
-          
-          if (userDoc.exists()) {
-            const firebaseUser = userDoc.data();
-            // دمج البيانات الجديدة مع البيانات القديمة
-            const updatedUser = { ...user, ...firebaseUser };
-            // تحديث البيانات في التخزين المحلي
-            localStorage.setItem('tanktools_current_user', JSON.stringify(updatedUser));
-            console.log('✅ تم تحديث بيانات المستخدم بنجاح من Firebase');
-            return updatedUser;
-          }
-        }
-      } catch (error) {
-        console.error('خطأ في تحديث بيانات المستخدم من Firebase:', error);
-      }
-      
       return user;
     }
     return null;
@@ -138,30 +116,24 @@ async function getCurrentUser() {
 }
 
 // فحص صلاحية الوصول للصفحة الحالية
-async function checkPageAccess() {
-  try {
-    const user = await getCurrentUser();
-    if (!user) {
-      redirectToLogin();
-      return false;
-    }
-
-    const currentPage = getCurrentPageName();
-    const hasAccess = checkUserPageAccess(user, currentPage);
-    
-    if (!hasAccess) {
-      showAccessDenied();
-      return false;
-    }
-
-    // تطبيق صلاحيات الوظائف
-    applyFeaturePermissions(user);
-    return true;
-  } catch (error) {
-    console.error('خطأ في فحص صلاحية الوصول:', error);
+function checkPageAccess() {
+  const user = getCurrentUser();
+  if (!user) {
     redirectToLogin();
     return false;
   }
+
+  const currentPage = getCurrentPageName();
+  const hasAccess = checkUserPageAccess(user, currentPage);
+  
+  if (!hasAccess) {
+    showAccessDenied();
+    return false;
+  }
+
+  // تطبيق صلاحيات الوظائف
+  applyFeaturePermissions(user);
+  return true;
 }
 
 // الحصول على اسم الصفحة الحالية
@@ -208,63 +180,51 @@ function checkUserPageAccess(user, pageName) {
 }
 
 // تطبيق صلاحيات الوظائف على الصفحة
-async function applyFeaturePermissions(user) {
-  try {
-    // التأكد من أن لدينا بيانات المستخدم المحدثة
-    if (!user) {
-      user = await getCurrentUser();
-      if (!user) return;
-    }
+function applyFeaturePermissions(user) {
+  // إذا كان المستخدم يستخدم النظام القديم
+  if (user.role && !user.specialization) {
+    // تطبيق الصلاحيات الافتراضية للنظام القديم
+    const isAdmin = user.role === 'admin' || user.isAdmin;
+    const canAccessLiveTanks = ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+    const canEditLiveTanks = ['admin', 'panel_operator'].includes(user.role);
     
-    // إذا كان المستخدم يستخدم النظام القديم
-    if (user.role && !user.specialization) {
-      // تطبيق الصلاحيات الافتراضية للنظام القديم
-      const isAdmin = user.role === 'admin' || user.isAdmin;
-      const canAccessLiveTanks = ['admin', 'panel_operator', 'supervisor'].includes(user.role);
-      const canEditLiveTanks = ['admin', 'panel_operator'].includes(user.role);
-      
-      hideElementIfNoPermission('live-tanks-btn', canAccessLiveTanks);
-      hideElementIfNoPermission('add-to-live-tanks-btn', canEditLiveTanks);
-      hideElementIfNoPermission('add-to-live-tanks-help', canEditLiveTanks); // إخفاء علامة التعجب
-      hideElementIfNoPermission('user-management-link', isAdmin);
-      hideElementIfNoPermission('nav-admin', isAdmin);
-      return;
-    }
+    hideElementIfNoPermission('live-tanks-btn', canAccessLiveTanks);
+    hideElementIfNoPermission('add-to-live-tanks-btn', canEditLiveTanks);
+    hideElementIfNoPermission('add-to-live-tanks-help', canEditLiveTanks); // إخفاء علامة التعجب
+    hideElementIfNoPermission('user-management-link', isAdmin);
+    hideElementIfNoPermission('nav-admin', isAdmin);
+    return;
+  }
 
-    // للمستخدمين الجدد مع نظام specialization
-    let permissions = {};
-    
-    // إذا كان للمستخدم صلاحيات مخصصة
-    if (user.customPermissions) {
-      permissions = user.customPermissions;
-    } else {
-      // استخدام الصلاحيات الافتراضية للتخصص
-      const specialization = SPECIALIZATIONS[user.specialization];
-      permissions = specialization ? specialization.defaultPermissions : {};
-    }
+  // للمستخدمين الجدد مع نظام specialization
+  let permissions = {};
+  
+  // إذا كان للمستخدم صلاحيات مخصصة
+  if (user.customPermissions) {
+    permissions = user.customPermissions;
+  } else {
+    // استخدام الصلاحيات الافتراضية للتخصص
+    const specialization = SPECIALIZATIONS[user.specialization];
+    permissions = specialization ? specialization.defaultPermissions : {};
+  }
 
-    // إخفاء أزرار Live Tanks حسب الصلاحيات
-    hideElementIfNoPermission('live-tanks-btn', permissions.canViewLiveTanks);
-    hideElementIfNoPermission('add-to-live-tanks-btn', permissions.canAddToLiveTanks);
-    hideElementIfNoPermission('add-to-live-tanks-help', permissions.canAddToLiveTanks); // إخفاء علامة التعجب
-    hideElementIfNoPermission('edit-live-tanks-btn', permissions.canEditLiveTanks);
-    hideElementIfNoPermission('delete-live-tanks-btn', permissions.canDeleteFromLiveTanks);
-    
-    // إخفاء رابط إدارة المستخدمين
-    hideElementIfNoPermission('user-management-link', permissions.canManageUsers);
-    hideElementIfNoPermission('nav-admin', permissions.canManageUsers);
+  // إخفاء أزرار Live Tanks حسب الصلاحيات
+  hideElementIfNoPermission('live-tanks-btn', permissions.canViewLiveTanks);
+  hideElementIfNoPermission('add-to-live-tanks-btn', permissions.canAddToLiveTanks);
+  hideElementIfNoPermission('add-to-live-tanks-help', permissions.canAddToLiveTanks); // إخفاء علامة التعجب
+  hideElementIfNoPermission('edit-live-tanks-btn', permissions.canEditLiveTanks);
+  hideElementIfNoPermission('delete-live-tanks-btn', permissions.canDeleteFromLiveTanks);
+  
+  // إخفاء رابط إدارة المستخدمين
+  hideElementIfNoPermission('user-management-link', permissions.canManageUsers);
+  hideElementIfNoPermission('nav-admin', permissions.canManageUsers);
 
-    // تطبيق صلاحيات على الروابط في القائمة العلوية
-    await applyNavigationPermissions(user);
-    
-    // تطبيق صلاحيات على صفحة Live Tanks إذا كنا فيها
-    if (getCurrentPageName() === 'live-tanks.html') {
-      applyLiveTanksPermissions(permissions);
-    }
-    
-    console.log('✅ تم تطبيق الصلاحيات بنجاح للمستخدم:', user.username);
-  } catch (error) {
-    console.error('خطأ في تطبيق الصلاحيات:', error);
+  // تطبيق صلاحيات على الروابط في القائمة العلوية
+  applyNavigationPermissions(user);
+  
+  // تطبيق صلاحيات على صفحة Live Tanks إذا كنا فيها
+  if (getCurrentPageName() === 'live-tanks.html') {
+    applyLiveTanksPermissions(permissions);
   }
 }
 
@@ -306,46 +266,21 @@ function hideElementIfNoPermission(elementId, hasPermission) {
 }
 
 // تطبيق صلاحيات على القائمة العلوية
-async function applyNavigationPermissions(user) {
-  try {
-    // التأكد من أن لدينا بيانات المستخدم المحدثة
-    if (!user) {
-      user = await getCurrentUser();
-      if (!user) return;
-    }
-    
-    // تعريف USER_TYPES إذا لم يكن موجوداً
-    const USER_TYPES = window.USER_TYPES || {};
-    const userConfig = USER_TYPES[user.userType] || {};
-    const allowedPages = userConfig.allowedPages || [];
+function applyNavigationPermissions(user) {
+  const userConfig = USER_TYPES[user.userType] || {};
+  const allowedPages = userConfig.allowedPages || [];
 
-    // إخفاء الروابط غير المسموحة
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-      const href = link.getAttribute('href');
-      if (href && !allowedPages.includes('all')) {
-        const isAllowed = allowedPages.some(page => href.includes(page.replace('.html', '')));
-        if (!isAllowed) {
-          link.style.display = 'none';
-        }
+  // إخفاء الروابط غير المسموحة
+  const navLinks = document.querySelectorAll('.nav-link');
+  navLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && !allowedPages.includes('all')) {
+      const isAllowed = allowedPages.some(page => href.includes(page.replace('.html', '')));
+      if (!isAllowed) {
+        link.style.display = 'none';
       }
-    });
-    
-    // إظهار الروابط المسموحة بناءً على صلاحيات المستخدم المحدثة
-    if (user.customPages && Array.isArray(user.customPages)) {
-      navLinks.forEach(link => {
-        const href = link.getAttribute('href');
-        if (href) {
-          const pageName = href.split('/').pop();
-          if (user.customPages.includes(pageName) || user.customPages.includes('all')) {
-            link.style.display = 'block';
-          }
-        }
-      });
     }
-  } catch (error) {
-    console.error('خطأ في تطبيق صلاحيات القائمة:', error);
-  }
+  });
 }
 
 // إظهار رسالة منع الوصول
@@ -380,129 +315,87 @@ function redirectToLogin() {
 }
 
 // فحص صلاحية وظيفة معينة
-async function hasPermission(permissionName) {
-  try {
-    const user = await getCurrentUser();
-    if (!user) return false;
-    
-    // الأدمن له كل الصلاحيات
-    if (user.specialization === 'admin' || user.isAdmin || user.role === 'admin') return true;
-    
-    // إذا كان المستخدم يستخدم النظام القديم
-    if (user.role && !user.specialization) {
-      // صلاحيات افتراضية للنظام القديم
-      switch (permissionName) {
-        case 'canManageUsers':
-          return user.role === 'admin' || user.isAdmin;
-        case 'canViewLiveTanks':
-          return ['admin', 'panel_operator', 'supervisor'].includes(user.role);
-        case 'canEditLiveTanks':
-        case 'canAddToLiveTanks':
-        case 'canDeleteFromLiveTanks':
-          return ['admin', 'panel_operator'].includes(user.role);
-        default:
-          return false;
-      }
+function hasPermission(permissionName) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  
+  // الأدمن له كل الصلاحيات
+  if (user.specialization === 'admin' || user.isAdmin || user.role === 'admin') return true;
+  
+  // إذا كان المستخدم يستخدم النظام القديم
+  if (user.role && !user.specialization) {
+    // صلاحيات افتراضية للنظام القديم
+    switch (permissionName) {
+      case 'canManageUsers':
+        return user.role === 'admin' || user.isAdmin;
+      case 'canViewLiveTanks':
+        return ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+      case 'canEditLiveTanks':
+      case 'canAddToLiveTanks':
+      case 'canDeleteFromLiveTanks':
+        return ['admin', 'panel_operator'].includes(user.role);
+      default:
+        return false;
     }
-    
-    // للمستخدمين الجدد مع نظام specialization
-    let permissions = {};
-    
-    if (user.customPermissions) {
-      permissions = user.customPermissions;
-    } else {
-      const specialization = SPECIALIZATIONS[user.specialization];
-      permissions = specialization ? specialization.defaultPermissions : {};
-    }
-    
-    return permissions[permissionName] || false;
-  } catch (error) {
-    console.error('خطأ في فحص الصلاحية:', error);
-    return false;
   }
+  
+  // للمستخدمين الجدد مع نظام specialization
+  let permissions = {};
+  
+  if (user.customPermissions) {
+    permissions = user.customPermissions;
+  } else {
+    const specialization = SPECIALIZATIONS[user.specialization];
+    permissions = specialization ? specialization.defaultPermissions : {};
+  }
+  
+  return permissions[permissionName] || false;
 }
 
 // تسجيل نشاط المستخدم
-async function logUserActivity(action, details = '') {
-  try {
-    const user = await getCurrentUser();
-    if (!user) return;
+function logUserActivity(action, details = '') {
+  const user = getCurrentUser();
+  if (!user) return;
 
-    const activity = {
-      username: user.username,
-      action: action,
-      details: details,
-      timestamp: new Date().toISOString(),
-      page: getCurrentPageName(),
-      userAgent: navigator.userAgent
-    };
+  const activity = {
+    username: user.username,
+    action: action,
+    details: details,
+    timestamp: new Date().toISOString(),
+    page: getCurrentPageName(),
+    userAgent: navigator.userAgent
+  };
 
-    // حفظ النشاط في localStorage مؤقتاً
-    const activities = JSON.parse(localStorage.getItem('tanktools_activities') || '[]');
-    activities.push(activity);
-    
-    // الاحتفاظ بآخر 100 نشاط فقط
-    if (activities.length > 100) {
-      activities.splice(0, activities.length - 100);
-    }
-    
-    localStorage.setItem('tanktools_activities', JSON.stringify(activities));
-    
-    console.log('تم تسجيل النشاط:', activity);
-  } catch (error) {
-    console.error('خطأ في تسجيل النشاط:', error);
+  // حفظ النشاط في localStorage مؤقتاً
+  const activities = JSON.parse(localStorage.getItem('tanktools_activities') || '[]');
+  activities.push(activity);
+  
+  // الاحتفاظ بآخر 100 نشاط فقط
+  if (activities.length > 100) {
+    activities.splice(0, activities.length - 100);
   }
+  
+  localStorage.setItem('tanktools_activities', JSON.stringify(activities));
+  
+  console.log('تم تسجيل النشاط:', activity);
 }
 
 // تهيئة نظام الصلاحيات عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', async function() {
-  try {
-    // فحص الصلاحيات بشكل غير متزامن
-    const hasAccess = await checkPageAccess();
-    if (!hasAccess) {
-      return;
-    }
-    
-    // تسجيل دخول المستخدم للصفحة
-    const user = await getCurrentUser();
-    logUserActivity('page_visit', getCurrentPageName());
-    
-    console.log('🔐 نظام الصلاحيات تم تحميله بنجاح');
-  } catch (error) {
-    console.error('خطأ في تهيئة نظام الصلاحيات:', error);
-    redirectToLogin();
+document.addEventListener('DOMContentLoaded', function() {
+  // فحص الصلاحيات
+  if (!checkPageAccess()) {
+    return;
   }
+  
+  // تسجيل دخول المستخدم للصفحة
+  logUserActivity('page_visit', getCurrentPageName());
+  
+  console.log('🔐 نظام الصلاحيات تم تحميله بنجاح');
 });
-
-// إضافة دالة مساعدة للتحقق من الصلاحيات بشكل متزامن (للتوافق مع الكود القديم)
-function getCurrentUserSync() {
-  // استخدام البيانات المخزنة محلياً فقط بدون تحديث من Firebase
-  const session = sessionStorage.getItem('tanktools_session');
-  if (session !== 'active') {
-    return null;
-  }
-  
-  const userData = localStorage.getItem('tanktools_current_user');
-  if (!userData) {
-    return null;
-  }
-  
-  try {
-    const user = JSON.parse(userData);
-    if (user && user.username && (user.role || user.userType)) {
-      return user;
-    }
-    return null;
-  } catch (e) {
-    console.error('خطأ في قراءة بيانات المستخدم:', e);
-    return null;
-  }
-}
 
 // تصدير الوظائف للاستخدام العام
 window.TankToolsPermissions = {
   getCurrentUser,
-  getCurrentUserSync, // إضافة الدالة المتزامنة للتوافق مع الكود القديم
   checkPageAccess,
   hasPermission,
   logUserActivity,
