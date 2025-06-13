@@ -612,42 +612,32 @@
       checkLoginStatus();
     });
 
-    async function checkLoginStatus() {
+    function checkLoginStatus() {
+      const session = sessionStorage.getItem('tanktools_session');
+      const userData = localStorage.getItem('tanktools_current_user');
+      
+      if (session !== 'active' || !userData) {
+        showAccessDenied();
+        return;
+      }
+      
       try {
-        // استخدام الدالة غير المتزامنة للحصول على بيانات المستخدم المحدثة من Firebase
-        const user = await window.TankToolsPermissions.getCurrentUser();
-        
-        if (!user) {
-          showAccessDenied();
-          return;
-        }
-        
-        currentUser = user;
-        
-        // استخدام الدالة غير المتزامنة للتحقق من صلاحية الوصول
-        const canViewLiveTanks = await window.TankToolsPermissions.hasPermission('canViewLiveTanks');
-        
-        if (!canViewLiveTanks) {
+        currentUser = JSON.parse(userData);
+        if (!canUserAccessLiveTanks()) {
           showAccessDenied();
           return;
         }
         
         initializeApp();
-        await logActivity('live_tanks_accessed', currentUser.username);
+        logActivity('live_tanks_accessed', currentUser.username);
       } catch (error) {
-        console.error('خطأ في التحقق من حالة تسجيل الدخول:', error);
         showAccessDenied();
       }
     }
 
-    async function canUserAccessLiveTanks() {
-      try {
-        // استخدام الدالة غير المتزامنة للتحقق من صلاحية الوصول
-        return await window.TankToolsPermissions.hasPermission('canViewLiveTanks');
-      } catch (error) {
-        console.error('خطأ في التحقق من صلاحية الوصول:', error);
-        return false;
-      }
+    function canUserAccessLiveTanks() {
+      const allowedRoles = ["admin", "panel_operator", "supervisor", "section_head", "operator", "planning"];
+      return allowedRoles.includes(currentUser.role);
     }
 
     function showAccessDenied() {
@@ -684,39 +674,19 @@
       }
     }
 
-    async function setupPermissions() {
-      try {
-        // استخدام الدوال غير المتزامنة للتحقق من الصلاحيات
-        const canAddToLiveTanks = await window.TankToolsPermissions.hasPermission('canAddToLiveTanks');
-        const canEditLiveTanks = await window.TankToolsPermissions.hasPermission('canEditLiveTanks');
-        const canDeleteFromLiveTanks = await window.TankToolsPermissions.hasPermission('canDeleteFromLiveTanks');
-        
-        console.log('🔐 صلاحيات المستخدم:', {
-          canAddToLiveTanks,
-          canEditLiveTanks,
-          canDeleteFromLiveTanks
-        });
-        
-        // Show/hide add buttons
-        const addButtons = ['addPBCRBtn', 'addWasheryBtn', 'addPLCRBtn'];
-        addButtons.forEach(btnId => {
-          const btn = document.getElementById(btnId);
-          if (canAddToLiveTanks) {
-            btn.style.display = 'flex';
-          } else {
-            btn.style.display = 'none';
-          }
-        });
-        
-        // تخزين الصلاحيات في متغير عام للاستخدام في أماكن أخرى
-        window.userLiveTanksPermissions = {
-          canAdd: canAddToLiveTanks,
-          canEdit: canEditLiveTanks,
-          canDelete: canDeleteFromLiveTanks
-        };
-      } catch (error) {
-        console.error('خطأ في إعداد الصلاحيات:', error);
-      }
+    function setupPermissions() {
+      const permissions = rolePermissions[currentUser.role] || { canView: true, canAdd: false, canEdit: false, canDelete: false };
+      
+      // Show/hide add buttons
+      const addButtons = ['addPBCRBtn', 'addWasheryBtn', 'addPLCRBtn'];
+      addButtons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (permissions.canAdd) {
+          btn.style.display = 'flex';
+        } else {
+          btn.style.display = 'none';
+        }
+      });
     }
 
     async function loadLiveTanks() {
@@ -774,7 +744,7 @@
       });
     }
 
-    async function displayTanksInTable(containerId, tanks) {
+    function displayTanksInTable(containerId, tanks) {
       const container = document.getElementById(containerId);
       
       if (tanks.length === 0) {
@@ -816,12 +786,13 @@
             <tbody>
         `;
       
-      // استخدام الصلاحيات المخزنة من setupPermissions
-      const permissions = window.userLiveTanksPermissions || {
-        canAdd: false,
-        canEdit: false,
-        canDelete: false
-      };
+      tanks.forEach(tank => {
+        const finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+        const urgencyLevel = getUrgencyLevel(finishDateTime);
+        const rowClass = getRowClass(urgencyLevel);
+        const urgencyIcon = getUrgencyIcon(urgencyLevel);
+        
+        const permissions = rolePermissions[currentUser.role] || {};
         
         // Format date to DD-MM
         const dateObj = new Date(tank.finishDate);
@@ -894,12 +865,9 @@
     }
 
     // Tank Details Functions
-    window.showTankDetails = async function(tankId) {
+    window.showTankDetails = function(tankId) {
       const tank = window.currentTanks?.find(t => t.id === tankId);
       if (!tank) return;
-      
-      // تحديث الصلاحيات قبل عرض التفاصيل
-      await setupPermissions();
       
       const finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
       const dateObj = new Date(tank.finishDate);
