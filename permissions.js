@@ -89,7 +89,7 @@ const PAGE_NAMES = {
 };
 
 // الحصول على بيانات المستخدم الحالي
-function getCurrentUser() {
+async function getCurrentUser() {
   // فحص الجلسة أولاً
   const session = sessionStorage.getItem('tanktools_session');
   if (session !== 'active') {
@@ -106,6 +106,28 @@ function getCurrentUser() {
     const user = JSON.parse(userData);
     // التأكد من صحة بيانات المستخدم
     if (user && user.username && (user.role || user.userType)) {
+      // تحديث بيانات المستخدم من Firebase قبل إرجاعها
+      try {
+        // التحقق من وجود Firebase
+        if (window.db && window.doc && window.getDoc) {
+          console.log('🔄 تحديث بيانات المستخدم من Firebase...');
+          const userRef = window.doc(window.db, 'users', user.username.toLowerCase());
+          const userDoc = await window.getDoc(userRef);
+          
+          if (userDoc.exists()) {
+            const firebaseUser = userDoc.data();
+            // دمج البيانات الجديدة مع البيانات القديمة
+            const updatedUser = { ...user, ...firebaseUser };
+            // تحديث البيانات في التخزين المحلي
+            localStorage.setItem('tanktools_current_user', JSON.stringify(updatedUser));
+            console.log('✅ تم تحديث بيانات المستخدم بنجاح من Firebase');
+            return updatedUser;
+          }
+        }
+      } catch (error) {
+        console.error('خطأ في تحديث بيانات المستخدم من Firebase:', error);
+      }
+      
       return user;
     }
     return null;
@@ -116,24 +138,30 @@ function getCurrentUser() {
 }
 
 // فحص صلاحية الوصول للصفحة الحالية
-function checkPageAccess() {
-  const user = getCurrentUser();
-  if (!user) {
+async function checkPageAccess() {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      redirectToLogin();
+      return false;
+    }
+
+    const currentPage = getCurrentPageName();
+    const hasAccess = checkUserPageAccess(user, currentPage);
+    
+    if (!hasAccess) {
+      showAccessDenied();
+      return false;
+    }
+
+    // تطبيق صلاحيات الوظائف
+    applyFeaturePermissions(user);
+    return true;
+  } catch (error) {
+    console.error('خطأ في فحص صلاحية الوصول:', error);
     redirectToLogin();
     return false;
   }
-
-  const currentPage = getCurrentPageName();
-  const hasAccess = checkUserPageAccess(user, currentPage);
-  
-  if (!hasAccess) {
-    showAccessDenied();
-    return false;
-  }
-
-  // تطبيق صلاحيات الوظائف
-  applyFeaturePermissions(user);
-  return true;
 }
 
 // الحصول على اسم الصفحة الحالية
@@ -315,41 +343,46 @@ function redirectToLogin() {
 }
 
 // فحص صلاحية وظيفة معينة
-function hasPermission(permissionName) {
-  const user = getCurrentUser();
-  if (!user) return false;
-  
-  // الأدمن له كل الصلاحيات
-  if (user.specialization === 'admin' || user.isAdmin || user.role === 'admin') return true;
-  
-  // إذا كان المستخدم يستخدم النظام القديم
-  if (user.role && !user.specialization) {
-    // صلاحيات افتراضية للنظام القديم
-    switch (permissionName) {
-      case 'canManageUsers':
-        return user.role === 'admin' || user.isAdmin;
-      case 'canViewLiveTanks':
-        return ['admin', 'panel_operator', 'supervisor'].includes(user.role);
-      case 'canEditLiveTanks':
-      case 'canAddToLiveTanks':
-      case 'canDeleteFromLiveTanks':
-        return ['admin', 'panel_operator'].includes(user.role);
-      default:
-        return false;
+async function hasPermission(permissionName) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return false;
+    
+    // الأدمن له كل الصلاحيات
+    if (user.specialization === 'admin' || user.isAdmin || user.role === 'admin') return true;
+    
+    // إذا كان المستخدم يستخدم النظام القديم
+    if (user.role && !user.specialization) {
+      // صلاحيات افتراضية للنظام القديم
+      switch (permissionName) {
+        case 'canManageUsers':
+          return user.role === 'admin' || user.isAdmin;
+        case 'canViewLiveTanks':
+          return ['admin', 'panel_operator', 'supervisor'].includes(user.role);
+        case 'canEditLiveTanks':
+        case 'canAddToLiveTanks':
+        case 'canDeleteFromLiveTanks':
+          return ['admin', 'panel_operator'].includes(user.role);
+        default:
+          return false;
+      }
     }
+    
+    // للمستخدمين الجدد مع نظام specialization
+    let permissions = {};
+    
+    if (user.customPermissions) {
+      permissions = user.customPermissions;
+    } else {
+      const specialization = SPECIALIZATIONS[user.specialization];
+      permissions = specialization ? specialization.defaultPermissions : {};
+    }
+    
+    return permissions[permissionName] || false;
+  } catch (error) {
+    console.error('خطأ في فحص الصلاحية:', error);
+    return false;
   }
-  
-  // للمستخدمين الجدد مع نظام specialization
-  let permissions = {};
-  
-  if (user.customPermissions) {
-    permissions = user.customPermissions;
-  } else {
-    const specialization = SPECIALIZATIONS[user.specialization];
-    permissions = specialization ? specialization.defaultPermissions : {};
-  }
-  
-  return permissions[permissionName] || false;
 }
 
 // تسجيل نشاط المستخدم
@@ -381,16 +414,23 @@ function logUserActivity(action, details = '') {
 }
 
 // تهيئة نظام الصلاحيات عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-  // فحص الصلاحيات
-  if (!checkPageAccess()) {
-    return;
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    // فحص الصلاحيات بشكل غير متزامن
+    const hasAccess = await checkPageAccess();
+    if (!hasAccess) {
+      return;
+    }
+    
+    // تسجيل دخول المستخدم للصفحة
+    const user = await getCurrentUser();
+    logUserActivity('page_visit', getCurrentPageName());
+    
+    console.log('🔐 نظام الصلاحيات تم تحميله بنجاح');
+  } catch (error) {
+    console.error('خطأ في تهيئة نظام الصلاحيات:', error);
+    redirectToLogin();
   }
-  
-  // تسجيل دخول المستخدم للصفحة
-  logUserActivity('page_visit', getCurrentPageName());
-  
-  console.log('🔐 نظام الصلاحيات تم تحميله بنجاح');
 });
 
 // تصدير الوظائف للاستخدام العام
