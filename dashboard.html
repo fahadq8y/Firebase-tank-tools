@@ -1308,21 +1308,24 @@
         const userRef = doc(db, 'users', username);
         const userDoc = await getDoc(userRef);
         
-        let updateData = {};
-        
         if (userDoc.exists()) {
-          // المستخدم موجود - تحديث الصلاحيات فقط
-          updateData = {
+          // المستخدم موجود - تحديث الصلاحيات مع الحفاظ على البيانات الأصلية
+          const userData = userDoc.data();
+          const updateData = {
             specialization: specialization,
             customPages: selectedPages,
             customPermissions: customPermissions,
             updatedAt: serverTimestamp()
           };
+          
           await updateDoc(userRef, updateData);
+          console.log('User permissions updated successfully');
         } else {
           // المستخدم غير موجود - إنشاء مستند جديد مع البيانات الأساسية
-          updateData = {
+          const updateData = {
             username: username,
+            fullName: username, // قيمة افتراضية
+            email: `${username}@example.com`, // قيمة افتراضية
             specialization: specialization,
             customPages: selectedPages,
             customPermissions: customPermissions,
@@ -1330,13 +1333,17 @@
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           };
+          
           await setDoc(userRef, updateData);
+          console.log('New user created with permissions');
         }
         
         console.log('Permissions updated successfully in Firebase');
         showMessage('✅ Permissions updated successfully!', 'success');
         modal.remove();
-        loadUsers(); // إعادة تحميل قائمة المستخدمين
+        
+        // استدعاء الدالة الصحيحة لتحديث الجدول
+        loadDashboardData();
         
       } catch (error) {
         console.error('Error updating permissions:', error);
