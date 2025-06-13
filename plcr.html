@@ -8,6 +8,36 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#003366">
   <script src="permissions.js"></script>
+  
+  <!-- Firebase v9 SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBxqKJBLOvwxgGqJvOwYzKfbLhHGjQoQQE",
+      authDomain: "firebase-tank-tools.firebaseapp.com",
+      projectId: "firebase-tank-tools",
+      storageBucket: "firebase-tank-tools.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef123456"
+    };
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    // Make Firebase functions globally available
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs;
+    window.query = query;
+    window.where = where;
+    window.orderBy = orderBy;
+    window.limit = limit;
+  </script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:Arial,sans-serif;margin:0;padding:20px;background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;color:white;direction:ltr;min-height:100vh}
@@ -643,22 +673,96 @@
       const tableContent = document.getElementById('personalTableContent');
       
       if (personalData.length === 0) {
-        tableContent.innerHTML = '<p style="text-align:center;color:#999;">No entries yet</p>';
+        tableContent.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">No entries yet</p>';
         return;
       }
       
       let html = '';
-      personalData.forEach(entry => {
+      personalData.forEach((entry, index) => {
         const isCurrentShift = isSameShift(new Date(entry.timestamp));
         const color = isCurrentShift ? '#ff4444' : '#44ff44';
+        const bgColor = isCurrentShift ? 'rgba(255,68,68,0.1)' : 'rgba(68,255,68,0.1)';
         
         html += `
-          <div style="border-bottom:1px solid rgba(255,255,255,0.2);padding:10px 0;">
-            <div style="color:${color};font-weight:bold;">Tank ${entry.tankNumber}</div>
-            <div style="font-size:12px;color:#ccc;">
-              Level: ${entry.currentLevel}m → ${entry.finalLevel.toFixed(2)}m<br>
-              Withdrawal: ${entry.amountToWithdraw} MT<br>
-              Finish: ${entry.finishTime}
+          <div style="
+            background: ${bgColor};
+            border: 1px solid ${color}40;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            position: relative;
+            transition: all 0.3s ease;
+          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            
+            <!-- زر المسح -->
+            <button onclick="removeFromPersonalTable(${index})" style="
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              background: rgba(255,0,0,0.8);
+              color: white;
+              border: none;
+              border-radius: 50%;
+              width: 25px;
+              height: 25px;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: bold;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.3s ease;
+            " onmouseover="this.style.background='rgba(255,0,0,1)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(255,0,0,0.8)'; this.style.transform='scale(1)'">×</button>
+            
+            <!-- معلومات الخزان -->
+            <div style="margin-right: 35px;">
+              <div style="
+                color: ${color};
+                font-weight: bold;
+                font-size: 16px;
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              ">
+                <span style="
+                  background: ${color};
+                  color: white;
+                  padding: 2px 8px;
+                  border-radius: 12px;
+                  font-size: 12px;
+                  font-weight: bold;
+                ">🛢️</span>
+                Tank ${entry.tankNumber}
+              </div>
+              
+              <div style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                font-size: 12px;
+                color: #ccc;
+                margin-bottom: 8px;
+              ">
+                <div>
+                  <span style="color: #00ffff;">📊 Level:</span><br>
+                  <span style="font-weight: bold;">${entry.currentLevel}m → ${entry.finalLevel.toFixed(2)}m</span>
+                </div>
+                <div>
+                  <span style="color: #00ffff;">⚖️ Withdrawal:</span><br>
+                  <span style="font-weight: bold;">${entry.amountToWithdraw} MT</span>
+                </div>
+              </div>
+              
+              <div style="
+                background: rgba(0,0,0,0.3);
+                padding: 8px;
+                border-radius: 5px;
+                border-left: 3px solid ${color};
+              ">
+                <span style="color: #00ffff;">⏰ Finish:</span>
+                <span style="font-weight: bold; color: ${color};">${entry.finishTime}</span>
+              </div>
             </div>
           </div>
         `;
@@ -666,6 +770,23 @@
       
       tableContent.innerHTML = html;
     }
+
+    // دالة مسح خزان من الجدول الشخصي
+    window.removeFromPersonalTable = (index) => {
+      if (confirm('Are you sure you want to remove this tank from the table?')) {
+        const personalData = JSON.parse(localStorage.getItem('plcr_personal_table') || '[]');
+        personalData.splice(index, 1);
+        localStorage.setItem('plcr_personal_table', JSON.stringify(personalData));
+        updatePersonalTable();
+        
+        // رسالة تأكيد
+        const msgDiv = document.createElement('div');
+        msgDiv.style.cssText = 'position:fixed;top:80px;right:20px;background:rgba(76,175,80,0.9);color:white;padding:10px 15px;border-radius:8px;font-size:12px;z-index:1000;animation:slideIn 0.3s ease';
+        msgDiv.textContent = '✅ Tank removed successfully!';
+        document.body.appendChild(msgDiv);
+        setTimeout(() => msgDiv.remove(), 3000);
+      }
+    };
 
     // دالة إظهار نافذة Add to Live Tanks
     window.showAddToLiveTanksModal = () => {
