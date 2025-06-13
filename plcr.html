@@ -1126,8 +1126,8 @@
           finishTime: timeStr,
           finishDate: dateStr,
           finishDateTime: finishDateTime,
-          addedAt: new Date(),
-          lastLevelUpdate: new Date(),
+          addedAt: window.serverTimestamp(),
+          lastLevelUpdate: window.serverTimestamp(),
           status: 'active',
           notes: document.getElementById('ltNotes').value,
           source: 'PLCR_Calculator'
@@ -1142,7 +1142,7 @@
         console.log('Attempting to add to Firebase:', tankData);
         
         // إضافة إلى Firebase مع معالجة أفضل للأخطاء
-        const docRef = await window.addDoc(window.collection(window.db, 'live-tanks'), tankData);
+        const docRef = await window.addDoc(window.collection(window.db, 'liveTanks'), tankData);
         console.log('Successfully added to Firebase with ID:', docRef.id);
         
         // رسالة نجاح
