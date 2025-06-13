@@ -614,38 +614,46 @@
 
     async function checkLoginStatus() {
       try {
-        // استخدام الدالة غير المتزامنة للحصول على بيانات المستخدم المحدثة من Firebase
-        const user = await window.TankToolsPermissions.getCurrentUser();
+        console.log('🔐 Checking login status for Live Tanks...');
+        
+        // استخدام دالة getCurrentUser من permissions.js
+        const user = await getCurrentUser();
         
         if (!user) {
+          console.log('checkLoginStatus: No current user, showing access denied');
           showAccessDenied();
           return;
         }
         
         currentUser = user;
+        console.log('checkLoginStatus: Current user:', user);
         
-        // استخدام الدالة غير المتزامنة للتحقق من صلاحية الوصول
-        const canViewLiveTanks = await window.TankToolsPermissions.hasPermission('canViewLiveTanks');
+        // استخدام دالة hasPermission من permissions.js للتحقق من صلاحية الوصول
+        const canViewLiveTanks = await hasPermission('canViewLiveTanks');
+        
+        console.log('checkLoginStatus: Can view Live Tanks:', canViewLiveTanks);
         
         if (!canViewLiveTanks) {
+          console.log('checkLoginStatus: User cannot view Live Tanks, showing access denied');
           showAccessDenied();
           return;
         }
         
+        console.log('✅ Login status check passed, initializing app');
         initializeApp();
         await logActivity('live_tanks_accessed', currentUser.username);
       } catch (error) {
-        console.error('خطأ في التحقق من حالة تسجيل الدخول:', error);
+        console.error('❌ Error checking login status:', error);
         showAccessDenied();
       }
     }
 
     async function canUserAccessLiveTanks() {
       try {
-        // استخدام الدالة غير المتزامنة للتحقق من صلاحية الوصول
-        return await window.TankToolsPermissions.hasPermission('canViewLiveTanks');
+        // استخدام دالة hasPermission من permissions.js للتحقق من صلاحية الوصول
+        return await hasPermission('canViewLiveTanks');
       } catch (error) {
-        console.error('خطأ في التحقق من صلاحية الوصول:', error);
+        console.error('❌ Error checking Live Tanks access permission:', error);
         return false;
       }
     }
@@ -686,25 +694,40 @@
 
     async function setupPermissions() {
       try {
-        // استخدام الدوال غير المتزامنة للتحقق من الصلاحيات
-        const canAddToLiveTanks = await window.TankToolsPermissions.hasPermission('canAddToLiveTanks');
-        const canEditLiveTanks = await window.TankToolsPermissions.hasPermission('canEditLiveTanks');
-        const canDeleteFromLiveTanks = await window.TankToolsPermissions.hasPermission('canDeleteFromLiveTanks');
+        console.log('🔐 Setting up Live Tanks permissions...');
         
-        console.log('🔐 صلاحيات المستخدم:', {
+        // الحصول على بيانات المستخدم الحالي
+        const user = await getCurrentUser();
+        if (!user) {
+          console.error('setupPermissions: No current user found');
+          return;
+        }
+        
+        console.log('setupPermissions: Current user:', user);
+        
+        // استخدام دالة hasPermission من permissions.js
+        const canAddToLiveTanks = await hasPermission('canAddToLiveTanks');
+        const canEditLiveTanks = await hasPermission('canEditLiveTanks');
+        const canDeleteFromLiveTanks = await hasPermission('canDeleteFromLiveTanks');
+        
+        console.log('🔐 Live Tanks permissions:', {
           canAddToLiveTanks,
           canEditLiveTanks,
           canDeleteFromLiveTanks
         });
         
-        // Show/hide add buttons
+        // Show/hide add buttons based on permissions
         const addButtons = ['addPBCRBtn', 'addWasheryBtn', 'addPLCRBtn'];
         addButtons.forEach(btnId => {
           const btn = document.getElementById(btnId);
-          if (canAddToLiveTanks) {
-            btn.style.display = 'flex';
-          } else {
-            btn.style.display = 'none';
+          if (btn) {
+            if (canAddToLiveTanks) {
+              btn.style.display = 'flex';
+              btn.disabled = false;
+            } else {
+              btn.style.display = 'none';
+              btn.disabled = true;
+            }
           }
         });
         
@@ -714,8 +737,16 @@
           canEdit: canEditLiveTanks,
           canDelete: canDeleteFromLiveTanks
         };
+        
+        console.log('✅ Live Tanks permissions setup completed');
       } catch (error) {
-        console.error('خطأ في إعداد الصلاحيات:', error);
+        console.error('❌ Error setting up Live Tanks permissions:', error);
+        // Fallback: hide all action buttons if permissions check fails
+        window.userLiveTanksPermissions = {
+          canAdd: false,
+          canEdit: false,
+          canDelete: false
+        };
       }
     }
 
