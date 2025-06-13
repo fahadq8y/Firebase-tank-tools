@@ -971,7 +971,7 @@
             
             <div class="form-row" style="display:flex;gap:10px">
               <div class="form-group" style="flex:1">
-                <label class="form-label">📊 Target Value:</label>
+                <label class="form-label">📊 Request Quantity (MT):</label>
                 <input type="number" step="any" class="form-input" id="ltTargetValue" value="${calcData.amountToWithdraw}" readonly style="background:#f5f5f5">
               </div>
               <div class="form-group" style="flex:1">
@@ -991,11 +991,7 @@
               </div>
               <div class="form-group" style="flex:1">
                 <label class="form-label">📏 Rate Unit:</label>
-                <select class="form-select" id="ltRateUnit" required>
-                  <option value="MT/hr">MT/hr</option>
-                  <option value="bbl/hr">bbl/hr</option>
-                  <option value="m³/hr">m³/hr</option>
-                </select>
+                <input type="text" class="form-input" id="ltRateUnit" value="MT/hr" readonly style="background:#f5f5f5">
               </div>
             </div>
             
@@ -1123,14 +1119,20 @@
           department: 'PLCR',
           tankNumber: calcData.tankNumber,
           product: finalProduct,
-          amount: parseFloat(calcData.amountToWithdraw),
-          targetType: document.getElementById('ltTargetType').value,
-          finishDate: dateStr,
-          finishTime: timeStr,
-          finishDateTime: finishDateTime,
-          notes: document.getElementById('ltNotes').value,
+          targetValue: parseFloat(document.getElementById('ltTargetValue').value) || null,
+          targetType: document.getElementById('ltTargetType').value || null,
+          currentLevel: null, // PLCR doesn't track current level like PBCR
+          rate: parseFloat(document.getElementById('ltRate').value) || null,
+          rateUnit: 'MT/hr',
           addedBy: currentUser.username,
-          addedAt: new Date(),
+          userName: currentUser.fullName || currentUser.username,
+          finishTime: timeStr,
+          finishDate: dateStr,
+          finishDateTime: finishDateTime,
+          addedAt: window.serverTimestamp(),
+          lastLevelUpdate: window.serverTimestamp(),
+          status: 'active',
+          notes: document.getElementById('ltNotes').value,
           source: 'PLCR_Calculator'
         };
         
