@@ -1155,6 +1155,11 @@
         document.body.appendChild(successMsg);
         setTimeout(() => successMsg.remove(), 4000);
         
+        // الانتقال إلى صفحة Live Tanks
+        setTimeout(() => {
+          window.location.href = 'live-tanks.html';
+        }, 1500);
+        
       } catch (error) {
         console.error('Error adding to Live Tanks:', error);
         
