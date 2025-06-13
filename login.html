@@ -427,9 +427,11 @@
         
         const userData = userDoc.data();
         
-        // Check password
-        if (userData.password !== password) {
-          showMessage('❌ Invalid password', 'error');
+        // Check passwo        if (userDoc.exists()) {
+          console.log("User found:", userDoc.data());
+          console.log("Entered password:", password);
+          console.log("Stored password:", userDoc.data().password);
+          if (userDoc.data().password === password) {      showMessage('❌ Invalid password', 'error');
           await addActivity('failed_login_attempt', username);
           return;
         }
