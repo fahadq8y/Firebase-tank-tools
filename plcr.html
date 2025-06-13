@@ -48,6 +48,23 @@
     .security-modal.show{display:flex;justify-content:center;align-items:center}
     .security-modal-content{background:rgba(255,255,255,0.95);padding:30px;border-radius:15px;max-width:500px;width:90%;color:#003366;text-align:center;animation:modalSlideIn 0.5s ease}
     @keyframes modalSlideIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+    
+    /* إضافة CSS للميزات الجديدة */
+    .row{display:flex;justify-content:center;align-items:center;gap:8px;margin:10px 0;max-width:400px;margin-left:auto;margin-right:auto}
+    .row input,.row select{margin:0;flex:1;width:50%}
+    .buttons-section{margin:20px 0;padding:15px;background:rgba(255,255,255,0.1);border-radius:15px;backdrop-filter:blur(10px)}
+    .button-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
+    .action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;width:180px;height:45px;justify-content:center}
+    .live-tanks-btn{background:linear-gradient(45deg,#ff4444,#ff6666);color:white;box-shadow:0 2px 8px rgba(255,68,68,0.3)}
+    .reminder-btn{background:linear-gradient(45deg,#4CAF50,#45a049);color:white;box-shadow:0 2px 8px rgba(76,175,80,0.3)}
+    .table-btn{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;box-shadow:0 2px 8px rgba(33,150,243,0.3)}
+    .action-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+    .help-btn{background:linear-gradient(45deg,#FF9800,#F57C00);color:white;border:none;padding:10px;border-radius:50%;cursor:pointer;font-size:14px;transition:all 0.3s ease;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;box-shadow:0 2px 6px rgba(255,152,0,0.3)}
+    .help-btn:hover{transform:translateY(-2px) scale(1.1);box-shadow:0 4px 10px rgba(255,152,0,0.4)}
+    #tankTable{margin:auto;background:rgba(255,255,255,0.85);color:#003366;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;min-width:300px}
+    #tankTable th{padding:10px;border-bottom:1px solid #003366}
+    #tankTable td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
+    #tankTable th{background:#003366;color:white;font-weight:bold}
     .security-icon{font-size:3rem;margin-bottom:15px}
     .security-title{font-size:1.5rem;margin-bottom:15px;font-weight:bold}
     .security-text{margin-bottom:20px;line-height:1.5}
@@ -135,7 +152,45 @@
       <label id="inputLabel" for="value">Enter Value:</label>
       <input type="number" id="value" placeholder="Enter number" oninput="calculate()">
 
+      <!-- الحقول الجديدة لوضع Level to Metric Ton -->
+      <div id="advancedFields" style="display:none">
+        <div class="row">
+          <input type="number" id="amountToWithdraw" placeholder="Amount to Withdraw (MT)" oninput="calculateAdvanced()">
+          <input type="number" id="withdrawalRate" placeholder="Rate (MT/hr)" oninput="calculateAdvanced()">
+        </div>
+        <div class="result" id="finalLevel"></div>
+        <div class="result" id="timeNeeded"></div>
+        <div class="result" id="finishTime"></div>
+      </div>
+
       <div class="result" id="result"></div>
+      
+      <!-- الأزرار الجديدة -->
+      <div class="buttons-section" id="buttonsSection" style="display:none">
+        <div class="button-row">
+          <button onclick="openLTModal()" class="action-btn live-tanks-btn" id="add-to-live-tanks-btn" style="display:none">🔴 Add to Live Tanks</button>
+          <button onclick="showLiveTanksHelp()" class="help-btn" id="add-to-live-tanks-help" title="About Live Tanks" style="display:none">ℹ️</button>
+        </div>
+        <div class="button-row">
+          <a href="#" id="calendarLink" target="_blank">
+            <button class="action-btn reminder-btn">📅 Add Reminder</button>
+          </a>
+          <button onclick="showCalendarHelp()" class="help-btn" title="How to use Calendar Reminder">ℹ️</button>
+        </div>
+        <div class="button-row">
+          <button onclick="addToTable()" class="action-btn table-btn">📊 Add to Table</button>
+          <button onclick="showTableHelp()" class="help-btn" title="About Personal Table">ℹ️</button>
+        </div>
+      </div>
+      
+      <!-- الجدول الشخصي -->
+      <div id="personalTable" style="display:none">
+        <h3 style="margin-top:40px">Your tanks finishing in current shift:</h3>
+        <table id="tankTable">
+          <thead><tr><th>Tank Number</th><th>Finish Date</th><th>Finish Time</th><th>Delete</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
     
     <button id="darkModeButton" class="action-button" title="Dark Mode">🌙</button>
@@ -446,8 +501,433 @@
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
 
+    // إضافة الوظائف الجديدة لـ PLCR
+    let calcData = null;
+
+    // تحديث دالة calculate لتشمل الحقول الجديدة
+    const originalCalculate = window.calculate;
+    window.calculate = () => {
+      originalCalculate();
+      
+      const mode = document.getElementById('mode').value;
+      const advancedFields = document.getElementById('advancedFields');
+      const buttonsSection = document.getElementById('buttonsSection');
+      const personalTable = document.getElementById('personalTable');
+      
+      // إظهار الحقول الجديدة فقط في وضع Level to Metric Ton
+      if (mode === 'levelToTon') {
+        advancedFields.style.display = 'block';
+        buttonsSection.style.display = 'block';
+        personalTable.style.display = 'block';
+        
+        // تحديث تسميات الحقول
+        document.getElementById('inputLabel').textContent = 'Current Level (m):';
+        
+        // حساب الوزن الحالي
+        const tk = document.getElementById("tk").value.trim();
+        const currentLevel = parseFloat(document.getElementById("value").value);
+        
+        if (tankConversions[tk] && !isNaN(currentLevel)) {
+          const tank = tankConversions[tk];
+          const currentWeight = currentLevel * tank.factor;
+          
+          // عرض الوزن الحالي
+          document.getElementById('result').textContent = `Current Weight: ${currentWeight.toFixed(2)} MT`;
+          
+          // حساب متقدم إذا تم إدخال البيانات
+          calculateAdvanced();
+        }
+      } else {
+        advancedFields.style.display = 'none';
+        buttonsSection.style.display = 'none';
+        personalTable.style.display = 'none';
+      }
+    };
+
+    // دالة الحساب المتقدم
+    window.calculateAdvanced = () => {
+      const tk = document.getElementById("tk").value.trim();
+      const currentLevel = parseFloat(document.getElementById("value").value);
+      const amountToWithdraw = parseFloat(document.getElementById("amountToWithdraw").value);
+      const withdrawalRate = parseFloat(document.getElementById("withdrawalRate").value);
+      
+      if (!tankConversions[tk] || isNaN(currentLevel) || isNaN(amountToWithdraw) || isNaN(withdrawalRate)) {
+        document.getElementById('finalLevel').textContent = '';
+        document.getElementById('timeNeeded').textContent = '';
+        document.getElementById('finishTime').textContent = '';
+        calcData = null;
+        checkAddToLiveTanksPermission();
+        return;
+      }
+      
+      const tank = tankConversions[tk];
+      const currentWeight = currentLevel * tank.factor;
+      const finalWeight = currentWeight - amountToWithdraw;
+      const finalLevel = finalWeight / tank.factor;
+      const timeNeeded = amountToWithdraw / withdrawalRate;
+      
+      // حساب وقت الانتهاء
+      const now = new Date();
+      const finishTime = new Date(now.getTime() + timeNeeded * 3600000);
+      
+      const hours = Math.floor(timeNeeded);
+      const minutes = Math.round((timeNeeded % 1) * 60);
+      
+      let ft, fd;
+      try {
+        ft = finishTime.toLocaleTimeString('en-GB', {hour: "2-digit", minute: "2-digit", hour12: false});
+        fd = finishTime.toLocaleDateString('en-GB');
+      } catch {
+        ft = `${finishTime.getHours().toString().padStart(2,'0')}:${finishTime.getMinutes().toString().padStart(2,'0')}`;
+        fd = `${finishTime.getDate()}/${finishTime.getMonth()+1}/${finishTime.getFullYear()}`;
+      }
+      
+      // عرض النتائج
+      document.getElementById('finalLevel').textContent = `Final Level: ${finalLevel.toFixed(2)} m`;
+      document.getElementById('timeNeeded').textContent = `Time Needed: ${hours} hr ${minutes} min`;
+      document.getElementById('finishTime').textContent = `Finish Time: ${ft} | Finish Date: ${fd}`;
+      
+      // حفظ بيانات الحساب
+      calcData = {
+        tankNumber: tk,
+        currentLevel: currentLevel,
+        currentWeight: currentWeight.toFixed(2),
+        amountToWithdraw: amountToWithdraw,
+        withdrawalRate: withdrawalRate,
+        finalLevel: finalLevel.toFixed(2),
+        timeNeeded: `${hours} hr ${minutes} min`,
+        finishTime: ft,
+        finishDate: fd,
+        finishDateTime: finishTime
+      };
+      
+      // تحديث رابط التقويم
+      const calendarStart = new Date(finishTime.getTime() - 600000); // 10 دقائق قبل
+      const calendarEnd = new Date(calendarStart.getTime() + 900000); // 15 دقيقة
+      
+      document.getElementById('calendarLink').href = 
+        `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Tank+${tk}+Withdrawal+Complete&dates=${calendarStart.toISOString().replace(/[-:]|\.\d{3}/g,"")}/${calendarEnd.toISOString().replace(/[-:]|\.\d{3}/g,"")}`;
+      
+      // فحص صلاحيات Add to Live Tanks
+      checkAddToLiveTanksPermission();
+    };
+
+    // دالة فتح نافذة Live Tanks
+    window.openLTModal = () => {
+      if (!calcData) {
+        alert('❌ Please calculate tank finish time first!');
+        return;
+      }
+      
+      // إنشاء النافذة المنبثقة
+      const modal = document.createElement('div');
+      modal.id = 'ltModal';
+      modal.className = 'lt-modal show';
+      modal.innerHTML = `
+        <div class="lt-modal-content">
+          <button class="close-btn" onclick="closeLTModal()">&times;</button>
+          <h3>🔴 Add to Live Tanks</h3>
+          <form id="ltForm">
+            <div class="form-group">
+              <label class="form-label">🏭 Department:</label>
+              <select class="form-select" id="ltDept" onchange="updateLTProducts()" required>
+                <option value="">Select Department</option>
+                <option value="PBCR">PBCR</option>
+                <option value="WASHERY">WASHERY</option>
+                <option value="PLCR" selected>PLCR</option>
+              </select>
+            </div>
+            <div class="form-row" style="display:flex;gap:10px">
+              <div class="form-group" style="flex:1">
+                <label class="form-label">🏷️ Tank Number:</label>
+                <input type="text" class="form-input" id="ltTank" value="${calcData.tankNumber}" readonly style="background:#f5f5f5">
+              </div>
+              <div class="form-group" style="flex:1">
+                <label class="form-label">🛢️ Product Type:</label>
+                <select class="form-select" id="ltProduct" required>
+                  <option value="">Select Product</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" style="display:flex;gap:10px">
+              <div class="form-group" style="flex:1">
+                <label class="form-label">📊 Amount to Withdraw:</label>
+                <input type="number" step="any" class="form-input" id="ltTargetValue" value="${calcData.amountToWithdraw}" readonly style="background:#f5f5f5">
+              </div>
+              <div class="form-group" style="flex:1">
+                <label class="form-label">🎯 Target Type:</label>
+                <select class="form-select" id="ltTargetType" required>
+                  <option value="withdrawal" selected>Withdrawal (MT)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" style="display:flex;gap:10px">
+              <div class="form-group" style="flex:1">
+                <label class="form-label">⚡ Withdrawal Rate:</label>
+                <input type="number" step="any" class="form-input" id="ltRate" value="${calcData.withdrawalRate}" readonly style="background:#f5f5f5">
+              </div>
+              <div class="form-group" style="flex:1">
+                <label class="form-label">📏 Rate Unit:</label>
+                <select class="form-select" id="ltRateUnit" required>
+                  <option value="MT/hr" selected>MT/hr</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" style="display:flex;gap:10px">
+              <div class="form-group" style="flex:1">
+                <label class="form-label">📅 Finish Date:</label>
+                <input type="text" class="form-input" id="ltDate" value="${calcData.finishDate}" readonly style="background:#f5f5f5">
+              </div>
+              <div class="form-group" style="flex:1">
+                <label class="form-label">⏰ Finish Time:</label>
+                <input type="text" class="form-input" id="ltTime" value="${calcData.finishTime}" readonly style="background:#f5f5f5">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">📝 Notes (Optional):</label>
+              <textarea class="form-textarea" id="ltNotes" placeholder="Additional information..."></textarea>
+            </div>
+            <div class="modal-buttons">
+              <button type="button" class="btn btn-secondary" onclick="closeLTModal()">❌ Cancel</button>
+              <button type="submit" class="btn btn-primary">💾 Add to Live Tanks</button>
+            </div>
+          </form>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      updateLTProducts();
+    };
+
+    // دالة إغلاق النافذة المنبثقة
+    window.closeLTModal = () => {
+      const modal = document.getElementById('ltModal');
+      if (modal) {
+        modal.remove();
+      }
+    };
+
+    // دالة تحديث المنتجات
+    window.updateLTProducts = () => {
+      const dept = document.getElementById('ltDept').value;
+      const sel = document.getElementById('ltProduct');
+      sel.innerHTML = '<option value="">Select Product</option>';
+      
+      const products = {
+        "PBCR": ["LSFO", "EGO 10PPM", "EGO 500PPM", "RHN", "PCNA", "NMOGAS", "OLMOGAS", "ATK", "ARDR", "IC5", "ISOM", "SLOP"],
+        "WASHERY": ["MOGAS 98", "MOGAS 95", "MOGAS 91", "GO", "KERO", "ATK", "Slop"],
+        "PLCR": ["Heavy Oil", "Light Product", "Mixed Product", "Refined Oil", "Final Product", "Blended Oil"]
+      };
+      
+      if (dept && products[dept]) {
+        products[dept].forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p;
+          opt.textContent = p;
+          sel.appendChild(opt);
+        });
+      }
+    };
+
+    // دالة إضافة إلى الجدول الشخصي
+    window.addToTable = () => {
+      if (!calcData) {
+        alert('❌ Please calculate tank finish time first!');
+        return;
+      }
+      
+      const table = document.querySelector("#tankTable tbody");
+      if (!table) return;
+      
+      const newRowData = {
+        tankNum: calcData.tankNumber,
+        date: calcData.finishDate,
+        time: calcData.finishTime,
+        finishDateTime: calcData.finishDateTime
+      };
+      
+      // جمع الصفوف الموجودة
+      const existingRows = Array.from(table.rows).map(row => ({
+        row: row,
+        tankNum: row.cells[0].textContent,
+        date: row.cells[1].textContent,
+        time: row.cells[2].textContent,
+        finishDateTime: new Date(row.cells[1].textContent + " " + row.cells[2].textContent)
+      }));
+      
+      existingRows.push(newRowData);
+      existingRows.sort((a, b) => a.finishDateTime - b.finishDateTime);
+      
+      // إعادة بناء الجدول
+      table.innerHTML = '';
+      existingRows.forEach(item => {
+        const row = table.insertRow();
+        row.insertCell().textContent = item.tankNum;
+        row.insertCell().textContent = item.date;
+        row.insertCell().textContent = item.time;
+        const cell4 = row.insertCell();
+        cell4.innerHTML = '<button onclick="this.parentNode.parentNode.remove()" style="background:#f44336;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer">🗑️</button>';
+      });
+      
+      alert(`✅ Tank ${calcData.tankNumber} added to your personal table!`);
+    };
+
+    // دالة المساعدة للأزرار
+    window.showLiveTanksHelp = () => {
+      alert('🔴 Add to Live Tanks:\n\nAdds your tank to the live monitoring system.\nAll users can see when your tank will finish.\nUseful for coordination between shifts and departments.\n\nNote: Requires panel operator or admin access.');
+    };
+
+    window.showCalendarHelp = () => {
+      alert('📅 Add Reminder:\n\nCreates a Google Calendar reminder for when your tank operation will finish.\nThe reminder will appear 10 minutes before completion.\n\nClick the button to open Google Calendar with pre-filled event details.');
+    };
+
+    window.showTableHelp = () => {
+      alert('📊 Add to Table:\n\nAdds tank to your personal table below.\nOnly you can see this table - it\'s private to your account.\nUseful for tracking your own tanks during the shift.\n\nYour personal reminder system.');
+    };
+
+    // دالة فحص صلاحيات Add to Live Tanks
+    async function checkAddToLiveTanksPermission() {
+      try {
+        if (!calcData || !calcData.tankNumber) {
+          return;
+        }
+        
+        // استخدام دالة hasPermission من permissions.js
+        const canAddToLiveTanks = await hasPermission('canAddToLiveTanks');
+        
+        const addButton = document.getElementById('add-to-live-tanks-btn');
+        const helpButton = document.getElementById('add-to-live-tanks-help');
+        
+        if (canAddToLiveTanks) {
+          if (addButton) {
+            addButton.style.display = 'inline-flex';
+            addButton.disabled = false;
+          }
+          if (helpButton) {
+            helpButton.style.display = 'inline-flex';
+            helpButton.disabled = false;
+          }
+        } else {
+          if (addButton) {
+            addButton.style.display = 'none';
+            addButton.disabled = true;
+          }
+          if (helpButton) {
+            helpButton.style.display = 'none';
+            helpButton.disabled = true;
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error checking Add to Live Tanks permission:', error);
+        const addButton = document.getElementById('add-to-live-tanks-btn');
+        const helpButton = document.getElementById('add-to-live-tanks-help');
+        if (addButton) {
+          addButton.style.display = 'none';
+          addButton.disabled = true;
+        }
+        if (helpButton) {
+          helpButton.style.display = 'none';
+          helpButton.disabled = true;
+        }
+      }
+    }
+
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
+  </script>
+
+  <!-- إضافة CSS للنافذة المنبثقة -->
+  <style>
+    .lt-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px)}
+    .lt-modal.show{display:flex;justify-content:center;align-items:center}
+    .lt-modal-content{background:rgba(255,255,255,0.95);padding:30px;border-radius:15px;max-width:600px;width:90%;color:#003366;max-height:90vh;overflow-y:auto}
+    .close-btn{background:none;border:none;font-size:28px;cursor:pointer;color:#666;font-weight:bold;float:right}
+    .close-btn:hover{color:#f44336}
+    .form-group{margin-bottom:20px}
+    .form-label{display:block;margin-bottom:8px;font-weight:600;color:#003366}
+    .form-input,.form-select{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:14px;transition:border-color 0.3s ease}
+    .form-input:focus,.form-select:focus{outline:none;border-color:#4CAF50}
+    .form-textarea{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:14px;min-height:80px;resize:vertical}
+    .form-row{display:flex;gap:10px}
+    .modal-buttons{display:flex;gap:10px;justify-content:center;margin-top:20px}
+    .btn{padding:12px 20px;border:none;border-radius:10px;cursor:pointer;font-weight:600;transition:all 0.3s ease;font-size:14px}
+    .btn-primary{background:linear-gradient(45deg,#4CAF50,#45a049);color:white}
+    .btn-secondary{background:linear-gradient(45deg,#6c757d,#5a6268);color:white}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,0.3)}
+  </style>
+
+  <!-- إضافة Firebase والوظائف -->
+  <script type="module">
+    import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import{getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    
+    const app=initializeApp({
+      apiKey:"AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",
+      authDomain:"tank-tools-knpc-c2d95.firebaseapp.com",
+      projectId:"tank-tools-knpc-c2d95",
+      storageBucket:"tank-tools-knpc-c2d95.firebasestorage.app",
+      messagingSenderId:"510062594324",
+      appId:"1:510062594324:web:b892fd02007a5ca2f0da01"
+    });
+    
+    window.db=getFirestore(app);
+    window.doc=doc;
+    window.getDoc=getDoc;
+    window.setDoc=setDoc;
+    window.addDoc=addDoc;
+    window.serverTimestamp=serverTimestamp;
+    window.collection=collection;
+
+    // إضافة معالج النموذج
+    document.addEventListener('submit', async function(e) {
+      if (e.target.id === 'ltForm') {
+        e.preventDefault();
+        
+        const dept = document.getElementById('ltDept').value;
+        const tank = document.getElementById('ltTank').value;
+        const product = document.getElementById('ltProduct').value;
+        const targetValue = document.getElementById('ltTargetValue').value;
+        const targetType = document.getElementById('ltTargetType').value;
+        const rate = document.getElementById('ltRate').value;
+        const rateUnit = document.getElementById('ltRateUnit').value;
+        const date = document.getElementById('ltDate').value;
+        const time = document.getElementById('ltTime').value;
+        const notes = document.getElementById('ltNotes').value;
+        
+        if (!dept || !product) {
+          alert('❌ Please select department and product!');
+          return;
+        }
+        
+        try {
+          await addDoc(collection(window.db, 'liveTanks'), {
+            department: dept,
+            tankNumber: tank,
+            product: product,
+            targetValue: parseFloat(targetValue) || null,
+            targetType: targetType || null,
+            currentLevel: calcData.currentLevel,
+            rate: parseFloat(rate) || null,
+            rateUnit: rateUnit || null,
+            addedBy: currentUser.username,
+            userName: currentUser.fullName || currentUser.username,
+            finishTime: time,
+            finishDate: date,
+            finishDateTime: new Date(date + ' ' + time),
+            addedAt: serverTimestamp(),
+            lastLevelUpdate: serverTimestamp(),
+            status: 'active',
+            notes: notes,
+            source: 'PLCR_Calculator'
+          });
+          
+          alert(`✅ Tank ${tank} added to Live Tanks!`);
+          closeLTModal();
+        } catch (err) {
+          alert('❌ Error: ' + err.message);
+        }
+      }
+    });
   </script>
 </body>
 </html>
