@@ -1,0 +1,2355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Tanks - KNPC Operations</title>
+  <link href="icon.png" rel="icon" type="image/png"/>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#003366">
+  <script src="permissions.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('background.jpg');background-size:cover;background-position:center;background-attachment:fixed;color:white;font-family:Arial,sans-serif;padding:20px;min-height:100vh}
+    .nav-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:rgba(0,0,0,0.5);border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
+    .nav-logo{font-size:24px;font-weight:bold;color:white}
+    .nav-links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .nav-link{color:white;text-decoration:none;padding:8px 16px;border-radius:8px;transition:all 0.3s ease;background:rgba(255,255,255,0.1);font-weight:500;border:1px solid rgba(255,255,255,0.2)}
+    .nav-link:hover{background:rgba(255,255,255,0.2);transform:translateY(-1px)}
+    .nav-link.active{background:rgba(255,255,255,0.3);font-weight:bold;border:1px solid rgba(255,255,255,0.4)}
+    .nav-admin{background:linear-gradient(45deg,#FFD700,#FFA500);color:#003366;font-weight:bold;border-radius:8px;padding:8px 16px;text-decoration:none;transition:all 0.3s ease;border:1px solid #FFA500;font-size:inherit}
+    .nav-admin:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,215,0,0.3)}
+    .nav-user{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.1);padding:5px 15px;border-radius:20px;backdrop-filter:blur(10px)}
+    .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(45deg,#4CAF50,#45a049);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px}
+    .logout-btn{background:rgba(255,0,0,0.2);border:1px solid rgba(255,0,0,0.5);color:white;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:12px;transition:all 0.3s ease}
+    .font-controls{display:flex;gap:5px;margin-right:10px}
+    .font-btn{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:14px;font-weight:bold;transition:all 0.3s ease;min-width:30px}
+    .font-btn:hover{background:rgba(255,255,255,0.3);transform:translateY(-1px)}
+    .page-header{text-align:center;margin-bottom:30px}
+    .page-title{font-size:2.5rem;margin-bottom:10px;background:linear-gradient(45deg,#ff4444,#ff6666);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+    .page-subtitle{font-size:1.2rem;opacity:0.8}
+    .container{max-width:100%;margin:0 auto}
+    .section{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:15px;padding:25px;margin-bottom:25px;border:1px solid rgba(255,255,255,0.2)}
+    .section-title{font-size:1.4rem;font-weight:bold;display:flex;align-items:center;gap:10px;margin-bottom:20px;margin-top:30px;padding-bottom:15px;border-bottom:2px solid rgba(255,255,255,0.2)}
+    .department-badge{padding:5px 15px;border-radius:20px;font-size:0.9rem;font-weight:bold}
+    .badge-pbcr{background:linear-gradient(45deg,#4CAF50,#45a049);color:white}
+    .badge-washery{background:linear-gradient(45deg,#2196F3,#1976D2);color:white}
+    .badge-plcr{background:linear-gradient(45deg,#ff9800,#f57c00);color:white}
+    .add-tank-btn{background:linear-gradient(45deg,#FFD700,#FFA500);color:#003366;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.3s ease;display:flex;align-items:center;gap:8px;margin-bottom:20px}
+    .add-tank-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(255,215,0,0.3)}
+    .add-tank-btn:disabled{background:#666;color:#999;cursor:not-allowed;transform:none}
+    .table-container{width:100%;max-width:100%;overflow-x:auto;margin:10px auto;background:rgba(0,0,0,0.2);border-radius:10px;padding:5px}
+    .tanks-table{margin:auto;background:rgba(255,255,255,0.9);color:#003366;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,0.3);margin-bottom:20px;width:100%;min-width:300px;table-layout:fixed}
+    .tanks-table th,.tanks-table td{padding:8px 6px;border-bottom:1px solid #003366;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .tanks-table th{background:#003366;color:white;font-weight:bold;font-size:12px}
+    .tanks-table th:nth-child(1),.tanks-table td:nth-child(1){width:15%}
+    .tanks-table th:nth-child(2),.tanks-table td:nth-child(2){width:20%}
+    .tanks-table th:nth-child(3),.tanks-table td:nth-child(3){width:18%}
+    .tanks-table th:nth-child(4),.tanks-table td:nth-child(4){width:18%}
+    .tanks-table th:nth-child(5),.tanks-table td:nth-child(5){width:20%}
+    .tanks-table th:nth-child(6),.tanks-table td:nth-child(6){width:9%}
+    .tank-row-critical{background:#ffebee!important;color:#c62828!important;font-weight:bold!important}
+    .tank-row-warning{background:#ffffff!important;color:#d32f2f!important;font-weight:bold!important}
+    .tank-row-normal{background:#ffffff!important;color:#2e7d32!important}
+    .tank-number{font-weight:bold;font-size:15px}
+    .tank-row-critical .tank-number{color:#c62828!important}
+    .tank-row-warning .tank-number{color:#d32f2f!important}
+    .tank-row-normal .tank-number{color:#2e7d32!important}
+    .product-badge{padding:4px 8px;border-radius:8px;font-size:12px;font-weight:bold;text-transform:uppercase;white-space:nowrap}
+    .product-lsfo{background:#e91e63;color:white}
+    .product-ego-10{background:#9c27b0;color:white}
+    .product-ego-500{background:#673ab7;color:white}
+    .product-rhn{background:#3f51b5;color:white}
+    .product-pcna{background:#2196f3;color:white}
+    .product-nmogas{background:#03a9f4;color:white}
+    .product-olmogas{background:#00bcd4;color:white}
+    .product-atk{background:#009688;color:white}
+    .product-ardr{background:#4caf50;color:white}
+    .product-ic5{background:#8bc34a;color:white}
+    .product-isom{background:#cddc39;color:#333}
+    .product-slop{background:#ff9800;color:white}
+    .product-mogas-98{background:#f44336;color:white}
+    .product-mogas-95{background:#e91e63;color:white}
+    .product-mogas-91{background:#9c27b0;color:white}
+    .product-go{background:#3f51b5;color:white}
+    .product-kero{background:#2196f3;color:white}
+    .status-badge{display:inline-block;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:bold;text-transform:uppercase}
+    .badge-active{background:#4CAF50;color:white}
+    .badge-completed{background:#ff9800;color:white}
+    .badge-cancelled{background:#f44336;color:white}
+    .action-buttons{display:flex;gap:2px;justify-content:center}
+    .action-btn{padding:6px 8px;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;transition:all 0.3s ease;color:white}
+    .btn-edit{background:#4CAF50}
+    .btn-delete{background:#f44336}
+    .btn-view{background:#2196F3}
+    .btn-reminder{background:#ff9800}
+    .action-btn:hover{transform:scale(1.05)}
+    .empty-state{text-align:center;padding:40px;color:#666}
+    .empty-icon{font-size:3rem;margin-bottom:15px;opacity:0.5}
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px)}
+    .modal.show{display:flex;justify-content:center;align-items:center}
+    .modal-content{background:rgba(255,255,255,0.95);padding:30px;border-radius:15px;max-width:500px;width:90%;color:#003366;max-height:90vh;overflow-y:auto}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #ddd}
+    .modal-title{font-size:1.3rem;font-weight:bold;color:#003366}
+    .close-btn{background:none;border:none;font-size:28px;cursor:pointer;color:#666;font-weight:bold}
+    .close-btn:hover{color:#f44336}
+    .form-group{margin-bottom:20px}
+    .form-label{display:block;margin-bottom:8px;font-weight:600;color:#003366}
+    .form-input,.form-select{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:14px;transition:border-color 0.3s ease}
+    .form-input:focus,.form-select:focus{outline:none;border-color:#4CAF50}
+    .form-textarea{width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:14px;min-height:80px;resize:vertical}
+    .btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s ease;font-size:14px;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary{background:linear-gradient(45deg,#4CAF50,#45a049);color:white}
+    .btn-secondary{background:linear-gradient(45deg,#6c757d,#5a6268);color:white}
+    .btn-danger{background:linear-gradient(45deg,#f44336,#d32f2f);color:white}
+    .btn-warning{background:linear-gradient(45deg,#ff9800,#f57c00);color:white}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.2)}
+    .tank-details-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px)}
+    .tank-details-modal.show{display:flex;justify-content:center;align-items:center}
+    .tank-details-content{background:rgba(255,255,255,0.95);padding:25px;border-radius:15px;max-width:450px;width:90%;color:#003366;max-height:90vh;overflow-y:auto}
+    .tank-details-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #ddd}
+    .tank-details-title{font-size:1.4rem;font-weight:bold;color:#003366}
+    .tank-detail-section{margin-bottom:20px}
+    .tank-detail-single{padding:15px;background:rgba(240,248,255,0.8);border-radius:10px;border-left:4px solid #2196F3}
+    .tank-detail-dual{display:flex;gap:15px}
+    .tank-detail-item{flex:1;padding:15px;background:rgba(240,248,255,0.8);border-radius:10px;border-left:4px solid #2196F3}
+    .tank-detail-label{font-size:0.9rem;font-weight:600;color:#666;margin-bottom:8px;display:block}
+    .tank-detail-value{font-size:1rem;color:#003366;font-weight:500;word-break:break-word}
+    .tank-actions{display:flex;gap:10px;justify-content:center;margin-top:20px;padding-top:15px;border-top:2px solid #eee}
+    .history-timeline{max-height:500px;overflow-y:auto;padding:10px}
+    .history-item{background:rgba(248,249,250,0.9);border-radius:10px;padding:15px;margin-bottom:15px;border-left:4px solid #28a745}
+    .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .history-date{font-size:0.9rem;color:#666;font-weight:500}
+    .history-user{font-size:0.9rem;color:#007bff;font-weight:600}
+    .history-action{font-size:1rem;font-weight:600;color:#28a745;margin-bottom:10px}
+    .history-changes{background:rgba(255,255,255,0.8);border-radius:8px;padding:10px;margin-bottom:10px}
+    .changes-grid{display:grid;gap:8px}
+    .change-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #eee}
+    .change-field{font-weight:600;color:#666;min-width:120px}
+    .change-values{display:flex;align-items:center;gap:10px}
+    .old-value{color:#dc3545;text-decoration:line-through;opacity:0.7}
+    .arrow{color:#6c757d;font-weight:bold}
+    .new-value{color:#28a745;font-weight:600}
+    .history-notes{background:rgba(255,248,220,0.8);border-radius:6px;padding:8px;font-style:italic;color:#856404}
+    .modal-buttons{display:flex;gap:15px;justify-content:flex-end;margin-top:25px}
+    .message{padding:15px 20px;border-radius:10px;margin-bottom:20px;font-weight:500;border-left:5px solid}
+    .message.success{background:rgba(76,175,80,0.2);border-color:#4CAF50;color:#4CAF50}
+    .message.error{background:rgba(244,67,54,0.2);border-color:#f44336;color:#f44336}
+    .message.info{background:rgba(33,150,243,0.2);border-color:#2196F3;color:#2196F3}
+    .message.warning{background:rgba(255,193,7,0.2);border-color:#ffc107;color:#ffc107}
+    .loading{text-align:center;padding:40px;font-size:18px}
+    .loading-spinner{display:inline-block;width:40px;height:40px;border:4px solid rgba(255,255,255,0.3);border-radius:50%;border-top:4px solid #FFD700;animation:spin 1s linear infinite;margin-bottom:10px}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    .access-denied{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.8)),url('background.jpg');background-size:cover;background-position:center;display:flex;justify-content:center;align-items:center;z-index:9999}
+    .access-denied-content{text-align:center;background:rgba(255,255,255,0.1);padding:40px;border-radius:20px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2)}
+    .access-denied-icon{font-size:5rem;color:#f44336;margin-bottom:20px}
+    .access-denied-title{font-size:2rem;color:#f44336;margin-bottom:15px}
+    .access-denied-text{font-size:1.2rem;margin-bottom:20px;opacity:0.8}
+    .login-btn{padding:12px 25px;background:linear-gradient(45deg,#4CAF50,#45a049);color:white;border:none;border-radius:10px;cursor:pointer;font-size:16px;transition:all 0.3s ease;margin:5px}
+    .refresh-indicator{position:fixed;top:80px;right:20px;background:rgba(76,175,80,0.9);color:white;padding:10px 15px;border-radius:8px;font-size:12px;z-index:1000;animation:slideIn 0.3s ease}
+    @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+    .tank-count{font-size:0.9rem;opacity:0.8;margin-left:10px}
+    .urgency-indicator{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:1.2rem;animation:blink 1s infinite}
+    .section-header{transition:all 0.3s ease;position:relative;overflow:hidden}
+    .section-header:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.15)!important}
+    .section-header:before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transition:left 0.5s ease}
+    .section-header:hover:before{left:100%}
+    .add-tank-btn:hover{transform:translateY(-3px)!important;box-shadow:0 6px 20px rgba(255,215,0,0.4)!important}
+    @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0.3}}
+    @media (max-width:768px){
+      .nav-bar{flex-direction:column;gap:15px;padding:15px}
+      .nav-links{order:1;justify-content:center;width:100%}
+      .nav-user{order:2;width:100%;justify-content:space-between}
+      .page-title{font-size:2rem}
+      .tanks-table{font-size:11px}
+      .tanks-table th,.tanks-table td{padding:8px 4px}
+      .action-buttons{flex-direction:column;gap:3px}
+      .modal-buttons{flex-direction:column}
+      .btn{width:100%}
+      .tanks-table{overflow-x:auto;display:block;white-space:nowrap;font-size:10px}
+      .tanks-table thead,.tanks-table tbody,.tanks-table tr{display:table;width:100%;table-layout:fixed}
+      .tanks-table th,.tanks-table td{padding:4px 2px}
+    }
+  </style>
+</head>
+
+
+<body>
+  <!-- Access Denied Screen -->
+  <div id="accessDenied" class="access-denied" style="display:none">
+    <div class="access-denied-content">
+      <div class="access-denied-icon">🔒</div>
+      <div class="access-denied-title">Access Denied</div>
+      <div class="access-denied-text">You don't have permission to access Live Tanks.<br>Please contact your administrator.</div>
+      <button class="login-btn" onclick="goToLogin()">Go to Login</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="mainContent">
+    <!-- Navigation -->
+    <div class="nav-bar">
+      <div class="nav-logo">Tank Tools</div>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">PBCR</a>
+        <a class="nav-link" href="plcr.html">PLCR</a>
+        <a class="nav-link" href="NMOGASBL.html">NMOGAS</a>
+        <a class="nav-link active" href="live-tanks.html">🔴 Live Tanks</a>
+        <a class="nav-admin" href="dashboard.html" id="adminLink" style="display:none">🔐 Dashboard</a>
+      </div>
+      <div class="nav-user" id="navUser">
+        <div class="font-controls">
+          <button class="font-btn" onclick="decreaseFontSize()" title="تصغير الخط">-</button>
+          <button class="font-btn" onclick="increaseFontSize()" title="تكبير الخط">+</button>
+        </div>
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div id="userName">User</div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="page-title">🔴 Live Tanks</div>
+      <div class="page-subtitle">Real-time Tank Operations Monitoring</div>
+    </div>
+
+    <div class="container">
+      <!-- Message Container -->
+      <div id="messageContainer"></div>
+
+      <!-- PBCR Department -->
+      <div class="section-header" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(69, 160, 73, 0.05)); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(76, 175, 80, 0.2); box-shadow: 0 4px 15px rgba(76, 175, 80, 0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div style="background: linear-gradient(45deg, #4CAF50, #45a049); color: white; padding: 12px 24px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 10px;">
+            🏭 <span>PBCR Department</span>
+          </div>
+          <div style="background: linear-gradient(45deg, #66BB6A, #4CAF50); color: white; padding: 10px 20px; border-radius: 20px; font-size: 1rem; font-weight: bold; box-shadow: 0 3px 10px rgba(76, 175, 80, 0.25); border: 2px solid rgba(255,255,255,0.15); min-width: 100px; text-align: center;" id="pbcrCount">
+            (0 tanks)
+          </div>
+          <button class="add-tank-btn" id="addPBCRBtn" onclick="openAddModal('PBCR')" style="display:none; background: linear-gradient(45deg, #FFD700, #FFA500); color: #003366; border: none; padding: 12px 24px; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 10px;">
+            ➕ <span>Add PBCR Tank</span>
+          </button>
+        </div>
+      </div>
+      <div id="pbcrContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div>Loading PBCR tanks...</div>
+        </div>
+      </div>
+
+      <!-- WASHERY Department -->
+      <div class="section-header" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(25, 118, 210, 0.05)); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(33, 150, 243, 0.2); box-shadow: 0 4px 15px rgba(33, 150, 243, 0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div style="background: linear-gradient(45deg, #2196F3, #1976D2); color: white; padding: 12px 24px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 10px;">
+            🌊 <span>WASHERY Department</span>
+          </div>
+          <div style="background: linear-gradient(45deg, #42A5F5, #2196F3); color: white; padding: 10px 20px; border-radius: 20px; font-size: 1rem; font-weight: bold; box-shadow: 0 3px 10px rgba(33, 150, 243, 0.25); border: 2px solid rgba(255,255,255,0.15); min-width: 100px; text-align: center;" id="washeryCount">
+            (0 tanks)
+          </div>
+          <button class="add-tank-btn" id="addWasheryBtn" onclick="openAddModal('WASHERY')" style="display:none; background: linear-gradient(45deg, #FFD700, #FFA500); color: #003366; border: none; padding: 12px 24px; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 10px;">
+            ➕ <span>Add WASHERY Tank</span>
+          </button>
+        </div>
+      </div>
+      <div id="washeryContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div>Loading WASHERY tanks...</div>
+        </div>
+      </div>
+
+      <!-- PLCR Department -->
+      <div class="section-header" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05)); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255, 152, 0, 0.2); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div style="background: linear-gradient(45deg, #ff9800, #f57c00); color: white; padding: 12px 24px; border-radius: 25px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 10px;">
+            ⚙️ <span>PLCR Department</span>
+          </div>
+          <div style="background: linear-gradient(45deg, #FFB74D, #ff9800); color: white; padding: 10px 20px; border-radius: 20px; font-size: 1rem; font-weight: bold; box-shadow: 0 3px 10px rgba(255, 152, 0, 0.25); border: 2px solid rgba(255,255,255,0.15); min-width: 100px; text-align: center;" id="plcrCount">
+            (0 tanks)
+          </div>
+          <button class="add-tank-btn" id="addPLCRBtn" onclick="openAddModal('PLCR')" style="display:none; background: linear-gradient(45deg, #FFD700, #FFA500); color: #003366; border: none; padding: 12px 24px; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 10px;">
+            ➕ <span>Add PLCR Tank</span>
+          </button>
+        </div>
+      </div>
+      <div id="plcrContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div>Loading PLCR tanks...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tank Details Modal -->
+  <div id="tankDetailsModal" class="tank-details-modal">
+    <div class="tank-details-content">
+      <div class="tank-details-header">
+        <h3 class="tank-details-title" id="tankDetailsTitle">🏭 Tank Details</h3>
+        <button class="close-btn" onclick="closeTankDetails()">&times;</button>
+      </div>
+      <div id="tankDetailsBody">
+        <!-- Tank details will be populated here -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Add Tank Modal -->
+  <div id="addTankModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="addModalTitle">➕ Add New Tank</h3>
+        <button class="close-btn" onclick="closeAddModal()">&times;</button>
+      </div>
+      <form id="addTankForm">
+        <!-- السطر الأول: القسم -->
+        <div class="form-group">
+          <label class="form-label">🏭 Department:</label>
+          <select class="form-select" id="addDepartment" onchange="updateProductOptions()" required>
+            <option value="">Select Department</option>
+            <option value="PBCR">PBCR</option>
+            <option value="WASHERY">WASHERY</option>
+            <option value="PLCR">PLCR</option>
+          </select>
+        </div>
+        
+        <!-- السطر الثاني: رقم التانك + المنتج -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">🏷️ Tank Number:</label>
+            <input type="number" class="form-input" id="addTankNumber" placeholder="e.g. 225" onchange="updateAddRateUnit()" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">🛢️ Product Type:</label>
+            <select class="form-select" id="addProduct" required>
+              <option value="">Select Product</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- السطر الثالث: Current Level + meter -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📏 Current Level:</label>
+            <input type="number" step="any" class="form-input" id="addCurrentLevel" placeholder="Enter current level" onchange="calculateAddTime()" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📏 Unit:</label>
+            <input type="text" class="form-input" value="meter" readonly style="background:#f5f5f5;color:#666">
+          </div>
+        </div>
+        
+        <!-- السطر الرابع: Target Value + Target Type -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📊 Target Value:</label>
+            <input type="number" step="any" class="form-input" id="addTargetValue" placeholder="Enter target value" onchange="calculateAddTime()" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">🎯 Target Type:</label>
+            <select class="form-select" id="addTargetType" onchange="calculateAddTime()" required>
+              <option value="">Select Target Type</option>
+              <option value="pumpable">Pumpable</option>
+              <option value="ullage">Ullage</option>
+              <option value="level">Level</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- السطر الخامس: Flow Rate + Rate Unit -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">⚡ Flow Rate:</label>
+            <input type="number" step="any" class="form-input" id="addRate" placeholder="Rate" onchange="calculateAddTime()" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📏 Rate Unit:</label>
+            <input type="text" class="form-input" id="addRateUnit" readonly style="background:#f5f5f5" value="bbl/hr">
+          </div>
+        </div>
+        
+        <!-- السطر السادس: التاريخ + الوقت -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📅 Finish Date:</label>
+            <input type="date" class="form-input" id="addFinishDate" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">⏰ Finish Time:</label>
+            <input type="time" class="form-input" id="addFinishTime" required>
+          </div>
+        </div>
+        
+        <!-- السطر السابع: Notes -->
+        <div class="form-group">
+          <label class="form-label">📝 Notes (Optional):</label>
+          <textarea class="form-textarea" id="addNotes" placeholder="Additional information..."></textarea>
+        </div>
+        
+        <div class="modal-buttons">
+          <button type="button" class="btn btn-secondary" onclick="closeAddModal()">❌ Cancel</button>
+          <button type="submit" class="btn btn-primary">💾 Save Tank</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Tank Modal -->
+  <div id="editTankModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">✏️ Edit Tank</h3>
+        <button class="close-btn" onclick="closeEditModal()">&times;</button>
+      </div>
+      <form id="editTankForm">
+        <!-- السطر الأول: القسم -->
+        <div class="form-group">
+          <label class="form-label">🏭 Department:</label>
+          <input type="text" class="form-input" id="editDepartment" readonly style="background:#f5f5f5">
+        </div>
+        
+        <!-- السطر الثاني: رقم التانك + المنتج -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">🏷️ Tank Number:</label>
+            <input type="number" class="form-input" id="editTankNumber" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">🛢️ Product Type:</label>
+            <select class="form-select" id="editProduct" required>
+              <option value="">Select Product</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- السطر الثالث: Current Level + meter -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📏 Current Level:</label>
+            <input type="number" step="any" class="form-input" id="editCurrentLevel" placeholder="Enter current level" oninput="calculateActualRate()">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📏 Unit:</label>
+            <input type="text" class="form-input" value="meter" readonly style="background:#f5f5f5;color:#666">
+          </div>
+        </div>
+        
+        <!-- السطر الرابع: Target Value + Target Type -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📊 Target Value:</label>
+            <input type="number" step="any" class="form-input" id="editTargetValue" placeholder="Enter target value" onchange="calculateEditTime()" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">🎯 Target Type:</label>
+            <select class="form-select" id="editTargetType" onchange="calculateEditTime()" required>
+              <option value="">Select Target Type</option>
+              <option value="pumpable">Pumpable</option>
+              <option value="ullage">Ullage</option>
+              <option value="level">Level</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- السطر الخامس: Flow Rate + Rate Unit -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">⚡ Flow Rate:</label>
+            <input type="number" step="any" class="form-input" id="editRate" placeholder="Rate" onchange="calculateEditTime()" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📏 Rate Unit:</label>
+            <input type="text" class="form-input" id="editRateUnit" readonly style="background:#f5f5f5">
+          </div>
+        </div>
+        
+        <!-- السطر السادس: التاريخ + الوقت -->
+        <div class="form-row" style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">📅 Finish Date:</label>
+            <input type="date" class="form-input" id="editFinishDate" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">⏰ Finish Time:</label>
+            <input type="time" class="form-input" id="editFinishTime" required>
+          </div>
+        </div>
+        
+        <!-- السطر السابع: Notes -->
+        <div class="form-group">
+          <label class="form-label">📝 Notes:</label>
+          <textarea class="form-textarea" id="editNotes" placeholder="Additional information..."></textarea>
+        </div>
+        
+        <!-- Previous Level (مخفي للمرجع) -->
+        <input type="hidden" id="editPreviousLevel">
+        
+        <div class="modal-buttons">
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">❌ Cancel</button>
+          <button type="submit" class="btn btn-primary">💾 Update Tank</button>
+          <button type="button" class="btn btn-danger" onclick="confirmDeleteTank()">🗑️ Delete Tank</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tank History Modal -->
+  <div id="tankHistoryModal" class="modal">
+    <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="historyModalTitle">📊 Tank History</h3>
+        <button class="close-btn" onclick="closeTankHistory()">&times;</button>
+      </div>
+      <div id="historyContent">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          Loading history...
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7lJcoY33FEC9d6eWy67QIO9SV4lS24pg",
+      authDomain: "tank-tools-knpc-c2d95.firebaseapp.com",
+      projectId: "tank-tools-knpc-c2d95",
+      storageBucket: "tank-tools-knpc-c2d95.firebasestorage.app",
+      messagingSenderId: "510062594324",
+      appId: "1:510062594324:web:b892fd02007a5ca2f0da01"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.db = db;
+    window.doc = doc;
+    window.getDoc = getDoc;
+    window.setDoc = setDoc;
+    window.updateDoc = updateDoc;
+    window.deleteDoc = deleteDoc;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.serverTimestamp = serverTimestamp;
+    window.query = query;
+    window.orderBy = orderBy;
+    window.onSnapshot = onSnapshot;
+    window.getDocs = getDocs;
+
+    console.log('🔥 Firebase initialized for Live Tanks!');
+  </script>
+
+  <script>
+    // Global variables
+    let currentUser = null;
+    let currentEditingTank = null;
+    let unsubscribe = null;
+
+    // Tank specifications data
+    const tanks = {"225":{comment:12879,min:3.353,max:15.24},"226":{comment:12879,min:3.353,max:15.24},"227":{comment:11327,min:2,max:17.95},"253":{comment:10781,min:2,max:17.093},"254":{comment:12288,min:2,max:14.96},"255":{comment:12287,min:2,max:14.96},"256":{comment:12287,min:2,max:14.96},"260":{comment:2249,min:2,max:13},"272":{comment:7217,min:2,max:15.309},"273":{comment:4198,min:2,max:13.468},"274":{comment:4198,min:2,max:13.458},"275":{comment:9563,min:2,max:17.897},"276":{comment:7236,min:2,max:15.442},"277":{comment:4188,min:2,max:13.714},"278":{comment:9506,min:1.98,max:17.89},"279":{comment:4118,min:1.98,max:15.977},"301":{comment:7756,min:3.048,max:18.54},"302":{comment:7756,min:3.048,max:18.54},"303":{comment:6070,min:2.59,max:14.173},"304":{comment:6070,min:2.59,max:14.173},"305":{comment:7171,min:0.533,max:18.797},"450":{comment:3155,min:2,max:14.2},"451":{comment:930,min:2,max:13},"452":{comment:4587,min:2,max:13},"453":{comment:5067,min:2,max:17.8},"454":{comment:1653,min:2,max:11.36},"455":{comment:1654,min:2,max:11.36},"456":{comment:11574,min:2.68,max:13.41},"457":{comment:9697,min:5.4,max:16.45},"458":{comment:9697,min:5.4,max:16.45},"459":{comment:9466,min:2,max:14.35},"460":{comment:14213,min:2,max:17.65},"461":{comment:14213,min:2,max:17.653},"462":{comment:12354,min:2,max:16.46},"463":{comment:9578,min:2,max:17.89},"464":{comment:9578,min:2,max:17.889},"465":{comment:9572,min:2,max:17.89},"467":{comment:12375,min:2,max:17.771},"468":{comment:12375,min:2,max:17.771},"469":{comment:12375,min:2,max:17.771},"470":{comment:12375,min:2,max:17.77},"503":{comment:2888,min:2.13,max:10.97},"504":{comment:2888,min:2.13,max:10.97},"506":{comment:930,min:0.92,max:14.33},"507":{comment:413,min:2,max:6.5},"508":{comment:1130,min:1.67,max:12.65},"509":{comment:1130,min:1.67,max:12.65},"510":{comment:529,min:2,max:10.363},"511":{comment:4531,min:0.198,max:9},"512":{comment:2939,min:0.92,max:11.6},"514":{comment:2942,min:0.92,max:12},"515":{comment:2942,min:0.92,max:12},"520":{comment:4142,min:1.88,max:14.29},"521":{comment:4142,min:1.88,max:14.29},"522":{comment:11990,min:1.61,max:15.6},"531":{comment:12377,min:2,max:17.77},"532":{comment:12377,min:2,max:17.772},"533":{comment:12377,min:2,max:17.772},"534":{comment:12377,min:2,max:17.772},"600":{comment:9490,min:2,max:13.3},"601":{comment:9490,min:2,max:13.3},"602":{comment:9512,min:2,max:13.73},"603":{comment:11695,min:2,max:13.325},"605":{comment:12964,min:2,max:14.325},"608":{comment:1060,min:2,max:11.887},"620":{comment:11981,min:1.65,max:16.5},"621":{comment:11981,min:1.65,max:16.5},"622":{comment:5019,min:2,max:15.76},"623":{comment:5050,min:1.6,max:15.76},"633":{comment:412,min:2,max:6},"634":{comment:412,min:2,max:6},"651":{comment:6543,min:2,max:13.325},"652":{comment:6543,min:2,max:13.32},"661":{comment:12354,min:2,max:17.759},"662":{comment:5074,min:2,max:14.802},"663":{comment:1507,min:2,max:10.23},"664":{comment:7250,min:2,max:15.22},"665":{comment:7250,min:2,max:15.22},"667":{comment:12278,min:2,max:17.922},"668":{comment:16858,min:2,max:18.165},"669":{comment:16858,min:2,max:18.17},"670":{comment:16856,min:2,max:18.165},"671":{comment:12863,min:2,max:16.45},"672":{comment:13046,min:2,max:16.45},"703":{comment:12931,min:2,max:14.88},"705":{comment:12931,min:2,max:14.88},"725":{comment:1080,min:0.914,max:11.887},"751":{comment:12834,min:2,max:15.1},"752":{comment:12834,min:2,max:15.1},"753":{comment:12834,min:2,max:15.1},"754":{comment:12834,min:2,max:15.1},"755":{comment:12834,min:2,max:15.1},"756":{comment:12962,min:2,max:15.1},"757":{comment:10989,min:2,max:17.8},"761":{comment:20546,min:2,max:14.2},"762":{comment:20546,min:2,max:18.798},"820":{comment:16656,min:1.6,max:18.48},"821":{comment:16656,min:1.6,max:18.48},"822":{comment:16856,min:1.6,max:18.48},"831":{comment:11297,min:2,max:18.41},"832":{comment:11297,min:2,max:18.409},"833":{comment:7279,min:3.25,max:18.012},"834":{comment:7279,min:3.25,max:18.012},"835":{comment:7305,min:2,max:15.226},"836":{comment:7305,min:2,max:15.226},"900":{comment:2644,min:1.6,max:11.9},"901":{comment:2692,min:2,max:12.02},"760":{comment:20546,min:2,max:18.798},"702":{comment:12931,min:2,max:16.15},"758":{comment:20546,min:2,max:14.5},"759":{comment:20546,min:2,max:14.5}};
+
+    // Updated Product types by department
+    const productsByDepartment = {
+      "PBCR": [
+        "LSFO",
+        "EGO 10PPM", 
+        "EGO 500PPM",
+        "RHN",
+        "PCNA",
+        "NMOGAS",
+        "OLMOGAS",
+        "ATK",
+        "ARDR",
+        "IC5",
+        "ISOM",
+        "SLOP",
+        "OTHER"
+      ],
+      "WASHERY": [
+        "MOGAS 98",
+        "MOGAS 95",
+        "MOGAS 91",
+        "GO",
+        "KERO",
+        "ATK",
+        "Slop",
+        "OTHER"
+      ],
+      "PLCR": [
+        "NAPHA",
+        "PCNA",
+        "HSD-EGO",
+        "EGO",
+        "F.OIL",
+        "MOGAS",
+        "VGO",
+        "KKERO",
+        "ARDR",
+        "METHANOL",
+        "OTHER"
+      ]
+    };
+
+    // Product priority for sorting
+    const productPriority = {
+      // PBCR
+      "LSFO": 1, "EGO 10PPM": 2, "EGO 500PPM": 3, "RHN": 4, "PCNA": 5, 
+      "NMOGAS": 6, "OLMOGAS": 7, "ATK": 8, "ARDR": 9, "IC5": 10, "ISOM": 11, "SLOP": 12,
+      // WASHERY  
+      "MOGAS 98": 13, "MOGAS 95": 14, "MOGAS 91": 15, "GO": 16, "KERO": 17, "Slop": 18,
+      // PLCR
+      "Heavy Oil": 19, "Light Product": 20, "Mixed Product": 21, "Refined Oil": 22, "Final Product": 23, "Blended Oil": 24
+    };
+
+    // Role permissions
+    const rolePermissions = {
+      "admin": { canView: true, canAdd: true, canEdit: true, canDelete: true },
+      "panel_operator": { canView: true, canAdd: true, canEdit: true, canDelete: true },
+      "supervisor": { canView: true, canAdd: false, canEdit: false, canDelete: false },
+      "section_head": { canView: true, canAdd: false, canEdit: false, canDelete: false },
+      "operator": { canView: true, canAdd: false, canEdit: false, canDelete: false },
+      "planning": { canView: true, canAdd: false, canEdit: false, canDelete: false }
+    };
+
+    // Initialize page
+    window.addEventListener('load', () => {
+      checkLoginStatus();
+    });
+
+    async function checkLoginStatus() {
+      try {
+        console.log('🔐 Checking login status for Live Tanks...');
+        
+        // استخدام دالة getCurrentUser من permissions.js
+        const user = await getCurrentUser();
+        
+        if (!user) {
+          console.log('checkLoginStatus: No current user, showing access denied');
+          showAccessDenied();
+          return;
+        }
+        
+        currentUser = user;
+        console.log('checkLoginStatus: Current user:', user);
+        
+        // استخدام دالة hasPermission من permissions.js للتحقق من صلاحية الوصول
+        const canViewLiveTanks = await hasPermission('canViewLiveTanks');
+        
+        console.log('checkLoginStatus: Can view Live Tanks:', canViewLiveTanks);
+        
+        if (!canViewLiveTanks) {
+          console.log('checkLoginStatus: User cannot view Live Tanks, showing access denied');
+          showAccessDenied();
+          return;
+        }
+        
+        console.log('✅ Login status check passed, initializing app');
+        initializeApp();
+        await logActivity('live_tanks_accessed', currentUser.username);
+      } catch (error) {
+        console.error('❌ Error checking login status:', error);
+        showAccessDenied();
+      }
+    }
+
+    async function canUserAccessLiveTanks() {
+      try {
+        // استخدام دالة hasPermission من permissions.js للتحقق من صلاحية الوصول
+        return await hasPermission('canViewLiveTanks');
+      } catch (error) {
+        console.error('❌ Error checking Live Tanks access permission:', error);
+        return false;
+      }
+    }
+
+    function showAccessDenied() {
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('accessDenied').style.display = 'flex';
+    }
+
+    function goToLogin() {
+      sessionStorage.setItem('tanktools_redirect', 'live-tanks.html');
+      window.location.href = 'login.html';
+    }
+
+    function initializeApp() {
+      document.getElementById('mainContent').style.display = 'block';
+      document.getElementById('accessDenied').style.display = 'none';
+      
+      loadUserInfo();
+      setupPermissions();
+      loadLiveTanks();
+      
+      // Set default date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('addFinishDate').value = today;
+    }
+
+    function loadUserInfo() {
+      if (!currentUser) return;
+      
+      document.getElementById('userName').textContent = currentUser.username;
+      document.getElementById('userAvatar').textContent = (currentUser.fullName || currentUser.username).charAt(0).toUpperCase();
+      
+      if (currentUser.username === 'fam030' || currentUser.role === 'admin') {
+        document.getElementById('adminLink').style.display = 'inline-block';
+      }
+    }
+
+    async function setupPermissions() {
+      try {
+        console.log('🔐 Setting up Live Tanks permissions...');
+        
+        // الحصول على بيانات المستخدم الحالي
+        const user = await getCurrentUser();
+        if (!user) {
+          console.error('setupPermissions: No current user found');
+          return;
+        }
+        
+        console.log('setupPermissions: Current user:', user);
+        
+        // استخدام دالة hasPermission من permissions.js
+        const canAddToLiveTanks = await hasPermission('canAddToLiveTanks');
+        const canEditLiveTanks = await hasPermission('canEditLiveTanks');
+        const canDeleteFromLiveTanks = await hasPermission('canDeleteFromLiveTanks');
+        
+        console.log('🔐 Live Tanks permissions:', {
+          canAddToLiveTanks,
+          canEditLiveTanks,
+          canDeleteFromLiveTanks
+        });
+        
+        // Show/hide add buttons based on permissions
+        const addButtons = ['addPBCRBtn', 'addWasheryBtn', 'addPLCRBtn'];
+        addButtons.forEach(btnId => {
+          const btn = document.getElementById(btnId);
+          if (btn) {
+            if (canAddToLiveTanks) {
+              btn.style.display = 'flex';
+              btn.disabled = false;
+            } else {
+              btn.style.display = 'none';
+              btn.disabled = true;
+            }
+          }
+        });
+        
+        // تخزين الصلاحيات في متغير عام للاستخدام في أماكن أخرى
+        window.userLiveTanksPermissions = {
+          canAdd: canAddToLiveTanks,
+          canEdit: canEditLiveTanks,
+          canDelete: canDeleteFromLiveTanks
+        };
+        
+        console.log('✅ Live Tanks permissions setup completed');
+      } catch (error) {
+        console.error('❌ Error setting up Live Tanks permissions:', error);
+        // Fallback: hide all action buttons if permissions check fails
+        window.userLiveTanksPermissions = {
+          canAdd: false,
+          canEdit: false,
+          canDelete: false
+        };
+      }
+    }
+
+
+    async function loadLiveTanks() {
+      try {
+        // Set up real-time listener
+        const q = query(collection(db, 'liveTanks'), orderBy('finishDateTime', 'asc'));
+        
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          const tanks = [];
+          snapshot.forEach((doc) => {
+            tanks.push({ id: doc.id, ...doc.data() });
+          });
+          
+          displayTanksByDepartment(tanks);
+          showRefreshIndicator();
+        });
+        
+        // Auto-refresh remaining time every minute
+        setInterval(() => {
+          const containers = ['pbcrContainer', 'washeryContainer', 'plcrContainer'];
+          containers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container && container.querySelector('.tanks-table')) {
+              // Re-render tables to update remaining time
+              const dept = containerId.replace('Container', '').toUpperCase();
+              const currentTanks = Array.from(document.querySelectorAll(`#${containerId} .tank-number`))
+                .map(el => el.textContent);
+              if (currentTanks.length > 0) {
+                // Trigger refresh by calling displayTanksByDepartment again
+                displayTanksByDepartment(window.currentTanks || []);
+              }
+            }
+          });
+        }, 60000); // Update every minute
+        
+      } catch (error) {
+        console.error('Error loading live tanks:', error);
+        showMessage('❌ Error loading tanks: ' + error.message, 'error');
+      }
+    }
+
+    function displayTanksByDepartment(tanks) {
+      const departments = ['PBCR', 'WASHERY', 'PLCR'];
+      
+      // Store tanks globally for auto-refresh
+      window.currentTanks = tanks;
+      
+      departments.forEach(dept => {
+        const deptTanks = tanks.filter(tank => tank.department === dept && tank.status === 'active');
+        const containerId = dept.toLowerCase() + 'Container';
+        const countId = dept.toLowerCase() + 'Count';
+        
+        displayTanksInTable(containerId, deptTanks);
+        document.getElementById(countId).textContent = `(${deptTanks.length} tanks)`;
+      });
+    }
+
+    async function displayTanksInTable(containerId, tanks) {
+      const container = document.getElementById(containerId);
+      
+      if (tanks.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🏭</div>
+            <div style="font-size:1.1rem;margin-bottom:10px;">No active tanks</div>
+            <div style="opacity:0.7;">Add a tank to start monitoring</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort tanks by product priority, then by finish time
+      tanks.sort((a, b) => {
+        const priorityA = productPriority[a.product] || 999;
+        const priorityB = productPriority[b.product] || 999;
+        
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+        
+        return new Date(a.finishDateTime) - new Date(b.finishDateTime);
+      });
+
+      let html = `
+        <div class="table-container">
+          <table class="tanks-table">
+            <thead>
+              <tr>
+                <th>Tank</th>
+                <th>Product</th>
+                <th>Target</th>
+                <th>Rate</th>
+                <th>Remaining</th>
+                <th>❗</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+      
+      // استخدام الصلاحيات المخزنة من setupPermissions
+      const permissions = window.userLiveTanksPermissions || {
+        canAdd: false,
+        canEdit: false,
+        canDelete: false
+      };
+      
+      // معالجة كل تانك في حلقة
+      tanks.forEach(tank => {
+        // إصلاح شامل لمشكلة PLCR: فحص البيانات وتطبيق الحل المناسب
+        let finishDateTime;
+        
+        // إضافة console.log لفحص البيانات الفعلية
+        if (tank.department === 'PLCR') {
+          console.log('🔍 PLCR Tank Data:', {
+            department: tank.department,
+            source: tank.source,
+            finishDateTime: tank.finishDateTime,
+            finishDate: tank.finishDate,
+            finishTime: tank.finishTime
+          });
+        }
+        
+        if (tank.finishDateTime && (tank.department === 'PLCR' || tank.source === 'PLCR_Calculator')) {
+          finishDateTime = tank.finishDateTime.toDate(); // ✅ الطريقة الصحيحة لـ Firebase Timestamp
+          console.log('✅ Using finishDateTime.toDate() for PLCR:', finishDateTime);
+        } else {
+          finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+          if (tank.department === 'PLCR') {
+            console.log('⚠️ Fallback to finishDate+finishTime for PLCR:', finishDateTime);
+          }
+        }
+        const urgencyLevel = getUrgencyLevel(finishDateTime);
+        const rowClass = getRowClass(urgencyLevel);
+        
+        // Format date to DD-MM
+        const dateObj = new Date(tank.finishDate);
+        const formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+        
+        // Calculate remaining time
+        const now = new Date();
+        const timeDiff = finishDateTime.getTime() - now.getTime();
+        const hoursRemaining = Math.floor(timeDiff / (1000 * 60 * 60));
+        const minutesRemaining = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        let remainingText = '';
+        if (timeDiff <= 0) {
+          remainingText = 'Finished';
+        } else if (hoursRemaining < 1) {
+          remainingText = `${minutesRemaining}m`;
+        } else if (hoursRemaining < 24) {
+          remainingText = `${hoursRemaining}h ${minutesRemaining}m`;
+        } else {
+          const daysRemaining = Math.floor(hoursRemaining / 24);
+          const remainingHours = hoursRemaining % 24;
+          remainingText = `${daysRemaining}d ${remainingHours}h`;
+        }
+        
+        // Format target and rate with abbreviations
+        let targetText = '-';
+        if (tank.targetValue && tank.targetValue !== null && tank.targetValue !== undefined) {
+          let targetUnit = '';
+          if (tank.targetType === 'level') {
+            targetUnit = 'M';
+          } else if (tank.targetType === 'pumpable' || tank.targetType === 'ullage') {
+            targetUnit = 'B';
+          } else {
+            targetUnit = tank.targetType || '';
+          }
+          targetText = `${tank.targetValue} ${targetUnit}`;
+        }
+        
+        let rateText = '-';
+        if (tank.rate && tank.rate !== null && tank.rate !== undefined) {
+          let rateUnit = '';
+          if (tank.rateUnit === 'bbl' || tank.rateUnit === 'bbl/hr') {
+            rateUnit = 'B/h';
+          } else if (tank.rateUnit === 'm3' || tank.rateUnit === 'm³/hr') {
+            rateUnit = 'm³';
+          } else if (tank.rateUnit === 'mtr/hr' || tank.rateUnit === 'meter/hr') {
+            rateUnit = 'M/h';
+          } else if (tank.rateUnit === 'MT/hr') {
+            rateUnit = 'MT/h';
+          } else {
+            rateUnit = tank.rateUnit || '';
+          }
+          rateText = `${tank.rate} ${rateUnit}`;
+        }
+        
+        html += `
+          <tr class="${rowClass}">
+            <td class="tank-number">${tank.tankNumber}</td>
+            <td><span class="product-badge ${getProductClass(tank.product)}">${tank.product}</span></td>
+            <td>${targetText}</td>
+            <td>${rateText}</td>
+            <td>${remainingText}</td>
+            <td>
+              <button class="action-btn" onclick="showTankDetails('${tank.id}')" title="View Details" style="background:#2196F3;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:14px">❗</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    }
+
+
+    // Tank Details Functions
+    window.showTankDetails = async function(tankId) {
+      const tank = window.currentTanks?.find(t => t.id === tankId);
+      if (!tank) return;
+      
+      // تحديث الصلاحيات قبل عرض التفاصيل
+      await setupPermissions();
+      
+      // إصلاح شامل لمشكلة PLCR: فحص البيانات وتطبيق الحل المناسب
+      let finishDateTime;
+      
+      // إضافة console.log لفحص البيانات الفعلية في التفاصيل
+      if (tank.department === 'PLCR') {
+        console.log('🔍 PLCR Tank Details Data:', {
+          department: tank.department,
+          source: tank.source,
+          finishDateTime: tank.finishDateTime,
+          finishDate: tank.finishDate,
+          finishTime: tank.finishTime
+        });
+      }
+      
+      if (tank.finishDateTime && (tank.department === 'PLCR' || tank.source === 'PLCR_Calculator')) {
+        finishDateTime = tank.finishDateTime.toDate(); // ✅ الطريقة الصحيحة لـ Firebase Timestamp
+        console.log('✅ Using finishDateTime.toDate() for PLCR Details:', finishDateTime);
+      } else {
+        finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+        if (tank.department === 'PLCR') {
+          console.log('⚠️ Fallback to finishDate+finishTime for PLCR Details:', finishDateTime);
+        }
+      }
+      const dateObj = new Date(tank.finishDate);
+      const formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+      
+      // Calculate remaining time
+      const now = new Date();
+      const timeDiff = finishDateTime.getTime() - now.getTime();
+      const hoursRemaining = Math.floor(timeDiff / (1000 * 60 * 60));
+      const minutesRemaining = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      let remainingText = '';
+      if (timeDiff <= 0) {
+        remainingText = 'Finished';
+      } else if (hoursRemaining < 1) {
+        remainingText = `${minutesRemaining} minutes`;
+      } else if (hoursRemaining < 24) {
+        remainingText = `${hoursRemaining}h ${minutesRemaining}m`;
+      } else {
+        const daysRemaining = Math.floor(hoursRemaining / 24);
+        const remainingHours = hoursRemaining % 24;
+        remainingText = `${daysRemaining}d ${remainingHours}h`;
+      }
+      
+      // استخدام الصلاحيات المحدثة من setupPermissions
+      const permissions = window.userLiveTanksPermissions || {
+        canAdd: false,
+        canEdit: false,
+        canDelete: false
+      };
+      
+      document.getElementById('tankDetailsTitle').textContent = `Tank ${tank.tankNumber} Details`;
+      
+      // Format last edit info
+      let lastEditInfo = 'No edits yet';
+      if (tank.lastModified && tank.modifiedBy) {
+        const editDate = new Date(tank.lastModified.seconds * 1000);
+        const editDateStr = String(editDate.getDate()).padStart(2, '0') + '-' + String(editDate.getMonth() + 1).padStart(2, '0');
+        const editTimeStr = editDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        lastEditInfo = `${editDateStr} ${editTimeStr} by ${tank.modifiedBy}`;
+      }
+
+      const detailsHTML = `
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">🏭 Department</div>
+            <div class="tank-detail-value">${tank.department}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">🏷️ Tank Number</div>
+              <div class="tank-detail-value">${tank.tankNumber}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">🛢️ Product Type</div>
+              <div class="tank-detail-value"><span class="product-badge ${getProductClass(tank.product)}">${tank.product}</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📊 Target Value</div>
+              <div class="tank-detail-value">${tank.targetValue || '-'}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">🎯 Target Type</div>
+              <div class="tank-detail-value">${tank.targetType || '-'}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">⚡ Flow Rate</div>
+              <div class="tank-detail-value">${tank.rate || '-'}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📏 Rate Unit</div>
+              <div class="tank-detail-value">${tank.rateUnit || '-'}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📅 Finish Date</div>
+              <div class="tank-detail-value">${formattedDate}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">⏰ Finish Time</div>
+              <div class="tank-detail-value">${tank.finishTime}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">🔄 Last Edit</div>
+            <div class="tank-detail-value">${lastEditInfo}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">📝 Notes</div>
+            <div class="tank-detail-value">${tank.notes || 'No notes'}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">📊 History</div>
+            <div class="tank-detail-value">
+              <button class="btn btn-info" onclick="showTankHistory('${tank.id}')" style="padding: 8px 16px; font-size: 14px;">📈 View History</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">⏳ Remaining Time</div>
+            <div class="tank-detail-value">${remainingText}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">👤 Added By</div>
+              <div class="tank-detail-value">${tank.addedBy}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📊 Source</div>
+              <div class="tank-detail-value">${tank.source || 'Manual'}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-actions">
+          ${permissions.canEdit ? `<button class="btn btn-primary" onclick="editTank('${tank.id}')">✏️ Edit Tank</button>` : ''}
+          ${permissions.canDelete ? `<button class="btn btn-danger" onclick="deleteTank('${tank.id}')">🗑️ Delete Tank</button>` : ''}
+          <button class="btn btn-warning" onclick="addReminder('${tank.id}')">📅 Add Reminder</button>
+        </div>
+      `;
+      document.getElementById('tankDetailsBody').innerHTML = detailsHTML;
+      document.getElementById('tankDetailsModal').classList.add('show');
+    }
+
+    // Add Reminder Function
+    window.addReminder = function(tankId) {
+      const tank = window.currentTanks?.find(t => t.id === tankId);
+      if (!tank) return;
+      
+      // Create reminder data
+      const finishDateTime = tank.finishDateTime ? 
+        (tank.finishDateTime.toDate ? tank.finishDateTime.toDate() : new Date(tank.finishDateTime)) :
+        new Date(tank.finishDate + ' ' + tank.finishTime);
+      
+      const reminderDate = finishDateTime.toISOString().split('T')[0].replace(/-/g, '');
+      const reminderTime = finishDateTime.toTimeString().slice(0, 5).replace(':', '') + '00';
+      
+      const eventTitle = `Tank ${tank.tankNumber} - ${tank.product} (${tank.department})`;
+      const eventDetails = `Target: ${tank.targetValue || 'N/A'} ${tank.targetType || ''}\\nRate: ${tank.rate || 'N/A'} ${tank.rateUnit || ''}\\nNotes: ${tank.notes || 'No notes'}`;
+      
+      // Create Google Calendar URL
+      const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${reminderDate}T${reminderTime}Z/${reminderDate}T${reminderTime}Z&details=${encodeURIComponent(eventDetails)}&location=KNPC&sf=true&output=xml`;
+      
+      // Open in new window
+      window.open(calendarUrl, '_blank');
+      
+      showMessage('📅 Reminder created! Check your Google Calendar.', 'success');
+    }
+
+
+    // Calculate actual rate based on level difference and time - FIXED VERSION
+    function calculateActualRate() {
+      const currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
+      const previousLevel = parseFloat(document.getElementById('editPreviousLevel').value);
+      const rateUnit = document.getElementById('editRateUnit').value;
+      const department = document.getElementById('editDepartment').value;
+      
+      if (!currentLevel || !previousLevel || !currentEditingTank) return;
+      
+      console.log('📊 Calculating actual rate:', {
+        currentLevel,
+        previousLevel,
+        rateUnit,
+        department
+      });
+      
+      // Get time difference
+      const now = new Date();
+      const lastUpdateTime = currentEditingTank.lastLevelUpdate ? 
+        new Date(currentEditingTank.lastLevelUpdate.seconds * 1000) : 
+        new Date(currentEditingTank.addedAt.seconds * 1000);
+      
+      const timeDiffHours = (now - lastUpdateTime) / (1000 * 60 * 60);
+      
+      if (timeDiffHours <= 0) return;
+      
+      // Calculate level difference
+      const levelDiff = Math.abs(currentLevel - previousLevel);
+      
+      console.log('📏 Level difference:', levelDiff, 'meters');
+      console.log('⏰ Time difference:', timeDiffHours, 'hours');
+      
+      let actualRate = 0;
+      
+      // ✅ FIXED: Proper calculation for meter/h in PBCR/WASHERY
+      if ((department === 'PBCR' || department === 'WASHERY') && (rateUnit === 'meter/hr' || rateUnit === 'mtr/hr' || rateUnit === 'mtr')) {
+        // Direct calculation in meters per hour - NO barrel conversion
+        actualRate = levelDiff / timeDiffHours;
+        console.log('📏 Calculated rate (meter/hr):', actualRate);
+      } else if (rateUnit === 'MT/hr' && department === 'PLCR') {
+        // ✅ FIXED: Proper calculation for MT/hr (PLCR)
+        const tankNumber = document.getElementById('editTankNumber').value;
+        const tankData = tanks[tankNumber];
+        
+        if (tankData) {
+          const c = tankData.comment; // capacity factor
+          // Convert level to volume in barrels, then to metric tons
+          const volumeDiffBarrels = levelDiff * c;
+          // Assuming 1 barrel ≈ 0.159 m³ and density varies by product (using average 0.85 MT/m³)
+          const volumeM3 = volumeDiffBarrels * 0.159;
+          const massMT = volumeM3 * 0.85; // Average density for petroleum products
+          actualRate = massMT / timeDiffHours;
+          console.log('⚖️ Calculated rate (MT/hr):', actualRate);
+        } else {
+          // Fallback calculation for PLCR
+          actualRate = levelDiff / timeDiffHours * 10; // Rough estimate
+        }
+      } else {
+        // For other units, use tank capacity factor
+        const tankNumber = document.getElementById('editTankNumber').value;
+        const tankData = tanks[tankNumber];
+        
+        if (tankData) {
+          const c = tankData.comment; // capacity factor
+          
+          if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
+            // Rate in cubic meters per hour
+            const volumeDiffBarrels = levelDiff * c;
+            const rateBarrels = volumeDiffBarrels / timeDiffHours;
+            // Convert from barrels to m³ (1 barrel = 0.159 m³ approximately)
+            actualRate = rateBarrels * 0.159;
+            console.log('🧊 Calculated rate (m³/hr):', actualRate);
+          } else {
+            // Default: bbl/hr (barrels per hour)
+            const volumeDiff = levelDiff * c;
+            actualRate = volumeDiff / timeDiffHours;
+            console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
+          }
+        }
+      }
+      
+      // Update rate field with decimal precision
+      document.getElementById('editRate').value = actualRate.toFixed(2);
+      
+      console.log('✅ Rate updated to:', actualRate.toFixed(2), rateUnit);
+      
+      // Recalculate finish time
+      calculateEditTime();
+    }
+
+    // Calculate edit time function - IMPROVED VERSION
+    function calculateEditTime() {
+      const targetType = document.getElementById('editTargetType').value;
+      const targetValue = parseFloat(document.getElementById('editTargetValue').value);
+      const rate = parseFloat(document.getElementById('editRate').value);
+      const rateUnit = document.getElementById('editRateUnit').value;
+      const tankNumber = document.getElementById('editTankNumber').value;
+      const department = document.getElementById('editDepartment').value;
+      
+      if (!targetType || !targetValue || !rate || !tankNumber) return;
+      
+      // Get tank data from tanks object (same as PBCR)
+      const tankData = tanks[tankNumber];
+      if (!tankData) return;
+      
+      const c = tankData.comment; // capacity factor
+      const m = tankData.min;     // minimum level
+      const x = tankData.max;     // maximum level
+      
+      // Get current level from form or use saved data
+      let currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
+      
+      // If no current level in form, use the saved current level from tank data
+      if (!currentLevel && currentEditingTank && currentEditingTank.currentLevel) {
+        currentLevel = currentEditingTank.currentLevel;
+        // Auto-fill the form field
+        document.getElementById('editCurrentLevel').value = currentLevel;
+      }
+      
+      // If still no current level, try to get from tank data
+      if (!currentLevel && tankData.currentLevel) {
+        currentLevel = tankData.currentLevel;
+        document.getElementById('editCurrentLevel').value = currentLevel;
+      }
+      
+      // If still no current level, cannot calculate
+      if (!currentLevel) {
+        console.log('⚠️ Cannot calculate time - no current level available');
+        return;
+      }
+      
+      console.log('📊 Calculation data:', {
+        tankNumber,
+        currentLevel,
+        targetValue,
+        targetType,
+        rate,
+        rateUnit,
+        department,
+        capacityFactor: c,
+        minLevel: m,
+        maxLevel: x
+      });
+      
+      // Calculate target level based on type (same as PBCR)
+      let targetLevel = 0;
+      if (targetType === "pumpable") {
+        targetLevel = (targetValue / c) + m;
+      } else if (targetType === "ullage") {
+        targetLevel = x - (targetValue / c);
+      } else if (targetType === "level") {
+        targetLevel = targetValue;
+      }
+      
+      console.log('🎯 Target level calculated:', targetLevel);
+      
+      // Calculate difference
+      const levelDiff = Math.abs(targetLevel - currentLevel);
+      console.log('📏 Level difference:', levelDiff);
+      
+      // Calculate time based on rate unit and department
+      let timeHours = 0;
+      
+      if (department === 'PLCR') {
+        // For PLCR: MT/hr calculation
+        if (rateUnit === 'MT/hr') {
+          // Convert level difference to metric tons, then divide by rate
+          const volumeDiffBarrels = levelDiff * c;
+          const volumeM3 = volumeDiffBarrels * 0.159;
+          const massMT = volumeM3 * 0.85; // Average density
+          timeHours = massMT / rate;
+        } else {
+          // Fallback for PLCR
+          timeHours = levelDiff / rate;
+        }
+      } else {
+        // For PBCR & WASHERY: Original logic with FIXED meter/hr
+        if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+          // ✅ FIXED: Direct level difference divided by rate
+          timeHours = levelDiff / rate;
+        } else {
+          const volumeDiff = levelDiff * c;
+          // Check for all m³ variations
+          const flowRate = (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") ? rate / 0.159 : rate;
+          timeHours = volumeDiff / flowRate;
+        }
+      }
+      
+      console.log('⏰ Time calculated (hours):', timeHours);
+      
+      if (timeHours > 0) {
+        const now = new Date();
+        const finishTime = new Date(now.getTime() + timeHours * 3600000);
+        
+        // Update date and time fields
+        const finishDate = `${finishTime.getFullYear()}-${String(finishTime.getMonth()+1).padStart(2,'0')}-${String(finishTime.getDate()).padStart(2,'0')}`;
+        const finishTimeStr = `${String(finishTime.getHours()).padStart(2,'0')}:${String(finishTime.getMinutes()).padStart(2,'0')}`;
+        
+        document.getElementById('editFinishDate').value = finishDate;
+        document.getElementById('editFinishTime').value = finishTimeStr;
+        
+        console.log('✅ Finish time updated:', finishDate, finishTimeStr);
+      }
+    }
+
+
+    // Enhanced Edit Tank Form Submission with Improved Data Saving
+    document.getElementById('editTankForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (!currentEditingTank) return;
+      
+      const tankNumber = document.getElementById('editTankNumber').value;
+      const product = document.getElementById('editProduct').value;
+      const targetType = document.getElementById('editTargetType').value;
+      const targetValue = document.getElementById('editTargetValue').value;
+      const currentLevel = document.getElementById('editCurrentLevel').value;
+      const previousLevel = document.getElementById('editPreviousLevel').value;
+      const rate = document.getElementById('editRate').value;
+      const rateUnit = document.getElementById('editRateUnit').value;
+      const finishDate = document.getElementById('editFinishDate').value;
+      const finishTime = document.getElementById('editFinishTime').value;
+      const notes = document.getElementById('editNotes').value;
+      
+      try {
+        const finishDateTime = new Date(finishDate + ' ' + finishTime);
+        
+        // Track changes for history
+        const changes = {};
+        if (currentLevel && currentLevel !== currentEditingTank.currentLevel) {
+          changes.currentLevel = { from: currentEditingTank.currentLevel, to: parseFloat(currentLevel) };
+        }
+        if (rate !== currentEditingTank.rate) {
+          changes.rate = { from: currentEditingTank.rate, to: parseFloat(rate) };
+        }
+        if (rateUnit !== currentEditingTank.rateUnit) {
+          changes.rateUnit = { from: currentEditingTank.rateUnit, to: rateUnit };
+        }
+        if (finishDate !== currentEditingTank.finishDate) {
+          changes.finishDate = { from: currentEditingTank.finishDate, to: finishDate };
+        }
+        if (finishTime !== currentEditingTank.finishTime) {
+          changes.finishTime = { from: currentEditingTank.finishTime, to: finishTime };
+        }
+        if (notes !== currentEditingTank.notes) {
+          changes.notes = { from: currentEditingTank.notes, to: notes };
+        }
+        
+        // Enhanced update data with improved tracking
+        const updateData = {
+          tankNumber: tankNumber,
+          product: product,
+          targetType: targetType || null,
+          targetValue: targetValue ? parseFloat(targetValue) : null,
+          previousLevel: currentLevel ? parseFloat(previousLevel) : (currentEditingTank.currentLevel || null),
+          currentLevel: currentLevel ? parseFloat(currentLevel) : (currentEditingTank.currentLevel || null),
+          rate: rate ? parseFloat(rate) : null,
+          rateUnit: rateUnit || null,
+          finishTime: finishTime,
+          finishDate: finishDate,
+          finishDateTime: finishDateTime,
+          notes: notes || '',
+          lastModified: serverTimestamp(),
+          modifiedBy: currentUser.username,
+          // Enhanced data tracking
+          lastLevelUpdate: currentLevel ? serverTimestamp() : (currentEditingTank.lastLevelUpdate || null),
+          initialLevel: currentEditingTank.initialLevel || (currentEditingTank.currentLevel || null),
+          initialTime: currentEditingTank.initialTime || (currentEditingTank.addedAt || null)
+        };
+        
+        // Enhanced history record
+        const historyRecord = {
+          action: currentLevel ? 'Level Updated' : 'Tank Updated',
+          modifiedBy: currentUser.username,
+          timestamp: new Date(),
+          notes: notes || 'Tank updated',
+          levelChange: currentLevel ? {
+            from: parseFloat(previousLevel) || currentEditingTank.currentLevel,
+            to: parseFloat(currentLevel),
+            difference: Math.abs((parseFloat(currentLevel) || 0) - (parseFloat(previousLevel) || currentEditingTank.currentLevel || 0))
+          } : null
+        };
+        
+        // Add changes if any
+        if (Object.keys(changes).length > 0) {
+          historyRecord.changes = changes;
+        }
+        
+        // Calculate actual rate if level was updated
+        if (currentLevel && previousLevel) {
+          const timeDiff = (new Date() - new Date(currentEditingTank.lastLevelUpdate?.seconds * 1000 || currentEditingTank.addedAt?.seconds * 1000)) / (1000 * 60 * 60);
+          const levelDiff = Math.abs(parseFloat(currentLevel) - parseFloat(previousLevel));
+          
+          if (timeDiff > 0) {
+            let actualRate = 0;
+            const department = currentEditingTank.department;
+            
+            if (department === 'PLCR') {
+              // PLCR: MT/hr calculation
+              const tankData = tanks[tankNumber];
+              if (tankData) {
+                const volumeDiffBarrels = levelDiff * tankData.comment;
+                const volumeM3 = volumeDiffBarrels * 0.159;
+                const massMT = volumeM3 * 0.85;
+                actualRate = massMT / timeDiff;
+              }
+            } else {
+              // PBCR/WASHERY: Based on rate unit
+              if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+                actualRate = levelDiff / timeDiff;
+              } else if (rateUnit === "m3/hr" || rateUnit === "m³/hr") {
+                const tankData = tanks[tankNumber];
+                if (tankData) {
+                  const volumeDiffBarrels = levelDiff * tankData.comment;
+                  actualRate = (volumeDiffBarrels * 0.159) / timeDiff;
+                }
+              } else {
+                const tankData = tanks[tankNumber];
+                if (tankData) {
+                  actualRate = (levelDiff * tankData.comment) / timeDiff;
+                }
+              }
+            }
+            
+            historyRecord.actualRate = {
+              value: Math.round(actualRate * 100) / 100,
+              unit: rateUnit,
+              timePeriod: Math.round(timeDiff * 100) / 100 + ' hours'
+            };
+          }
+        }
+        
+        // Get current history array and add new record
+        const currentHistory = currentEditingTank.history || [];
+        currentHistory.push(historyRecord);
+        
+        // Always update history
+        updateData.history = currentHistory;
+        
+        await updateDoc(doc(db, 'liveTanks', currentEditingTank.id), updateData);
+        
+        await addActivity('live_tank_updated', currentUser.username, currentEditingTank, changes);
+        showMessage('✅ Tank updated successfully!', 'success');
+        
+        // إغلاق القائمة تلقائياً بعد التعديل
+        setTimeout(() => {
+          closeEditModal();
+          window.location.reload();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error updating tank:', error);
+        showMessage('❌ Error updating tank: ' + error.message, 'error');
+      }
+    });
+
+    // Rest of the JavaScript functions remain the same...
+    // (Including all other functions from the original file)
+    
+    async function editTank(tankId) {
+      try {
+        const tankDoc = await getDoc(doc(db, 'liveTanks', tankId));
+        if (!tankDoc.exists()) {
+          showMessage('❌ Tank not found!', 'error');
+          return;
+        }
+        
+        const tank = tankDoc.data();
+        currentEditingTank = { id: tankId, ...tank };
+        
+        // Fill edit form
+        document.getElementById('editDepartment').value = tank.department;
+        document.getElementById('editTankNumber').value = tank.tankNumber;
+        document.getElementById('editTargetType').value = tank.targetType || '';
+        document.getElementById('editTargetValue').value = tank.targetValue || '';
+        
+        // Auto-fill current level from saved data
+        if (tank.currentLevel) {
+          document.getElementById('editCurrentLevel').value = tank.currentLevel;
+          console.log('✅ Auto-filled current level:', tank.currentLevel);
+        } else {
+          document.getElementById('editCurrentLevel').value = '';
+          console.log('⚠️ No current level found in tank data');
+        }
+        
+        document.getElementById('editPreviousLevel').value = tank.currentLevel || '';
+        document.getElementById('editRate').value = tank.rate || '';
+        
+        // Set rate unit based on department
+        let defaultRateUnit = 'bbl/hr';
+        if (tank.department === 'PLCR') {
+          defaultRateUnit = 'MT/hr';
+        } else if (tank.rateUnit) {
+          defaultRateUnit = tank.rateUnit;
+        }
+        
+        document.getElementById('editRateUnit').value = defaultRateUnit;
+        document.getElementById('editFinishDate').value = tank.finishDate;
+        document.getElementById('editFinishTime').value = tank.finishTime;
+        document.getElementById('editNotes').value = tank.notes || '';
+        
+        // Update product options for edit
+        const editProductSelect = document.getElementById('editProduct');
+        editProductSelect.innerHTML = '<option value="">Select Product</option>';
+        
+        if (productsByDepartment[tank.department]) {
+          productsByDepartment[tank.department].forEach(product => {
+            const option = document.createElement('option');
+            option.value = product;
+            option.textContent = product;
+            option.selected = product === tank.product;
+            editProductSelect.appendChild(option);
+          });
+        }
+        
+        // Trigger calculation after form is filled
+        setTimeout(() => {
+          calculateEditTime();
+        }, 100);
+        
+        document.getElementById('editTankModal').classList.add('show');
+        
+      } catch (error) {
+        console.error('Error loading tank for edit:', error);
+        showMessage('❌ Error loading tank: ' + error.message, 'error');
+      }
+    }
+
+    function closeEditModal() {
+      document.getElementById('editTankModal').classList.remove('show');
+      document.getElementById('editTankForm').reset();
+      currentEditingTank = null;
+    }
+
+
+    // Show Tank History Function (same as original)
+    window.showTankHistory = async function(tankId) {
+      try {
+        document.getElementById('tankHistoryModal').classList.add('show');
+        document.getElementById('historyContent').innerHTML = `
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            Loading history...
+          </div>
+        `;
+        
+        // Get tank info for title
+        const tank = window.currentTanks?.find(t => t.id === tankId);
+        document.getElementById('historyModalTitle').textContent = `📊 Tank ${tank?.tankNumber || ''} History`;
+        
+        // Get tank document from Firebase
+        const tankDoc = await getDoc(doc(db, 'liveTanks', tankId));
+        
+        if (!tankDoc.exists()) {
+          document.getElementById('historyContent').innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #f44336;">
+              <div style="font-size: 3rem; margin-bottom: 20px;">❌</div>
+              <h3>Tank Not Found</h3>
+              <p>Unable to find tank data.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        const tankData = tankDoc.data();
+        const history = tankData.history || [];
+        
+        if (history.length === 0) {
+          document.getElementById('historyContent').innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666;">
+              <div style="font-size: 3rem; margin-bottom: 20px;">📋</div>
+              <h3>No History Found</h3>
+              <p>This tank has no recorded changes yet.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Sort history by timestamp (newest first)
+        const sortedHistory = history.sort((a, b) => {
+          const timeA = a.timestamp?.seconds || (a.timestamp instanceof Date ? a.timestamp.getTime() / 1000 : new Date(a.timestamp).getTime() / 1000);
+          const timeB = b.timestamp?.seconds || (b.timestamp instanceof Date ? b.timestamp.getTime() / 1000 : new Date(b.timestamp).getTime() / 1000);
+          return timeB - timeA;
+        });
+        
+        let historyHTML = '<div class="history-timeline">';
+        
+        sortedHistory.forEach((historyItem) => {
+          const timestamp = historyItem.timestamp?.seconds ? 
+            new Date(historyItem.timestamp.seconds * 1000) : 
+            (historyItem.timestamp instanceof Date ? historyItem.timestamp : new Date(historyItem.timestamp));
+          const dateStr = String(timestamp.getDate()).padStart(2, '0') + '-' + String(timestamp.getMonth() + 1).padStart(2, '0');
+          const timeStr = timestamp.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          
+          historyHTML += `
+            <div class="history-item">
+              <div class="history-header">
+                <div class="history-date">📅 ${dateStr} ${timeStr}</div>
+                <div class="history-user">👤 ${historyItem.modifiedBy || 'Unknown'}</div>
+              </div>
+              <div class="history-action">${getActionIcon(historyItem.action)} ${historyItem.action}</div>
+              ${historyItem.changes ? `
+                <div class="history-changes">
+                  ${formatChanges(historyItem.changes)}
+                </div>
+              ` : ''}
+              ${historyItem.actualRate ? `
+                <div class="history-changes">
+                  <div class="change-item">
+                    <div class="change-field">Actual Rate:</div>
+                    <div class="change-values">
+                      <span class="new-value">${historyItem.actualRate.value} ${historyItem.actualRate.unit}</span>
+                      <span style="color:#666;font-size:0.9em">(over ${historyItem.actualRate.timePeriod})</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              ${historyItem.levelChange ? `
+                <div class="history-changes">
+                  <div class="change-item">
+                    <div class="change-field">Level Change:</div>
+                    <div class="change-values">
+                      <span class="old-value">${historyItem.levelChange.from}m</span>
+                      <span class="arrow">→</span>
+                      <span class="new-value">${historyItem.levelChange.to}m</span>
+                      <span style="color:#666;font-size:0.9em">(Δ${historyItem.levelChange.difference}m)</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              ${historyItem.notes ? `
+                <div class="history-notes">📝 ${historyItem.notes}</div>
+              ` : ''}
+            </div>
+          `;
+        });
+        
+        historyHTML += '</div>';
+        document.getElementById('historyContent').innerHTML = historyHTML;
+        
+      } catch (error) {
+        console.error('Error loading tank history:', error);
+        document.getElementById('historyContent').innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #f44336;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">❌</div>
+            <h3>Error Loading History</h3>
+            <p>Unable to load tank history. Please try again.</p>
+          </div>
+        `;
+      }
+    }
+    
+    // Close Tank History Modal
+    window.closeTankHistory = function() {
+      document.getElementById('tankHistoryModal').classList.remove('show');
+    }
+    
+    // Helper function to get action icon
+    function getActionIcon(action) {
+      const icons = {
+        'Tank Created': '🆕',
+        'Tank Updated': '✏️',
+        'Level Updated': '📊',
+        'Rate Recalculated': '⚡',
+        'Tank Deleted': '🗑️'
+      };
+      return icons[action] || '📝';
+    }
+    
+    // Helper function to format changes
+    function formatChanges(changes) {
+      let html = '<div class="changes-grid">';
+      
+      for (const [field, change] of Object.entries(changes)) {
+        const fieldName = getFieldDisplayName(field);
+        html += `
+          <div class="change-item">
+            <div class="change-field">${fieldName}:</div>
+            <div class="change-values">
+              <span class="old-value">${change.from || '-'}</span>
+              <span class="arrow">→</span>
+              <span class="new-value">${change.to || '-'}</span>
+            </div>
+          </div>
+        `;
+      }
+      
+      html += '</div>';
+      return html;
+    }
+    
+    // Helper function to get field display name
+    function getFieldDisplayName(field) {
+      const fieldNames = {
+        'currentLevel': 'Current Level',
+        'rate': 'Flow Rate',
+        'rateUnit': 'Rate Unit',
+        'finishDate': 'Finish Date',
+        'finishTime': 'Finish Time',
+        'notes': 'Notes',
+        'targetValue': 'Target Value',
+        'targetType': 'Target Type'
+      };
+      return fieldNames[field] || field;
+    }
+
+    window.closeTankDetails = function() {
+      document.getElementById('tankDetailsModal').classList.remove('show');
+    }
+
+    function getUrgencyLevel(finishDateTime) {
+      const now = new Date();
+      const timeDiff = finishDateTime.getTime() - now.getTime();
+      const minutesDiff = timeDiff / (1000 * 60);
+      
+      // Critical: Less than 1 hour (red background, dark red text)
+      if (minutesDiff <= 60) {
+        return 'critical';
+      }
+      
+      // Warning: Same shift but more than 1 hour (white background, red text)
+      if (isSameShift(now, finishDateTime)) {
+        return 'warning';
+      }
+      
+      // Normal: Next shift (white background, green text)
+      return 'normal';
+    }
+
+    function getRowClass(urgencyLevel) {
+      switch(urgencyLevel) {
+        case 'critical': return 'tank-row-critical';
+        case 'warning': return 'tank-row-warning';
+        default: return 'tank-row-normal';
+      }
+    }
+
+    function getUrgencyIcon(urgencyLevel) {
+      switch(urgencyLevel) {
+        case 'critical': return '🚨';
+        case 'warning': return '⚠️';
+        default: return '';
+      }
+    }
+
+    function getProductClass(product) {
+      const classMap = {
+        'LSFO': 'product-lsfo',
+        'EGO 10PPM': 'product-ego-10',
+        'EGO 500PPM': 'product-ego-500',
+        'RHN': 'product-rhn',
+        'PCNA': 'product-pcna',
+        'NMOGAS': 'product-nmogas',
+        'OLMOGAS': 'product-olmogas',
+        'ATK': 'product-atk',
+        'ARDR': 'product-ardr',
+        'IC5': 'product-ic5',
+        'ISOM': 'product-isom',
+        'SLOP': 'product-slop',
+        'MOGAS 98': 'product-mogas-98',
+        'MOGAS 95': 'product-mogas-95',
+        'MOGAS 91': 'product-mogas-91',
+        'GO': 'product-go',
+        'KERO': 'product-kero',
+        'Slop': 'product-slop'
+      };
+      return classMap[product] || 'product-default';
+    }
+
+    function isSameShift(date1, date2) {
+      const getShift = (date) => {
+        const hour = date.getHours();
+        if (hour >= 6 && hour < 14) return 'morning';
+        if (hour >= 14 && hour < 22) return 'evening';
+        return 'night';
+      };
+      
+      const shift1 = getShift(date1);
+      const shift2 = getShift(date2);
+      
+      // Must be same shift type first
+      if (shift1 !== shift2) {
+        return false;
+      }
+      
+      // For night shift, handle day boundary carefully
+      if (shift1 === 'night') {
+        const timeDiff = Math.abs(date2.getTime() - date1.getTime());
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
+        
+        // Night shift spans from 22:00 to 06:00 (8 hours max)
+        // If difference is more than 8 hours, it's definitely not same shift
+        return hoursDiff <= 8;
+      }
+      
+      // For morning and evening shifts, must be same day
+      return date1.toDateString() === date2.toDateString();
+    }
+
+    function openAddModal(department) {
+      console.log('🚀 Opening add modal for department:', department);
+      document.getElementById('addModalTitle').textContent = `➕ Add ${department} Tank`;
+      document.getElementById('addDepartment').value = department;
+      updateProductOptions();
+      document.getElementById('addTankModal').classList.add('show');
+      console.log('✅ Modal opened, department set to:', department);
+    }
+
+    function closeAddModal() {
+      document.getElementById('addTankModal').classList.remove('show');
+      document.getElementById('addTankForm').reset();
+    }
+
+    function updateProductOptions() {
+      const department = document.getElementById('addDepartment').value;
+      const productSelect = document.getElementById('addProduct');
+      
+      console.log('🔄 Updating product options for department:', department);
+      
+      productSelect.innerHTML = '<option value="">Select Product</option>';
+      
+      if (department && productsByDepartment[department]) {
+        console.log('📋 Available products:', productsByDepartment[department]);
+        productsByDepartment[department].forEach(product => {
+          const option = document.createElement('option');
+          option.value = product;
+          option.textContent = product;
+          productSelect.appendChild(option);
+        });
+        console.log('✅ Product options updated');
+      } else {
+        console.log('❌ No department selected or no products found');
+      }
+    }
+
+
+    // Rest of the functions (same as original)
+    async function deleteTank(tankId) {
+      if (!confirm('Are you sure you want to delete this tank?\n\nThis action cannot be undone!')) {
+        return;
+      }
+      
+      try {
+        // Get tank info before deletion for history
+        const tank = window.currentTanks?.find(t => t.id === tankId);
+        
+        // No need to save deletion history since tank is being deleted
+        await deleteDoc(doc(db, 'liveTanks', tankId));
+        
+        await addActivity('live_tank_deleted', currentUser.username, tank);
+        showMessage('✅ تم حذف التانك!', 'success');
+        
+        // Auto close modal after 1 second
+        setTimeout(() => {
+          closeTankDetails();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error deleting tank:', error);
+        showMessage('❌ Error deleting tank: ' + error.message, 'error');
+      }
+    }
+
+    // Form submissions
+    document.getElementById('addTankForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      console.log('🚀 Starting tank addition...');
+      
+      const department = document.getElementById('addDepartment').value;
+      const tankNumber = document.getElementById('addTankNumber').value;
+      const product = document.getElementById('addProduct').value;
+      const targetValue = document.getElementById('addTargetValue').value;
+      const targetType = document.getElementById('addTargetType').value;
+      const currentLevel = document.getElementById('addCurrentLevel').value;
+      const rate = document.getElementById('addRate').value;
+      const rateUnit = document.getElementById('addRateUnit').value;
+      const finishDate = document.getElementById('addFinishDate').value;
+      const finishTime = document.getElementById('addFinishTime').value;
+      const notes = document.getElementById('addNotes').value;
+      
+      console.log('📋 Form data:', { department, tankNumber, product, targetValue, targetType, currentLevel, rate, rateUnit, finishDate, finishTime });
+      
+      // Validation
+      if (!department) {
+        showMessage('❌ Please select a department!', 'error');
+        return;
+      }
+      if (!tankNumber) {
+        showMessage('❌ Please enter tank number!', 'error');
+        return;
+      }
+      if (!product) {
+        showMessage('❌ Please select a product!', 'error');
+        return;
+      }
+      if (!targetValue || !targetType) {
+        showMessage('❌ Please set target value and type!', 'error');
+        return;
+      }
+      if (!currentLevel) {
+        showMessage('❌ Please enter current level!', 'error');
+        return;
+      }
+      if (!rate || !rateUnit) {
+        showMessage('❌ Please enter flow rate!', 'error');
+        return;
+      }
+      if (!finishDate || !finishTime) {
+        showMessage('❌ Please set finish date and time!', 'error');
+        return;
+      }
+      
+      try {
+        console.log('💾 Saving to Firebase...');
+        const finishDateTime = new Date(finishDate + ' ' + finishTime);
+        
+        const tankData = {
+          department: department,
+          tankNumber: tankNumber,
+          product: product,
+          targetValue: parseFloat(targetValue),
+          targetType: targetType,
+          currentLevel: parseFloat(currentLevel),
+          rate: parseFloat(rate),
+          rateUnit: rateUnit,
+          addedBy: currentUser.username,
+          userName: currentUser.fullName || currentUser.username,
+          finishTime: finishTime,
+          finishDate: finishDate,
+          finishDateTime: finishDateTime,
+          addedAt: serverTimestamp(),
+          status: 'active',
+          notes: notes,
+          history: [{
+            action: 'Tank Created',
+            modifiedBy: currentUser.username,
+            timestamp: new Date(),
+            notes: `Tank ${tankNumber} created in ${department}`
+          }]
+        };
+        
+        console.log('📊 Tank data:', tankData);
+        
+        await addDoc(collection(db, 'liveTanks'), tankData);
+        console.log('✅ Tank saved to Firebase');
+        
+        await addActivity('live_tank_added', currentUser.username, tankData);
+        console.log('✅ Activity logged');
+        
+        showMessage('✅ Tank added successfully!', 'success');
+        
+        // إغلاق القائمة تلقائياً بعد الإضافة
+        setTimeout(() => {
+          closeAddModal();
+          window.location.reload();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('❌ Error adding tank:', error);
+        showMessage('❌ Error adding tank: ' + error.message, 'error');
+      }
+    });
+
+    function showRefreshIndicator() {
+      const indicator = document.createElement('div');
+      indicator.className = 'refresh-indicator';
+      indicator.textContent = '🔄 Updated';
+      document.body.appendChild(indicator);
+      
+      setTimeout(() => {
+        indicator.remove();
+      }, 2000);
+    }
+
+    async function addActivity(action, username, tankData = null, changes = null) {
+      try {
+        const userIP = await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(data => data.ip).catch(() => 'Unknown');
+        const timestamp = new Date();
+        const timeStr = timestamp.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = timestamp.toLocaleDateString('en-GB');
+        
+        let detailedAction = action;
+        let activityDetails = null;
+        
+        if (action === 'live_tank_added') {
+          const lastTank = tankData || window.currentTanks?.[window.currentTanks.length - 1];
+          if (lastTank) {
+            detailedAction = `Tank ${lastTank.tankNumber} - Added`;
+            activityDetails = {
+              tankNumber: lastTank.tankNumber,
+              department: lastTank.department,
+              product: lastTank.product,
+              action: 'added',
+              details: `New tank created in ${lastTank.department}`
+            };
+          } else {
+            detailedAction = `New Tank - Added`;
+          }
+        } else if (action === 'live_tank_updated') {
+          if (tankData && changes) {
+            detailedAction = `Tank ${tankData.tankNumber} - Updated`;
+            activityDetails = {
+              tankNumber: tankData.tankNumber,
+              department: tankData.department,
+              action: 'updated',
+              changes: changes,
+              details: Object.keys(changes).map(key => {
+                const change = changes[key];
+                return `${key}: ${change.from} → ${change.to}`;
+              }).join(', ')
+            };
+          } else {
+            detailedAction = `Tank - Updated`;
+          }
+        } else if (action === 'live_tank_deleted') {
+          if (tankData) {
+            detailedAction = `Tank ${tankData.tankNumber} - Deleted`;
+            activityDetails = {
+              tankNumber: tankData.tankNumber,
+              department: tankData.department,
+              action: 'deleted',
+              details: `Tank removed from ${tankData.department}`
+            };
+          } else {
+            detailedAction = `Tank - Deleted`;
+          }
+        } else if (action === 'live_tanks_accessed') {
+          detailedAction = `Live Tanks Access`;
+        }
+        
+        const activityData = {
+          action: detailedAction,
+          originalAction: action,
+          username: username,
+          timestamp: serverTimestamp(),
+          ip: userIP,
+          userAgent: navigator.userAgent.substring(0, 100),
+          page: 'live-tanks'
+        };
+        
+        // Add detailed information if available
+        if (activityDetails) {
+          activityData.details = activityDetails;
+        }
+        
+        await addDoc(collection(db, 'activities'), activityData);
+      } catch (error) {
+        console.error('Error adding activity:', error);
+      }
+    }
+
+    function showMessage(message, type) {
+      const container = document.getElementById('messageContainer');
+      container.innerHTML = `<div class="message ${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    function logout() {
+      if (unsubscribe) unsubscribe();
+      logActivity('user_logout', currentUser.username);
+      sessionStorage.removeItem('tanktools_session');
+      localStorage.removeItem('tanktools_current_user');
+      window.location.href = 'login.html';
+    }
+
+    function logActivity(action, username) {
+      const activities = JSON.parse(localStorage.getItem('tanktools_activities') || '[]');
+      activities.unshift({
+        id: Date.now(),
+        action: action,
+        username: username,
+        timestamp: new Date().toISOString(),
+        ip: 'local',
+        userAgent: navigator.userAgent.substring(0, 100)
+      });
+      activities.splice(100);
+      localStorage.setItem('tanktools_activities', JSON.stringify(activities));
+    }
+
+    // Font size control functions
+    let currentFontSize = parseInt(localStorage.getItem('tanktools_font_size_livetanks') || '14');
+    
+    function increaseFontSize() {
+      if (currentFontSize < 20) {
+        currentFontSize += 2;
+        applyFontSize();
+        localStorage.setItem('tanktools_font_size_livetanks', currentFontSize);
+        showMessage(`📈 Font size increased to ${currentFontSize}px`, 'info');
+      }
+    }
+    
+    function decreaseFontSize() {
+      if (currentFontSize > 10) {
+        currentFontSize -= 2;
+        applyFontSize();
+        localStorage.setItem('tanktools_font_size_livetanks', currentFontSize);
+        showMessage(`📉 Font size decreased to ${currentFontSize}px`, 'info');
+      }
+    }
+    
+    function applyFontSize() {
+      const style = document.createElement('style');
+      style.id = 'dynamic-font-style';
+      
+      const existingStyle = document.getElementById('dynamic-font-style');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+      
+      style.textContent = `
+        .tanks-table { font-size: ${currentFontSize}px !important; }
+        .tanks-table th { font-size: ${currentFontSize}px !important; }
+        .tank-number { font-size: ${currentFontSize + 1}px !important; }
+        .product-badge { font-size: ${currentFontSize - 2}px !important; }
+        .status-badge { font-size: ${currentFontSize - 3}px !important; }
+        .action-btn { font-size: ${currentFontSize - 3}px !important; }
+      `;
+      
+      document.head.appendChild(style);
+    }
+    
+    // Apply saved font size on page load
+    applyFontSize();
+
+    // Add Tank calculation functions
+    function updateAddRateUnit() {
+      const tankNumber = document.getElementById('addTankNumber').value;
+      const department = document.getElementById('addDepartment').value;
+      const rateUnitField = document.getElementById('addRateUnit');
+      
+      if (department === 'PLCR') {
+        rateUnitField.value = 'MT/hr';
+      } else if (tankNumber && tanks[tankNumber]) {
+        // Set default rate unit based on tank data (same as PBCR logic)
+        rateUnitField.value = 'bbl/hr';
+      }
+    }
+
+    function calculateAddTime() {
+      const targetType = document.getElementById('addTargetType').value;
+      const targetValue = parseFloat(document.getElementById('addTargetValue').value);
+      const currentLevel = parseFloat(document.getElementById('addCurrentLevel').value);
+      const rate = parseFloat(document.getElementById('addRate').value);
+      const rateUnit = document.getElementById('addRateUnit').value;
+      const tankNumber = document.getElementById('addTankNumber').value;
+      const department = document.getElementById('addDepartment').value;
+      
+      if (!targetType || !targetValue || !currentLevel || !rate || !tankNumber) return;
+      
+      // Get tank data from tanks object
+      const tankData = tanks[tankNumber];
+      if (!tankData) return;
+      
+      const c = tankData.comment; // capacity factor
+      const m = tankData.min;     // minimum level
+      const x = tankData.max;     // maximum level
+      
+      // Calculate target level based on type
+      let targetLevel = 0;
+      if (targetType === "pumpable") {
+        targetLevel = (targetValue / c) + m;
+      } else if (targetType === "ullage") {
+        targetLevel = x - (targetValue / c);
+      } else if (targetType === "level") {
+        targetLevel = targetValue;
+      }
+      
+      // Calculate difference
+      const levelDiff = Math.abs(targetLevel - currentLevel);
+      
+      // Calculate time based on rate unit and department
+      let timeHours = 0;
+      
+      if (department === 'PLCR') {
+        // For PLCR: MT/hr calculation
+        if (rateUnit === 'MT/hr') {
+          // Convert level difference to metric tons, then divide by rate
+          const volumeDiffBarrels = levelDiff * c;
+          const volumeM3 = volumeDiffBarrels * 0.159;
+          const massMT = volumeM3 * 0.85; // Average density
+          timeHours = massMT / rate;
+        } else {
+          // Fallback for PLCR
+          timeHours = levelDiff / rate;
+        }
+      } else {
+        // For PBCR & WASHERY: Original logic with FIXED meter/hr
+        if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+          // ✅ FIXED: Direct level difference divided by rate
+          timeHours = levelDiff / rate;
+        } else {
+          const volumeDiff = levelDiff * c;
+          const flowRate = rateUnit === "m3/hr" ? rate / 0.159 : rate;
+          timeHours = volumeDiff / flowRate;
+        }
+      }
+      
+      if (timeHours > 0) {
+        const now = new Date();
+        const finishTime = new Date(now.getTime() + timeHours * 3600000);
+        
+        // Update date and time fields
+        const finishDate = `${finishTime.getFullYear()}-${String(finishTime.getMonth()+1).padStart(2,'0')}-${String(finishTime.getDate()).padStart(2,'0')}`;
+        const finishTimeStr = `${String(finishTime.getHours()).padStart(2,'0')}:${String(finishTime.getMinutes()).padStart(2,'0')}`;
+        
+        document.getElementById('addFinishDate').value = finishDate;
+        document.getElementById('addFinishTime').value = finishTimeStr;
+      }
+    }
+
+    // إضافة function تأكيد الحذف
+    function confirmDeleteTank() {
+      if (!currentEditingTank) return;
+      
+      const tankNumber = currentEditingTank.tankNumber;
+      const department = currentEditingTank.department;
+      
+      if (confirm(`⚠️ هل أنت متأكد من حذف التانك ${tankNumber} في قسم ${department}؟\n\nهذا الإجراء لا يمكن التراجع عنه!`)) {
+        deleteTankConfirmed();
+      }
+    }
+    
+    async function deleteTankConfirmed() {
+      if (!currentEditingTank) return;
+      
+      try {
+        await deleteDoc(doc(db, 'liveTanks', currentEditingTank.id));
+        
+        await addActivity('live_tank_deleted', currentUser.username, currentEditingTank);
+        showMessage('✅ Tank deleted successfully!', 'success');
+        
+        // إغلاق القائمة تلقائياً بعد الحذف
+        setTimeout(() => {
+          closeEditModal();
+          window.location.reload();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error deleting tank:', error);
+        showMessage('❌ Error deleting tank: ' + error.message, 'error');
+      }
+    }
+
+    // Make functions globally available
+    window.openAddModal = openAddModal;
+    window.closeAddModal = closeAddModal;
+    window.updateProductOptions = updateProductOptions;
+    window.updateAddRateUnit = updateAddRateUnit;
+    window.calculateAddTime = calculateAddTime;
+    window.editTank = editTank;
+    window.closeEditModal = closeEditModal;
+    window.confirmDeleteTank = confirmDeleteTank;
+    window.deleteTank = deleteTank;
+    window.logout = logout;
+    window.goToLogin = goToLogin;
+    window.increaseFontSize = increaseFontSize;
+    window.decreaseFontSize = decreaseFontSize;
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (unsubscribe) unsubscribe();
+    });
+
+    console.log('%c🔴 LIVE TANKS v5.0 - IMPROVED VERSION', 'color:red;font-size:16px;font-weight:bold');
+    console.log('%cDeveloper: Fahad - 17877', 'color:green;font-size:14px');
+    console.log('%c✅ Fixed meter/h calculation', 'color:blue;font-size:14px');
+    console.log('%c✅ Added PLCR MT/hr support', 'color:blue;font-size:14px');
+    console.log('%c✅ Added Reminder button', 'color:blue;font-size:14px');
+    console.log('%c✅ Enhanced data saving', 'color:blue;font-size:14px');
+  </script>
+</body>
+</html>
+
