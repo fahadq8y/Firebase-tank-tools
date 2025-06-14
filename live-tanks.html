@@ -1066,6 +1066,203 @@
       // إصلاح شامل لمشكلة PLCR: فحص البيانات وتطبيق الحل المناسب
       let finishDateTime;
       
+      if (tank.finishDateTime && (tank.department === 'PLCR' || tank.source === 'PLCR_Calculator')) {
+        finishDateTime = tank.finishDateTime.toDate(); // ✅ الطريقة الصحيحة لـ Firebase Timestamp
+      } else {
+        finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+      }
+      const dateObj = new Date(tank.finishDate);
+      const formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+      
+      // Calculate remaining time
+      const now = new Date();
+      const timeDiff = finishDateTime.getTime() - now.getTime();
+      const hoursRemaining = Math.floor(timeDiff / (1000 * 60 * 60));
+      const minutesRemaining = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      let remainingText = '';
+      if (timeDiff <= 0) {
+        remainingText = 'Finished';
+      } else if (hoursRemaining < 1) {
+        remainingText = `${minutesRemaining} minutes`;
+      } else if (hoursRemaining < 24) {
+        remainingText = `${hoursRemaining}h ${minutesRemaining}m`;
+      } else {
+        const daysRemaining = Math.floor(hoursRemaining / 24);
+        const remainingHours = hoursRemaining % 24;
+        remainingText = `${daysRemaining}d ${remainingHours}h`;
+      }
+      
+      // استخدام الصلاحيات المحدثة من setupPermissions
+      const permissions = window.userLiveTanksPermissions || {
+        canAdd: false,
+        canEdit: false,
+        canDelete: false
+      };
+      
+      document.getElementById('tankDetailsTitle').textContent = `Tank ${tank.tankNumber} Details`;
+      
+      // Format last edit info
+      let lastEditInfo = 'No edits yet';
+      if (tank.lastModified && tank.modifiedBy) {
+        const editDate = new Date(tank.lastModified.seconds * 1000);
+        const editDateStr = String(editDate.getDate()).padStart(2, '0') + '-' + String(editDate.getMonth() + 1).padStart(2, '0');
+        const editTimeStr = editDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        lastEditInfo = `${editDateStr} ${editTimeStr} by ${tank.modifiedBy}`;
+      }
+
+      const detailsHTML = `
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">🏭 Department</div>
+            <div class="tank-detail-value">${tank.department}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">🏷️ Tank Number</div>
+              <div class="tank-detail-value">${tank.tankNumber}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">🛢️ Product Type</div>
+              <div class="tank-detail-value"><span class="product-badge ${getProductClass(tank.product)}">${tank.product}</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📊 Target Value</div>
+              <div class="tank-detail-value">${tank.targetValue || '-'}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">🎯 Target Type</div>
+              <div class="tank-detail-value">${tank.targetType || '-'}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">⚡ Flow Rate</div>
+              <div class="tank-detail-value">${tank.rate || '-'}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📏 Rate Unit</div>
+              <div class="tank-detail-value">${tank.rateUnit || '-'}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📅 Finish Date</div>
+              <div class="tank-detail-value">${formattedDate}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">⏰ Finish Time</div>
+              <div class="tank-detail-value">${tank.finishTime}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">🔄 Last Edit</div>
+            <div class="tank-detail-value">${lastEditInfo}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">📝 Notes</div>
+            <div class="tank-detail-value">${tank.notes || 'No notes'}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">📊 History</div>
+            <div class="tank-detail-value">
+              <button class="btn btn-info" onclick="showTankHistory('${tank.id}')" style="padding: 8px 16px; font-size: 14px;">📈 View History</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-single">
+            <div class="tank-detail-label">⏳ Remaining Time</div>
+            <div class="tank-detail-value">${remainingText}</div>
+          </div>
+        </div>
+        
+        <div class="tank-detail-section">
+          <div class="tank-detail-dual">
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">👤 Added By</div>
+              <div class="tank-detail-value">${tank.addedBy}</div>
+            </div>
+            <div class="tank-detail-item">
+              <div class="tank-detail-label">📊 Source</div>
+              <div class="tank-detail-value">${tank.source || 'Manual'}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tank-actions">
+          ${permissions.canEdit ? `<button class="btn btn-primary" onclick="editTank('${tank.id}')">✏️ Edit Tank</button>` : ''}
+          ${permissions.canDelete ? `<button class="btn btn-danger" onclick="deleteTank('${tank.id}')">🗑️ Delete Tank</button>` : ''}
+          <button class="btn btn-warning" onclick="addReminder('${tank.id}')">📅 Add Reminder</button>
+        </div>
+      `;
+      document.getElementById('tankDetailsBody').innerHTML = detailsHTML;
+      document.getElementById('tankDetailsModal').classList.add('show');
+    }
+
+    // Close Tank Details Modal
+    window.closeTankDetails = function() {
+      document.getElementById('tankDetailsModal').classList.remove('show');
+    }
+
+    // Add Reminder Function
+    window.addReminder = function(tankId) {
+      const tank = window.currentTanks?.find(t => t.id === tankId);
+      if (!tank) return;
+      
+      // Create reminder data
+      const finishDateTime = tank.finishDateTime ? 
+        (tank.finishDateTime.toDate ? tank.finishDateTime.toDate() : new Date(tank.finishDateTime)) :
+        new Date(tank.finishDate + ' ' + tank.finishTime);
+      
+      const reminderDate = finishDateTime.toISOString().split('T')[0].replace(/-/g, '');
+      const reminderTime = finishDateTime.toTimeString().slice(0, 5).replace(':', '') + '00';
+      
+      const eventTitle = `Tank ${tank.tankNumber} - ${tank.product} (${tank.department})`;
+      const eventDetails = `Target: ${tank.targetValue || 'N/A'} ${tank.targetType || ''}\\nRate: ${tank.rate || 'N/A'} ${tank.rateUnit || ''}\\nNotes: ${tank.notes || 'No notes'}`;
+      
+      // Create Google Calendar URL
+      const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${reminderDate}T${reminderTime}Z/${reminderDate}T${reminderTime}Z&details=${encodeURIComponent(eventDetails)}&location=KNPC&sf=true&output=xml`;
+      
+      // Open in new window
+      window.open(calendarUrl, '_blank');
+      
+      showMessage('📅 Reminder created! Check your Google Calendar.', 'success');
+    }
+    window.showTankDetails = async function(tankId) {
+      const tank = window.currentTanks?.find(t => t.id === tankId);
+      if (!tank) return;
+      
+      // تحديث الصلاحيات قبل عرض التفاصيل
+      await setupPermissions();
+      
+      // إصلاح شامل لمشكلة PLCR: فحص البيانات وتطبيق الحل المناسب
+      let finishDateTime;
+      
       // إضافة console.log لفحص البيانات الفعلية في التفاصيل
       if (tank.department === 'PLCR') {
         console.log('🔍 PLCR Tank Details Data:', {
@@ -2014,4 +2211,85 @@
   </script>
 </body>
 </html>
+
+
+
+    // Edit Tank Function
+    async function editTank(tankId) {
+      try {
+        const tankDoc = await getDoc(doc(db, 'liveTanks', tankId));
+        if (!tankDoc.exists()) {
+          showMessage('❌ Tank not found!', 'error');
+          return;
+        }
+        
+        const tank = tankDoc.data();
+        currentEditingTank = { id: tankId, ...tank };
+        
+        // Fill edit form
+        document.getElementById('editDepartment').value = tank.department;
+        document.getElementById('editTankNumber').value = tank.tankNumber;
+        document.getElementById('editTargetType').value = tank.targetType || '';
+        document.getElementById('editTargetValue').value = tank.targetValue || '';
+        
+        // Auto-fill current level from saved data
+        if (tank.currentLevel) {
+          document.getElementById('editCurrentLevel').value = tank.currentLevel;
+          console.log('✅ Auto-filled current level:', tank.currentLevel);
+        } else {
+          document.getElementById('editCurrentLevel').value = '';
+          console.log('⚠️ No current level found in tank data');
+        }
+        
+        document.getElementById('editPreviousLevel').value = tank.currentLevel || '';
+        document.getElementById('editRate').value = tank.rate || '';
+        
+        // Set rate unit based on department
+        let defaultRateUnit = 'bbl/hr';
+        if (tank.department === 'PLCR') {
+          defaultRateUnit = 'MT/hr';
+        } else if (tank.rateUnit) {
+          defaultRateUnit = tank.rateUnit;
+        }
+        
+        document.getElementById('editRateUnit').value = defaultRateUnit;
+        document.getElementById('editFinishDate').value = tank.finishDate;
+        document.getElementById('editFinishTime').value = tank.finishTime;
+        document.getElementById('editNotes').value = tank.notes || '';
+        
+        // Update product options for edit
+        const editProductSelect = document.getElementById('editProduct');
+        editProductSelect.innerHTML = '<option value="">Select Product</option>';
+        
+        if (productsByDepartment[tank.department]) {
+          productsByDepartment[tank.department].forEach(product => {
+            const option = document.createElement('option');
+            option.value = product;
+            option.textContent = product;
+            option.selected = product === tank.product;
+            editProductSelect.appendChild(option);
+          });
+        }
+        
+        // Trigger calculation after form is filled
+        setTimeout(() => {
+          calculateEditTime();
+        }, 100);
+        
+        document.getElementById('editTankModal').classList.add('show');
+        
+      } catch (error) {
+        console.error('Error loading tank for edit:', error);
+        showMessage('❌ Error loading tank: ' + error.message, 'error');
+      }
+    }
+
+    function closeEditModal() {
+      document.getElementById('editTankModal').classList.remove('show');
+      document.getElementById('editTankForm').reset();
+      currentEditingTank = null;
+    }
+
+    // Make editTank available globally
+    window.editTank = editTank;
 
