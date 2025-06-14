@@ -426,10 +426,16 @@
           </div>
           <div class="form-group" style="flex:1">
             <label class="form-label">🛢️ Product Type:</label>
-            <select class="form-select" id="editProduct" required>
+            <select class="form-select" id="editProduct" onchange="checkOtherProductEdit()" required>
               <option value="">Select Product</option>
             </select>
           </div>
+        </div>
+        
+        <!-- حقل OTHER Product للتعديل -->
+        <div class="form-group" id="editOtherProductGroup" style="display:none">
+          <label class="form-label">🔧 Other Product (specify):</label>
+          <input type="text" class="form-input" id="editOtherProduct" placeholder="Enter product name">
         </div>
         
         <!-- السطر الثالث: Current Level + meter -->
@@ -1934,6 +1940,20 @@
       }
     }
 
+    function checkOtherProductEdit() {
+      const productSelect = document.getElementById('editProduct');
+      const otherGroup = document.getElementById('editOtherProductGroup');
+      
+      if (productSelect.value === 'OTHER') {
+        otherGroup.style.display = 'block';
+        document.getElementById('editOtherProduct').required = true;
+      } else {
+        otherGroup.style.display = 'none';
+        document.getElementById('editOtherProduct').required = false;
+        document.getElementById('editOtherProduct').value = '';
+      }
+    }
+
 
     // Rest of the functions (same as original)
     async function deleteTank(tankId) {
@@ -2348,6 +2368,7 @@
     window.closeAddModal = closeAddModal;
     window.updateProductOptions = updateProductOptions;
     window.checkOtherProduct = checkOtherProduct;
+    window.checkOtherProductEdit = checkOtherProductEdit;
     window.updateAddRateUnit = updateAddRateUnit;
     window.calculateAddTime = calculateAddTime;
     window.editTank = editTank;
