@@ -1130,7 +1130,7 @@
           department: 'PLCR',
           tankNumber: calcData.tankNumber,
           product: finalProduct,
-          targetValue: calcData.finalLevel / 1000, // Convert to actual meters (6.318)
+          targetValue: parseFloat((calcData.finalLevel / 1000).toFixed(3)), // Convert to actual meters and round to 3 decimals (6.318)
           targetType: 'Level', // Changed from 'Quantity MT' to 'Level'
           currentLevel: calcData.currentLevel / 1000, // Convert to actual meters (10.000)
           rate: calcData.withdrawalRate,
