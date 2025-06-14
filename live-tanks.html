@@ -545,24 +545,25 @@
 
     async function setupPermissions() {
       try {
-        if (typeof window.setupPermissions === 'function') {
-          const result = await window.setupPermissions();
-          currentUser = result.user;
-          userPermissions = result.permissions;
-          
-          // Update UI based on permissions
+        // Check if user is logged in
+        const storedUser = localStorage.getItem('currentUser');
+        const storedPermissions = localStorage.getItem('userPermissions');
+        
+        if (storedUser && storedPermissions) {
+          currentUser = JSON.parse(storedUser);
+          userPermissions = JSON.parse(storedPermissions);
+          console.log('Live Tanks permissions setup completed');
           updateUIBasedOnPermissions();
         } else {
-          // Fallback for testing
-          currentUser = { name: 'Test User', avatar: 'T' };
-          userPermissions = { canEdit: true, canDelete: false, canAdd: true };
-          updateUIBasedOnPermissions();
+          // Redirect to login if no user found
+          console.log('No user found, redirecting to login');
+          window.location.href = 'login.html';
+          return;
         }
       } catch (error) {
         console.error('Error setting up permissions:', error);
-        // Show access denied
-        document.getElementById('accessDenied').style.display = 'flex';
-        document.getElementById('mainContent').style.display = 'none';
+        // Redirect to login on error
+        window.location.href = 'login.html';
       }
     }
 
@@ -1401,24 +1402,25 @@ Notes: ${tank.notes || 'No notes'}`;
 
     async function setupPermissions() {
       try {
-        if (typeof window.setupPermissions === 'function') {
-          const result = await window.setupPermissions();
-          currentUser = result.user;
-          userPermissions = result.permissions;
-          
-          // Update UI based on permissions
+        // Check if user is logged in
+        const storedUser = localStorage.getItem('currentUser');
+        const storedPermissions = localStorage.getItem('userPermissions');
+        
+        if (storedUser && storedPermissions) {
+          currentUser = JSON.parse(storedUser);
+          userPermissions = JSON.parse(storedPermissions);
+          console.log('Live Tanks permissions setup completed');
           updateUIBasedOnPermissions();
         } else {
-          // Fallback for testing
-          currentUser = { name: 'Test User', avatar: 'T' };
-          userPermissions = { canEdit: true, canDelete: false, canAdd: true };
-          updateUIBasedOnPermissions();
+          // Redirect to login if no user found
+          console.log('No user found, redirecting to login');
+          window.location.href = 'login.html';
+          return;
         }
       } catch (error) {
         console.error('Error setting up permissions:', error);
-        // Show access denied
-        document.getElementById('accessDenied').style.display = 'flex';
-        document.getElementById('mainContent').style.display = 'none';
+        // Redirect to login on error
+        window.location.href = 'login.html';
       }
     }
 
