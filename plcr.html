@@ -1116,11 +1116,14 @@
           department: 'PLCR',
           tankNumber: calcData.tankNumber,
           product: finalProduct,
-          targetValue: parseFloat(document.getElementById('ltTargetValue').value) || null,
-          targetType: 'Quantity MT',
-          currentLevel: null, // PLCR doesn't track current level like PBCR
+          // ✅ FIXED: Send Final Level as Target Value
+          targetValue: calcData.finalLevel / 1000, // Convert to actual meters (6.318)
+          targetType: 'Level', // Changed from 'Quantity MT' to 'Level'
+          currentLevel: calcData.currentLevel / 1000, // Convert to actual meters (10.000)
           rate: parseFloat(document.getElementById('ltRate').value) || null,
           rateUnit: 'MT/hr',
+          // ✅ FIXED: Calculate and send Conversion Factor
+          conversionFactor: calculateConversionFactor(),
           addedBy: currentUser.username,
           userName: currentUser.fullName || currentUser.username,
           finishTime: timeStr,
@@ -1130,8 +1133,36 @@
           lastLevelUpdate: window.serverTimestamp(),
           status: 'active',
           notes: document.getElementById('ltNotes').value,
-          source: 'PLCR_Calculator'
+          source: 'PLCR_Calculator',
+          // ✅ FIXED: Add calculation metadata
+          calculationData: {
+            requestQuantity: calcData.requestQuantity,
+            timeNeeded: calcData.timeNeeded,
+            finalLevel: calcData.finalLevel / 1000,
+            currentLevel: calcData.currentLevel / 1000
+          }
         };
+        
+        // ✅ FIXED: Add Conversion Factor calculation function
+        function calculateConversionFactor() {
+          const levelDiff = (calcData.currentLevel - calcData.finalLevel) / 1000; // Convert to meters
+          const timeHours = calcData.timeNeeded; // Time in hours
+          const rateValue = parseFloat(document.getElementById('ltRate').value);
+          
+          if (levelDiff > 0 && timeHours > 0 && rateValue > 0) {
+            const meterPerHour = levelDiff / timeHours;
+            const conversionFactor = rateValue / meterPerHour;
+            console.log('🧮 Conversion Factor calculated:', {
+              levelDiff: levelDiff,
+              timeHours: timeHours,
+              rateValue: rateValue,
+              meterPerHour: meterPerHour,
+              conversionFactor: conversionFactor
+            });
+            return conversionFactor;
+          }
+          return 1357; // Default fallback
+        }
         
         // إظهار رسالة تحميل
         const submitBtn = document.querySelector('button[type="submit"]');
