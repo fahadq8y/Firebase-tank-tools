@@ -1446,23 +1446,29 @@
         // Enhanced update data with improved tracking
         const updateData = {
           tankNumber: tankNumber,
-          product: product,
+          product: product === 'OTHER' ? document.getElementById('editOtherProduct').value : product,
+          otherProduct: product === 'OTHER' ? document.getElementById('editOtherProduct').value : null,
           targetType: targetType || null,
           targetValue: targetValue ? parseFloat(targetValue) : null,
-          previousLevel: currentLevel ? parseFloat(previousLevel) : (currentEditingTank.currentLevel || null),
+          // ✅ FIXED: Proper Current Level saving for PLCR
+          previousLevel: currentEditingTank.currentLevel || parseFloat(previousLevel) || null,
           currentLevel: currentLevel ? parseFloat(currentLevel) : (currentEditingTank.currentLevel || null),
           rate: rate ? parseFloat(rate) : null,
-          rateUnit: rateUnit || null,
+          rateUnit: rateUnit || currentEditingTank.rateUnit || null,
           finishTime: finishTime,
           finishDate: finishDate,
           finishDateTime: finishDateTime,
           notes: notes || '',
           lastModified: serverTimestamp(),
           modifiedBy: currentUser.username,
-          // Enhanced data tracking
+          // ✅ FIXED: Enhanced data tracking for PLCR
           lastLevelUpdate: currentLevel ? serverTimestamp() : (currentEditingTank.lastLevelUpdate || null),
           initialLevel: currentEditingTank.initialLevel || (currentEditingTank.currentLevel || null),
-          initialTime: currentEditingTank.initialTime || (currentEditingTank.addedAt || null)
+          initialTime: currentEditingTank.initialTime || (currentEditingTank.addedAt || null),
+          // ✅ FIXED: Preserve department and original data
+          department: currentEditingTank.department,
+          addedAt: currentEditingTank.addedAt,
+          addedBy: currentEditingTank.addedBy
         };
         
         // Enhanced history record
