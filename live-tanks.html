@@ -856,12 +856,28 @@
       
       // معالجة كل تانك في حلقة
       tanks.forEach(tank => {
-        // إصلاح محدود لمشكلة PLCR: التحقق من وجود finishDateTime جاهز للخزانات من PLCR فقط
+        // إصلاح شامل لمشكلة PLCR: فحص البيانات وتطبيق الحل المناسب
         let finishDateTime;
-        if (tank.finishDateTime && tank.department === 'PLCR') {
+        
+        // إضافة console.log لفحص البيانات الفعلية
+        if (tank.department === 'PLCR') {
+          console.log('🔍 PLCR Tank Data:', {
+            department: tank.department,
+            source: tank.source,
+            finishDateTime: tank.finishDateTime,
+            finishDate: tank.finishDate,
+            finishTime: tank.finishTime
+          });
+        }
+        
+        if (tank.finishDateTime && (tank.department === 'PLCR' || tank.source === 'PLCR_Calculator')) {
           finishDateTime = new Date(tank.finishDateTime);
+          console.log('✅ Using finishDateTime for PLCR:', finishDateTime);
         } else {
           finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+          if (tank.department === 'PLCR') {
+            console.log('⚠️ Fallback to finishDate+finishTime for PLCR:', finishDateTime);
+          }
         }
         const urgencyLevel = getUrgencyLevel(finishDateTime);
         const rowClass = getRowClass(urgencyLevel);
@@ -944,12 +960,28 @@
       // تحديث الصلاحيات قبل عرض التفاصيل
       await setupPermissions();
       
-      // إصلاح محدود لمشكلة PLCR: التحقق من وجود finishDateTime جاهز للخزانات من PLCR فقط
+      // إصلاح شامل لمشكلة PLCR: فحص البيانات وتطبيق الحل المناسب
       let finishDateTime;
-      if (tank.finishDateTime && tank.department === 'PLCR') {
+      
+      // إضافة console.log لفحص البيانات الفعلية في التفاصيل
+      if (tank.department === 'PLCR') {
+        console.log('🔍 PLCR Tank Details Data:', {
+          department: tank.department,
+          source: tank.source,
+          finishDateTime: tank.finishDateTime,
+          finishDate: tank.finishDate,
+          finishTime: tank.finishTime
+        });
+      }
+      
+      if (tank.finishDateTime && (tank.department === 'PLCR' || tank.source === 'PLCR_Calculator')) {
         finishDateTime = new Date(tank.finishDateTime);
+        console.log('✅ Using finishDateTime for PLCR Details:', finishDateTime);
       } else {
         finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
+        if (tank.department === 'PLCR') {
+          console.log('⚠️ Fallback to finishDate+finishTime for PLCR Details:', finishDateTime);
+        }
       }
       const dateObj = new Date(tank.finishDate);
       const formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
