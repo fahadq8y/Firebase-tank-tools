@@ -871,8 +871,8 @@
         }
         
         if (tank.finishDateTime && (tank.department === 'PLCR' || tank.source === 'PLCR_Calculator')) {
-          finishDateTime = new Date(tank.finishDateTime);
-          console.log('✅ Using finishDateTime for PLCR:', finishDateTime);
+          finishDateTime = tank.finishDateTime.toDate(); // ✅ الطريقة الصحيحة لـ Firebase Timestamp
+          console.log('✅ Using finishDateTime.toDate() for PLCR:', finishDateTime);
         } else {
           finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
           if (tank.department === 'PLCR') {
@@ -975,8 +975,8 @@
       }
       
       if (tank.finishDateTime && (tank.department === 'PLCR' || tank.source === 'PLCR_Calculator')) {
-        finishDateTime = new Date(tank.finishDateTime);
-        console.log('✅ Using finishDateTime for PLCR Details:', finishDateTime);
+        finishDateTime = tank.finishDateTime.toDate(); // ✅ الطريقة الصحيحة لـ Firebase Timestamp
+        console.log('✅ Using finishDateTime.toDate() for PLCR Details:', finishDateTime);
       } else {
         finishDateTime = new Date(tank.finishDate + ' ' + tank.finishTime);
         if (tank.department === 'PLCR') {
