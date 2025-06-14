@@ -83,6 +83,7 @@
     .btn-edit{background:#4CAF50}
     .btn-delete{background:#f44336}
     .btn-view{background:#2196F3}
+    .btn-reminder{background:#ff9800}
     .action-btn:hover{transform:scale(1.05)}
     .empty-state{text-align:center;padding:40px;color:#666}
     .empty-icon{font-size:3rem;margin-bottom:15px;opacity:0.5}
@@ -102,6 +103,7 @@
     .btn-primary{background:linear-gradient(45deg,#4CAF50,#45a049);color:white}
     .btn-secondary{background:linear-gradient(45deg,#6c757d,#5a6268);color:white}
     .btn-danger{background:linear-gradient(45deg,#f44336,#d32f2f);color:white}
+    .btn-warning{background:linear-gradient(45deg,#ff9800,#f57c00);color:white}
     .btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.2)}
     .tank-details-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px)}
     .tank-details-modal.show{display:flex;justify-content:center;align-items:center}
@@ -171,6 +173,8 @@
     }
   </style>
 </head>
+
+
 <body>
   <!-- Access Denied Screen -->
   <div id="accessDenied" class="access-denied" style="display:none">
@@ -292,6 +296,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- Add Tank Modal -->
   <div id="addTankModal" class="modal">
@@ -507,6 +512,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- Firebase SDK -->
   <script type="module">
@@ -750,6 +756,7 @@
       }
     }
 
+
     async function loadLiveTanks() {
       try {
         // Set up real-time listener
@@ -926,8 +933,10 @@
             rateUnit = 'B/h';
           } else if (tank.rateUnit === 'm3' || tank.rateUnit === 'm³/hr') {
             rateUnit = 'm³';
-          } else if (tank.rateUnit === 'mtr' || tank.rateUnit === 'meter/hr') {
-            rateUnit = 'M';
+          } else if (tank.rateUnit === 'mtr/hr' || tank.rateUnit === 'meter/hr') {
+            rateUnit = 'M/h';
+          } else if (tank.rateUnit === 'MT/hr') {
+            rateUnit = 'MT/h';
           } else {
             rateUnit = tank.rateUnit || '';
           }
@@ -951,6 +960,7 @@
       html += '</tbody></table></div>';
       container.innerHTML = html;
     }
+
 
     // Tank Details Functions
     window.showTankDetails = async function(tankId) {
@@ -1129,13 +1139,490 @@
         <div class="tank-actions">
           ${permissions.canEdit ? `<button class="btn btn-primary" onclick="editTank('${tank.id}')">✏️ Edit Tank</button>` : ''}
           ${permissions.canDelete ? `<button class="btn btn-danger" onclick="deleteTank('${tank.id}')">🗑️ Delete Tank</button>` : ''}
+          <button class="btn btn-warning" onclick="addReminder('${tank.id}')">📅 Add Reminder</button>
         </div>
       `;
       document.getElementById('tankDetailsBody').innerHTML = detailsHTML;
       document.getElementById('tankDetailsModal').classList.add('show');
     }
 
-    // Show Tank History Function
+    // Add Reminder Function
+    window.addReminder = function(tankId) {
+      const tank = window.currentTanks?.find(t => t.id === tankId);
+      if (!tank) return;
+      
+      // Create reminder data
+      const finishDateTime = tank.finishDateTime ? 
+        (tank.finishDateTime.toDate ? tank.finishDateTime.toDate() : new Date(tank.finishDateTime)) :
+        new Date(tank.finishDate + ' ' + tank.finishTime);
+      
+      const reminderDate = finishDateTime.toISOString().split('T')[0].replace(/-/g, '');
+      const reminderTime = finishDateTime.toTimeString().slice(0, 5).replace(':', '') + '00';
+      
+      const eventTitle = `Tank ${tank.tankNumber} - ${tank.product} (${tank.department})`;
+      const eventDetails = `Target: ${tank.targetValue || 'N/A'} ${tank.targetType || ''}\\nRate: ${tank.rate || 'N/A'} ${tank.rateUnit || ''}\\nNotes: ${tank.notes || 'No notes'}`;
+      
+      // Create Google Calendar URL
+      const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${reminderDate}T${reminderTime}Z/${reminderDate}T${reminderTime}Z&details=${encodeURIComponent(eventDetails)}&location=KNPC&sf=true&output=xml`;
+      
+      // Open in new window
+      window.open(calendarUrl, '_blank');
+      
+      showMessage('📅 Reminder created! Check your Google Calendar.', 'success');
+    }
+
+
+    // Calculate actual rate based on level difference and time - IMPROVED VERSION
+    function calculateActualRate() {
+      const currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
+      const previousLevel = parseFloat(document.getElementById('editPreviousLevel').value);
+      const rateUnit = document.getElementById('editRateUnit').value;
+      const department = document.getElementById('editDepartment').value;
+      
+      if (!currentLevel || !previousLevel || !currentEditingTank) return;
+      
+      console.log('📊 Calculating actual rate:', {
+        currentLevel,
+        previousLevel,
+        rateUnit,
+        department
+      });
+      
+      // Get time difference
+      const now = new Date();
+      const lastUpdateTime = currentEditingTank.lastLevelUpdate ? 
+        new Date(currentEditingTank.lastLevelUpdate.seconds * 1000) : 
+        new Date(currentEditingTank.addedAt.seconds * 1000);
+      
+      const timeDiffHours = (now - lastUpdateTime) / (1000 * 60 * 60);
+      
+      if (timeDiffHours <= 0) return;
+      
+      // Calculate level difference (previous - current for consumption)
+      const levelDiff = Math.abs(previousLevel - currentLevel);
+      
+      console.log('📏 Level difference:', levelDiff, 'meters');
+      console.log('⏰ Time difference:', timeDiffHours, 'hours');
+      
+      let actualRate = 0;
+      
+      // PLCR Department: Always use MT/hr
+      if (department === 'PLCR') {
+        // For PLCR, calculate MT/hr based on level difference
+        // Assuming a conversion factor for PLCR tanks (this may need adjustment based on actual tank specifications)
+        const tankNumber = document.getElementById('editTankNumber').value;
+        const tankData = tanks[tankNumber];
+        
+        if (tankData) {
+          const c = tankData.comment; // capacity factor
+          // Convert level to volume in barrels, then to metric tons
+          const volumeDiffBarrels = levelDiff * c;
+          // Assuming 1 barrel ≈ 0.159 m³ and density varies by product (using average 0.85 MT/m³)
+          const volumeM3 = volumeDiffBarrels * 0.159;
+          const massMT = volumeM3 * 0.85; // Average density for petroleum products
+          actualRate = massMT / timeDiffHours;
+          console.log('⚙️ PLCR Rate calculation:', {
+            volumeDiffBarrels,
+            volumeM3,
+            massMT,
+            actualRate: actualRate + ' MT/hr'
+          });
+        } else {
+          // Fallback calculation for PLCR
+          actualRate = levelDiff / timeDiffHours * 10; // Rough estimate
+        }
+        
+        // Update rate unit to MT/hr for PLCR
+        document.getElementById('editRateUnit').value = 'MT/hr';
+      } 
+      // PBCR & WASHERY: Use original logic with FIXED meter/hr calculation
+      else {
+        const tankNumber = document.getElementById('editTankNumber').value;
+        const tankData = tanks[tankNumber];
+        
+        if (!tankData) return;
+        
+        const c = tankData.comment; // capacity factor
+        
+        // Calculate rate based on the selected unit
+        if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+          // ✅ FIXED: Rate in meters per hour (direct level difference)
+          actualRate = levelDiff / timeDiffHours;
+          console.log('📐 Calculated rate (meter/hr):', actualRate);
+        } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
+          // Rate in cubic meters per hour
+          // First calculate volume in barrels
+          const volumeDiffBarrels = levelDiff * c;
+          const rateBarrels = volumeDiffBarrels / timeDiffHours;
+          // Convert from barrels to m³ (1 barrel = 0.159 m³ approximately)
+          actualRate = rateBarrels * 0.159;
+          console.log('🧊 Volume in barrels:', volumeDiffBarrels);
+          console.log('🧊 Rate in barrels:', rateBarrels);
+          console.log('🧊 Rate Unit detected:', rateUnit);
+          console.log('🧊 Calculated rate (m³/hr):', actualRate);
+        } else {
+          // Default: bbl/hr (barrels per hour)
+          const volumeDiff = levelDiff * c;
+          actualRate = volumeDiff / timeDiffHours;
+          console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
+        }
+      }
+      
+      // Update rate field
+      document.getElementById('editRate').value = Math.round(actualRate);
+      
+      console.log('✅ Rate updated to:', Math.round(actualRate), document.getElementById('editRateUnit').value);
+      
+      // Recalculate finish time
+      calculateEditTime();
+    }
+
+    // Calculate edit time function - IMPROVED VERSION
+    function calculateEditTime() {
+      const targetType = document.getElementById('editTargetType').value;
+      const targetValue = parseFloat(document.getElementById('editTargetValue').value);
+      const rate = parseFloat(document.getElementById('editRate').value);
+      const rateUnit = document.getElementById('editRateUnit').value;
+      const tankNumber = document.getElementById('editTankNumber').value;
+      const department = document.getElementById('editDepartment').value;
+      
+      if (!targetType || !targetValue || !rate || !tankNumber) return;
+      
+      // Get tank data from tanks object (same as PBCR)
+      const tankData = tanks[tankNumber];
+      if (!tankData) return;
+      
+      const c = tankData.comment; // capacity factor
+      const m = tankData.min;     // minimum level
+      const x = tankData.max;     // maximum level
+      
+      // Get current level from form or use saved data
+      let currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
+      
+      // If no current level in form, use the saved current level from tank data
+      if (!currentLevel && currentEditingTank && currentEditingTank.currentLevel) {
+        currentLevel = currentEditingTank.currentLevel;
+        // Auto-fill the form field
+        document.getElementById('editCurrentLevel').value = currentLevel;
+      }
+      
+      // If still no current level, try to get from tank data
+      if (!currentLevel && tankData.currentLevel) {
+        currentLevel = tankData.currentLevel;
+        document.getElementById('editCurrentLevel').value = currentLevel;
+      }
+      
+      // If still no current level, cannot calculate
+      if (!currentLevel) {
+        console.log('⚠️ Cannot calculate time - no current level available');
+        return;
+      }
+      
+      console.log('📊 Calculation data:', {
+        tankNumber,
+        currentLevel,
+        targetValue,
+        targetType,
+        rate,
+        rateUnit,
+        department,
+        capacityFactor: c,
+        minLevel: m,
+        maxLevel: x
+      });
+      
+      // Calculate target level based on type (same as PBCR)
+      let targetLevel = 0;
+      if (targetType === "pumpable") {
+        targetLevel = (targetValue / c) + m;
+      } else if (targetType === "ullage") {
+        targetLevel = x - (targetValue / c);
+      } else if (targetType === "level") {
+        targetLevel = targetValue;
+      }
+      
+      console.log('🎯 Target level calculated:', targetLevel);
+      
+      // Calculate difference
+      const levelDiff = Math.abs(targetLevel - currentLevel);
+      console.log('📏 Level difference:', levelDiff);
+      
+      // Calculate time based on rate unit and department
+      let timeHours = 0;
+      
+      if (department === 'PLCR') {
+        // For PLCR: MT/hr calculation
+        if (rateUnit === 'MT/hr') {
+          // Convert level difference to metric tons, then divide by rate
+          const volumeDiffBarrels = levelDiff * c;
+          const volumeM3 = volumeDiffBarrels * 0.159;
+          const massMT = volumeM3 * 0.85; // Average density
+          timeHours = massMT / rate;
+        } else {
+          // Fallback for PLCR
+          timeHours = levelDiff / rate;
+        }
+      } else {
+        // For PBCR & WASHERY: Original logic with FIXED meter/hr
+        if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+          // ✅ FIXED: Direct level difference divided by rate
+          timeHours = levelDiff / rate;
+        } else {
+          const volumeDiff = levelDiff * c;
+          // Check for all m³ variations
+          const flowRate = (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") ? rate / 0.159 : rate;
+          timeHours = volumeDiff / flowRate;
+        }
+      }
+      
+      console.log('⏰ Time calculated (hours):', timeHours);
+      
+      if (timeHours > 0) {
+        const now = new Date();
+        const finishTime = new Date(now.getTime() + timeHours * 3600000);
+        
+        // Update date and time fields
+        const finishDate = `${finishTime.getFullYear()}-${String(finishTime.getMonth()+1).padStart(2,'0')}-${String(finishTime.getDate()).padStart(2,'0')}`;
+        const finishTimeStr = `${String(finishTime.getHours()).padStart(2,'0')}:${String(finishTime.getMinutes()).padStart(2,'0')}`;
+        
+        document.getElementById('editFinishDate').value = finishDate;
+        document.getElementById('editFinishTime').value = finishTimeStr;
+        
+        console.log('✅ Finish time updated:', finishDate, finishTimeStr);
+      }
+    }
+
+
+    // Enhanced Edit Tank Form Submission with Improved Data Saving
+    document.getElementById('editTankForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (!currentEditingTank) return;
+      
+      const tankNumber = document.getElementById('editTankNumber').value;
+      const product = document.getElementById('editProduct').value;
+      const targetType = document.getElementById('editTargetType').value;
+      const targetValue = document.getElementById('editTargetValue').value;
+      const currentLevel = document.getElementById('editCurrentLevel').value;
+      const previousLevel = document.getElementById('editPreviousLevel').value;
+      const rate = document.getElementById('editRate').value;
+      const rateUnit = document.getElementById('editRateUnit').value;
+      const finishDate = document.getElementById('editFinishDate').value;
+      const finishTime = document.getElementById('editFinishTime').value;
+      const notes = document.getElementById('editNotes').value;
+      
+      try {
+        const finishDateTime = new Date(finishDate + ' ' + finishTime);
+        
+        // Track changes for history
+        const changes = {};
+        if (currentLevel && currentLevel !== currentEditingTank.currentLevel) {
+          changes.currentLevel = { from: currentEditingTank.currentLevel, to: parseFloat(currentLevel) };
+        }
+        if (rate !== currentEditingTank.rate) {
+          changes.rate = { from: currentEditingTank.rate, to: parseFloat(rate) };
+        }
+        if (rateUnit !== currentEditingTank.rateUnit) {
+          changes.rateUnit = { from: currentEditingTank.rateUnit, to: rateUnit };
+        }
+        if (finishDate !== currentEditingTank.finishDate) {
+          changes.finishDate = { from: currentEditingTank.finishDate, to: finishDate };
+        }
+        if (finishTime !== currentEditingTank.finishTime) {
+          changes.finishTime = { from: currentEditingTank.finishTime, to: finishTime };
+        }
+        if (notes !== currentEditingTank.notes) {
+          changes.notes = { from: currentEditingTank.notes, to: notes };
+        }
+        
+        // Enhanced update data with improved tracking
+        const updateData = {
+          tankNumber: tankNumber,
+          product: product,
+          targetType: targetType || null,
+          targetValue: targetValue ? parseFloat(targetValue) : null,
+          previousLevel: currentLevel ? parseFloat(previousLevel) : (currentEditingTank.currentLevel || null),
+          currentLevel: currentLevel ? parseFloat(currentLevel) : (currentEditingTank.currentLevel || null),
+          rate: rate ? parseFloat(rate) : null,
+          rateUnit: rateUnit || null,
+          finishTime: finishTime,
+          finishDate: finishDate,
+          finishDateTime: finishDateTime,
+          notes: notes || '',
+          lastModified: serverTimestamp(),
+          modifiedBy: currentUser.username,
+          // Enhanced data tracking
+          lastLevelUpdate: currentLevel ? serverTimestamp() : (currentEditingTank.lastLevelUpdate || null),
+          initialLevel: currentEditingTank.initialLevel || (currentEditingTank.currentLevel || null),
+          initialTime: currentEditingTank.initialTime || (currentEditingTank.addedAt || null)
+        };
+        
+        // Enhanced history record
+        const historyRecord = {
+          action: currentLevel ? 'Level Updated' : 'Tank Updated',
+          modifiedBy: currentUser.username,
+          timestamp: new Date(),
+          notes: notes || 'Tank updated',
+          levelChange: currentLevel ? {
+            from: parseFloat(previousLevel) || currentEditingTank.currentLevel,
+            to: parseFloat(currentLevel),
+            difference: Math.abs((parseFloat(currentLevel) || 0) - (parseFloat(previousLevel) || currentEditingTank.currentLevel || 0))
+          } : null
+        };
+        
+        // Add changes if any
+        if (Object.keys(changes).length > 0) {
+          historyRecord.changes = changes;
+        }
+        
+        // Calculate actual rate if level was updated
+        if (currentLevel && previousLevel) {
+          const timeDiff = (new Date() - new Date(currentEditingTank.lastLevelUpdate?.seconds * 1000 || currentEditingTank.addedAt?.seconds * 1000)) / (1000 * 60 * 60);
+          const levelDiff = Math.abs(parseFloat(currentLevel) - parseFloat(previousLevel));
+          
+          if (timeDiff > 0) {
+            let actualRate = 0;
+            const department = currentEditingTank.department;
+            
+            if (department === 'PLCR') {
+              // PLCR: MT/hr calculation
+              const tankData = tanks[tankNumber];
+              if (tankData) {
+                const volumeDiffBarrels = levelDiff * tankData.comment;
+                const volumeM3 = volumeDiffBarrels * 0.159;
+                const massMT = volumeM3 * 0.85;
+                actualRate = massMT / timeDiff;
+              }
+            } else {
+              // PBCR/WASHERY: Based on rate unit
+              if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+                actualRate = levelDiff / timeDiff;
+              } else if (rateUnit === "m3/hr" || rateUnit === "m³/hr") {
+                const tankData = tanks[tankNumber];
+                if (tankData) {
+                  const volumeDiffBarrels = levelDiff * tankData.comment;
+                  actualRate = (volumeDiffBarrels * 0.159) / timeDiff;
+                }
+              } else {
+                const tankData = tanks[tankNumber];
+                if (tankData) {
+                  actualRate = (levelDiff * tankData.comment) / timeDiff;
+                }
+              }
+            }
+            
+            historyRecord.actualRate = {
+              value: Math.round(actualRate * 100) / 100,
+              unit: rateUnit,
+              timePeriod: Math.round(timeDiff * 100) / 100 + ' hours'
+            };
+          }
+        }
+        
+        // Get current history array and add new record
+        const currentHistory = currentEditingTank.history || [];
+        currentHistory.push(historyRecord);
+        
+        // Always update history
+        updateData.history = currentHistory;
+        
+        await updateDoc(doc(db, 'liveTanks', currentEditingTank.id), updateData);
+        
+        await addActivity('live_tank_updated', currentUser.username, currentEditingTank, changes);
+        showMessage('✅ Tank updated successfully!', 'success');
+        
+        // إغلاق القائمة تلقائياً بعد التعديل
+        setTimeout(() => {
+          closeEditModal();
+          window.location.reload();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error updating tank:', error);
+        showMessage('❌ Error updating tank: ' + error.message, 'error');
+      }
+    });
+
+    // Rest of the JavaScript functions remain the same...
+    // (Including all other functions from the original file)
+    
+    async function editTank(tankId) {
+      try {
+        const tankDoc = await getDoc(doc(db, 'liveTanks', tankId));
+        if (!tankDoc.exists()) {
+          showMessage('❌ Tank not found!', 'error');
+          return;
+        }
+        
+        const tank = tankDoc.data();
+        currentEditingTank = { id: tankId, ...tank };
+        
+        // Fill edit form
+        document.getElementById('editDepartment').value = tank.department;
+        document.getElementById('editTankNumber').value = tank.tankNumber;
+        document.getElementById('editTargetType').value = tank.targetType || '';
+        document.getElementById('editTargetValue').value = tank.targetValue || '';
+        
+        // Auto-fill current level from saved data
+        if (tank.currentLevel) {
+          document.getElementById('editCurrentLevel').value = tank.currentLevel;
+          console.log('✅ Auto-filled current level:', tank.currentLevel);
+        } else {
+          document.getElementById('editCurrentLevel').value = '';
+          console.log('⚠️ No current level found in tank data');
+        }
+        
+        document.getElementById('editPreviousLevel').value = tank.currentLevel || '';
+        document.getElementById('editRate').value = tank.rate || '';
+        
+        // Set rate unit based on department
+        let defaultRateUnit = 'bbl/hr';
+        if (tank.department === 'PLCR') {
+          defaultRateUnit = 'MT/hr';
+        } else if (tank.rateUnit) {
+          defaultRateUnit = tank.rateUnit;
+        }
+        
+        document.getElementById('editRateUnit').value = defaultRateUnit;
+        document.getElementById('editFinishDate').value = tank.finishDate;
+        document.getElementById('editFinishTime').value = tank.finishTime;
+        document.getElementById('editNotes').value = tank.notes || '';
+        
+        // Update product options for edit
+        const editProductSelect = document.getElementById('editProduct');
+        editProductSelect.innerHTML = '<option value="">Select Product</option>';
+        
+        if (productsByDepartment[tank.department]) {
+          productsByDepartment[tank.department].forEach(product => {
+            const option = document.createElement('option');
+            option.value = product;
+            option.textContent = product;
+            option.selected = product === tank.product;
+            editProductSelect.appendChild(option);
+          });
+        }
+        
+        // Trigger calculation after form is filled
+        setTimeout(() => {
+          calculateEditTime();
+        }, 100);
+        
+        document.getElementById('editTankModal').classList.add('show');
+        
+      } catch (error) {
+        console.error('Error loading tank for edit:', error);
+        showMessage('❌ Error loading tank: ' + error.message, 'error');
+      }
+    }
+
+    function closeEditModal() {
+      document.getElementById('editTankModal').classList.remove('show');
+      document.getElementById('editTankForm').reset();
+      currentEditingTank = null;
+    }
+
+
+    // Show Tank History Function (same as original)
     window.showTankHistory = async function(tankId) {
       try {
         document.getElementById('tankHistoryModal').classList.add('show');
@@ -1191,19 +1678,43 @@
           const timestamp = historyItem.timestamp?.seconds ? 
             new Date(historyItem.timestamp.seconds * 1000) : 
             (historyItem.timestamp instanceof Date ? historyItem.timestamp : new Date(historyItem.timestamp));
-          const dateStr = timestamp.toLocaleDateString('en-GB');
+          const dateStr = String(timestamp.getDate()).padStart(2, '0') + '-' + String(timestamp.getMonth() + 1).padStart(2, '0');
           const timeStr = timestamp.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
           
           historyHTML += `
             <div class="history-item">
               <div class="history-header">
-                <div class="history-date">📅 ${dateStr} ⏰ ${timeStr}</div>
+                <div class="history-date">📅 ${dateStr} ${timeStr}</div>
                 <div class="history-user">👤 ${historyItem.modifiedBy || 'Unknown'}</div>
               </div>
               <div class="history-action">${getActionIcon(historyItem.action)} ${historyItem.action}</div>
               ${historyItem.changes ? `
                 <div class="history-changes">
                   ${formatChanges(historyItem.changes)}
+                </div>
+              ` : ''}
+              ${historyItem.actualRate ? `
+                <div class="history-changes">
+                  <div class="change-item">
+                    <div class="change-field">Actual Rate:</div>
+                    <div class="change-values">
+                      <span class="new-value">${historyItem.actualRate.value} ${historyItem.actualRate.unit}</span>
+                      <span style="color:#666;font-size:0.9em">(over ${historyItem.actualRate.timePeriod})</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+              ${historyItem.levelChange ? `
+                <div class="history-changes">
+                  <div class="change-item">
+                    <div class="change-field">Level Change:</div>
+                    <div class="change-values">
+                      <span class="old-value">${historyItem.levelChange.from}m</span>
+                      <span class="arrow">→</span>
+                      <span class="new-value">${historyItem.levelChange.to}m</span>
+                      <span style="color:#666;font-size:0.9em">(Δ${historyItem.levelChange.difference}m)</span>
+                    </div>
+                  </div>
                 </div>
               ` : ''}
               ${historyItem.notes ? `
@@ -1411,240 +1922,8 @@
       }
     }
 
-    async function editTank(tankId) {
-      try {
-        const tankDoc = await getDoc(doc(db, 'liveTanks', tankId));
-        if (!tankDoc.exists()) {
-          showMessage('❌ Tank not found!', 'error');
-          return;
-        }
-        
-        const tank = tankDoc.data();
-        currentEditingTank = { id: tankId, ...tank };
-        
-        // Fill edit form
-        document.getElementById('editDepartment').value = tank.department;
-        document.getElementById('editTankNumber').value = tank.tankNumber;
-        document.getElementById('editTargetType').value = tank.targetType || '';
-        document.getElementById('editTargetValue').value = tank.targetValue || '';
-        
-        // Auto-fill current level from saved data
-        if (tank.currentLevel) {
-          document.getElementById('editCurrentLevel').value = tank.currentLevel;
-          console.log('✅ Auto-filled current level:', tank.currentLevel);
-        } else {
-          document.getElementById('editCurrentLevel').value = '';
-          console.log('⚠️ No current level found in tank data');
-        }
-        
-        document.getElementById('editPreviousLevel').value = tank.currentLevel || '';
-        document.getElementById('editRate').value = tank.rate || '';
-        document.getElementById('editRateUnit').value = tank.rateUnit || 'bbl/hr';
-        document.getElementById('editFinishDate').value = tank.finishDate;
-        document.getElementById('editFinishTime').value = tank.finishTime;
-        document.getElementById('editNotes').value = tank.notes || '';
-        
-        // Update product options for edit
-        const editProductSelect = document.getElementById('editProduct');
-        editProductSelect.innerHTML = '<option value="">Select Product</option>';
-        
-        if (productsByDepartment[tank.department]) {
-          productsByDepartment[tank.department].forEach(product => {
-            const option = document.createElement('option');
-            option.value = product;
-            option.textContent = product;
-            option.selected = product === tank.product;
-            editProductSelect.appendChild(option);
-          });
-        }
-        
-        // Trigger calculation after form is filled
-        setTimeout(() => {
-          calculateEditTime();
-        }, 100);
-        
-        document.getElementById('editTankModal').classList.add('show');
-        
-      } catch (error) {
-        console.error('Error loading tank for edit:', error);
-        showMessage('❌ Error loading tank: ' + error.message, 'error');
-      }
-    }
 
-    function closeEditModal() {
-      document.getElementById('editTankModal').classList.remove('show');
-      document.getElementById('editTankForm').reset();
-      currentEditingTank = null;
-    }
-
-    // Calculate actual rate based on level difference and time
-    function calculateActualRate() {
-      const currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
-      const previousLevel = parseFloat(document.getElementById('editPreviousLevel').value);
-      const rateUnit = document.getElementById('editRateUnit').value;
-      
-      if (!currentLevel || !previousLevel || !currentEditingTank) return;
-      
-      console.log('📊 Calculating actual rate:', {
-        currentLevel,
-        previousLevel,
-        rateUnit
-      });
-      
-      // Get time difference
-      const now = new Date();
-      const lastUpdateTime = currentEditingTank.lastLevelUpdate ? 
-        new Date(currentEditingTank.lastLevelUpdate.seconds * 1000) : 
-        new Date(currentEditingTank.addedAt.seconds * 1000);
-      
-      const timeDiffHours = (now - lastUpdateTime) / (1000 * 60 * 60);
-      
-      if (timeDiffHours <= 0) return;
-      
-      // Calculate level difference (previous - current for consumption)
-      const levelDiff = Math.abs(previousLevel - currentLevel);
-      
-      console.log('📏 Level difference:', levelDiff, 'meters');
-      console.log('⏰ Time difference:', timeDiffHours, 'hours');
-      
-      // Get tank data for capacity calculation
-      const tankNumber = document.getElementById('editTankNumber').value;
-      const tankData = tanks[tankNumber];
-      
-      if (!tankData) return;
-      
-      const c = tankData.comment; // capacity factor
-      
-      let actualRate = 0;
-      
-      // Calculate rate based on the selected unit
-      if (rateUnit === "mtr/hr") {
-        // Rate in meters per hour
-        actualRate = levelDiff / timeDiffHours;
-        console.log('📐 Calculated rate (mtr/hr):', actualRate);
-      } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
-        // Rate in cubic meters per hour
-        // First calculate volume in barrels
-        const volumeDiffBarrels = levelDiff * c;
-        const rateBarrels = volumeDiffBarrels / timeDiffHours;
-        // Convert from barrels to m³ (1 barrel = 6.28 m³ approximately)
-        actualRate = rateBarrels / 6.28;
-        console.log('🧊 Volume in barrels:', volumeDiffBarrels);
-        console.log('🧊 Rate in barrels:', rateBarrels);
-        console.log('🧊 Rate Unit detected:', rateUnit);
-        console.log('🧊 Calculated rate (m³/hr):', actualRate);
-      } else {
-        // Default: bbl/hr (barrels per hour)
-        const volumeDiff = levelDiff * c;
-        actualRate = volumeDiff / timeDiffHours;
-        console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
-      }
-      
-      // Update rate field
-      document.getElementById('editRate').value = Math.round(actualRate);
-      
-      console.log('✅ Rate updated to:', Math.round(actualRate), rateUnit);
-      
-      // Recalculate finish time
-      calculateEditTime();
-    }
-
-    // Calculate edit time function
-    function calculateEditTime() {
-      const targetType = document.getElementById('editTargetType').value;
-      const targetValue = parseFloat(document.getElementById('editTargetValue').value);
-      const rate = parseFloat(document.getElementById('editRate').value);
-      const rateUnit = document.getElementById('editRateUnit').value;
-      const tankNumber = document.getElementById('editTankNumber').value;
-      
-      if (!targetType || !targetValue || !rate || !tankNumber) return;
-      
-      // Get tank data from tanks object (same as PBCR)
-      const tankData = tanks[tankNumber];
-      if (!tankData) return;
-      
-      const c = tankData.comment; // capacity factor
-      const m = tankData.min;     // minimum level
-      const x = tankData.max;     // maximum level
-      
-      // Get current level from form or use saved data
-      let currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
-      
-      // If no current level in form, use the saved current level from tank data
-      if (!currentLevel && currentEditingTank && currentEditingTank.currentLevel) {
-        currentLevel = currentEditingTank.currentLevel;
-        // Auto-fill the form field
-        document.getElementById('editCurrentLevel').value = currentLevel;
-      }
-      
-      // If still no current level, try to get from tank data
-      if (!currentLevel && tankData.currentLevel) {
-        currentLevel = tankData.currentLevel;
-        document.getElementById('editCurrentLevel').value = currentLevel;
-      }
-      
-      // If still no current level, cannot calculate
-      if (!currentLevel) {
-        console.log('⚠️ Cannot calculate time - no current level available');
-        return;
-      }
-      
-      console.log('📊 Calculation data:', {
-        tankNumber,
-        currentLevel,
-        targetValue,
-        targetType,
-        rate,
-        rateUnit,
-        capacityFactor: c,
-        minLevel: m,
-        maxLevel: x
-      });
-      
-      // Calculate target level based on type (same as PBCR)
-      let targetLevel = 0;
-      if (targetType === "pumpable") {
-        targetLevel = (targetValue / c) + m;
-      } else if (targetType === "ullage") {
-        targetLevel = x - (targetValue / c);
-      } else if (targetType === "level") {
-        targetLevel = targetValue;
-      }
-      
-      console.log('🎯 Target level calculated:', targetLevel);
-      
-      // Calculate difference
-      const levelDiff = Math.abs(targetLevel - currentLevel);
-      console.log('📏 Level difference:', levelDiff);
-      
-      // Calculate time based on rate unit (same as PBCR)
-      let timeHours = 0;
-      if (rateUnit === "mtr/hr") {
-        timeHours = levelDiff / rate;
-      } else {
-        const volumeDiff = levelDiff * c;
-        // Check for all m³ variations
-        const flowRate = (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") ? rate * 6.28 : rate;
-        timeHours = volumeDiff / flowRate;
-      }
-      
-      console.log('⏰ Time calculated (hours):', timeHours);
-      
-      if (timeHours > 0) {
-        const now = new Date();
-        const finishTime = new Date(now.getTime() + timeHours * 3600000);
-        
-        // Update date and time fields
-        const finishDate = `${finishTime.getFullYear()}-${String(finishTime.getMonth()+1).padStart(2,'0')}-${String(finishTime.getDate()).padStart(2,'0')}`;
-        const finishTimeStr = `${String(finishTime.getHours()).padStart(2,'0')}:${String(finishTime.getMinutes()).padStart(2,'0')}`;
-        
-        document.getElementById('editFinishDate').value = finishDate;
-        document.getElementById('editFinishTime').value = finishTimeStr;
-        
-        console.log('✅ Finish time updated:', finishDate, finishTimeStr);
-      }
-    }
-
+    // Rest of the functions (same as original)
     async function deleteTank(tankId) {
       if (!confirm('Are you sure you want to delete this tank?\n\nThis action cannot be undone!')) {
         return;
@@ -1769,99 +2048,6 @@
       } catch (error) {
         console.error('❌ Error adding tank:', error);
         showMessage('❌ Error adding tank: ' + error.message, 'error');
-      }
-    });
-
-    document.getElementById('editTankForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      if (!currentEditingTank) return;
-      
-      const tankNumber = document.getElementById('editTankNumber').value;
-      const product = document.getElementById('editProduct').value;
-      const targetType = document.getElementById('editTargetType').value;
-      const targetValue = document.getElementById('editTargetValue').value;
-      const currentLevel = document.getElementById('editCurrentLevel').value;
-      const previousLevel = document.getElementById('editPreviousLevel').value;
-      const rate = document.getElementById('editRate').value;
-      const rateUnit = document.getElementById('editRateUnit').value;
-      const finishDate = document.getElementById('editFinishDate').value;
-      const finishTime = document.getElementById('editFinishTime').value;
-      const notes = document.getElementById('editNotes').value;
-      
-      try {
-        const finishDateTime = new Date(finishDate + ' ' + finishTime);
-        
-        // Track changes for history
-        const changes = {};
-        if (currentLevel && currentLevel !== currentEditingTank.currentLevel) {
-          changes.currentLevel = { from: currentEditingTank.currentLevel, to: parseFloat(currentLevel) };
-        }
-        if (rate !== currentEditingTank.rate) {
-          changes.rate = { from: currentEditingTank.rate, to: parseFloat(rate) };
-        }
-        if (finishDate !== currentEditingTank.finishDate) {
-          changes.finishDate = { from: currentEditingTank.finishDate, to: finishDate };
-        }
-        if (finishTime !== currentEditingTank.finishTime) {
-          changes.finishTime = { from: currentEditingTank.finishTime, to: finishTime };
-        }
-        if (notes !== currentEditingTank.notes) {
-          changes.notes = { from: currentEditingTank.notes, to: notes };
-        }
-        
-        const updateData = {
-          tankNumber: tankNumber,
-          product: product,
-          targetType: targetType || null,
-          targetValue: targetValue ? parseFloat(targetValue) : null,
-          previousLevel: previousLevel ? parseFloat(previousLevel) : null,
-          currentLevel: currentLevel ? parseFloat(currentLevel) : (currentEditingTank.currentLevel || null),
-          rate: rate ? parseFloat(rate) : null,
-          rateUnit: rateUnit || null,
-          finishTime: finishTime,
-          finishDate: finishDate,
-          finishDateTime: finishDateTime,
-          notes: notes || '',
-          lastModified: serverTimestamp(),
-          modifiedBy: currentUser.username,
-          lastLevelUpdate: currentLevel ? serverTimestamp() : (currentEditingTank.lastLevelUpdate || null)
-        };
-        
-        // Always add history record for any edit
-        const historyRecord = {
-          action: currentLevel ? 'Level Updated' : 'Tank Updated',
-          modifiedBy: currentUser.username,
-          timestamp: new Date(),
-          notes: notes || 'Tank updated'
-        };
-        
-        // Add changes if any
-        if (Object.keys(changes).length > 0) {
-          historyRecord.changes = changes;
-        }
-        
-        // Get current history array and add new record
-        const currentHistory = currentEditingTank.history || [];
-        currentHistory.push(historyRecord);
-        
-        // Always update history
-        updateData.history = currentHistory;
-        
-        await updateDoc(doc(db, 'liveTanks', currentEditingTank.id), updateData);
-        
-        await addActivity('live_tank_updated', currentUser.username, currentEditingTank, changes);
-        showMessage('✅ Tank updated successfully!', 'success');
-        
-        // إغلاق القائمة تلقائياً بعد التعديل
-        setTimeout(() => {
-          closeEditModal();
-          window.location.reload();
-        }, 1000);
-        
-      } catch (error) {
-        console.error('Error updating tank:', error);
-        showMessage('❌ Error updating tank: ' + error.message, 'error');
       }
     });
 
@@ -2029,9 +2215,12 @@
     // Add Tank calculation functions
     function updateAddRateUnit() {
       const tankNumber = document.getElementById('addTankNumber').value;
+      const department = document.getElementById('addDepartment').value;
       const rateUnitField = document.getElementById('addRateUnit');
       
-      if (tankNumber && tanks[tankNumber]) {
+      if (department === 'PLCR') {
+        rateUnitField.value = 'MT/hr';
+      } else if (tankNumber && tanks[tankNumber]) {
         // Set default rate unit based on tank data (same as PBCR logic)
         rateUnitField.value = 'bbl/hr';
       }
@@ -2044,6 +2233,7 @@
       const rate = parseFloat(document.getElementById('addRate').value);
       const rateUnit = document.getElementById('addRateUnit').value;
       const tankNumber = document.getElementById('addTankNumber').value;
+      const department = document.getElementById('addDepartment').value;
       
       if (!targetType || !targetValue || !currentLevel || !rate || !tankNumber) return;
       
@@ -2068,14 +2258,31 @@
       // Calculate difference
       const levelDiff = Math.abs(targetLevel - currentLevel);
       
-      // Calculate time based on rate unit
+      // Calculate time based on rate unit and department
       let timeHours = 0;
-      if (rateUnit === "mtr/hr") {
-        timeHours = levelDiff / rate;
+      
+      if (department === 'PLCR') {
+        // For PLCR: MT/hr calculation
+        if (rateUnit === 'MT/hr') {
+          // Convert level difference to metric tons, then divide by rate
+          const volumeDiffBarrels = levelDiff * c;
+          const volumeM3 = volumeDiffBarrels * 0.159;
+          const massMT = volumeM3 * 0.85; // Average density
+          timeHours = massMT / rate;
+        } else {
+          // Fallback for PLCR
+          timeHours = levelDiff / rate;
+        }
       } else {
-        const volumeDiff = levelDiff * c;
-        const flowRate = rateUnit === "m3/hr" ? rate * 6.28 : rate;
-        timeHours = volumeDiff / flowRate;
+        // For PBCR & WASHERY: Original logic with FIXED meter/hr
+        if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
+          // ✅ FIXED: Direct level difference divided by rate
+          timeHours = levelDiff / rate;
+        } else {
+          const volumeDiff = levelDiff * c;
+          const flowRate = rateUnit === "m3/hr" ? rate / 0.159 : rate;
+          timeHours = volumeDiff / flowRate;
+        }
       }
       
       if (timeHours > 0) {
@@ -2144,9 +2351,13 @@
       if (unsubscribe) unsubscribe();
     });
 
-    console.log('%c🔴 LIVE TANKS v4.2 - UPDATED TABLE DESIGN', 'color:red;font-size:16px;font-weight:bold');
+    console.log('%c🔴 LIVE TANKS v5.0 - IMPROVED VERSION', 'color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877', 'color:green;font-size:14px');
-    console.log('%cProduct-based sorting with urgency indicators', 'color:blue;font-size:14px');
+    console.log('%c✅ Fixed meter/h calculation', 'color:blue;font-size:14px');
+    console.log('%c✅ Added PLCR MT/hr support', 'color:blue;font-size:14px');
+    console.log('%c✅ Added Reminder button', 'color:blue;font-size:14px');
+    console.log('%c✅ Enhanced data saving', 'color:blue;font-size:14px');
   </script>
 </body>
 </html>
+
