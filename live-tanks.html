@@ -1260,10 +1260,10 @@
         }
       }
       
-      // Update rate field
-      document.getElementById('editRate').value = Math.round(actualRate);
+      // Update rate field with decimal precision
+      document.getElementById('editRate').value = actualRate.toFixed(2);
       
-      console.log('✅ Rate updated to:', Math.round(actualRate), rateUnit);
+      console.log('✅ Rate updated to:', actualRate.toFixed(2), rateUnit);
       
       // Recalculate finish time
       calculateEditTime();
