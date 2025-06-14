@@ -1225,13 +1225,9 @@
       
       let actualRate = 0;
       
-      // ✅ FIXED: Proper calculation for meter/h in PBCR/WASHERY
-      if ((department === 'PBCR' || department === 'WASHERY') && (rateUnit === 'meter/hr' || rateUnit === 'mtr/hr' || rateUnit === 'mtr')) {
-        // Direct calculation in meters per hour - NO barrel conversion
-        actualRate = levelDiff / timeDiffHours;
-        console.log('📏 Calculated rate (meter/hr):', actualRate);
-      } else if (rateUnit === 'MT/hr' && department === 'PLCR') {
-        // ✅ FIXED: Proper calculation for MT/hr (PLCR)
+      // ✅ FIXED: Proper calculation based on Rate Unit and source
+      if (rateUnit === 'MT/hr') {
+        // For MT/hr (typically from PLCR)
         const tankNumber = document.getElementById('editTankNumber').value;
         const tankData = tanks[tankNumber];
         
@@ -1248,27 +1244,35 @@
           // Fallback calculation for PLCR
           actualRate = levelDiff / timeDiffHours * 10; // Rough estimate
         }
-      } else {
-        // For other units, use tank capacity factor
+      } else if (rateUnit === 'meter/hr' || rateUnit === 'mtr/hr' || rateUnit === 'mtr') {
+        // For meter units (typically from PBCR/WASHERY)
+        // Direct calculation in meters per hour - NO barrel conversion
+        actualRate = levelDiff / timeDiffHours;
+        console.log('📏 Calculated rate (meter/hr):', actualRate);
+      } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
+        // For cubic meter units (typically from PBCR)
         const tankNumber = document.getElementById('editTankNumber').value;
         const tankData = tanks[tankNumber];
         
         if (tankData) {
           const c = tankData.comment; // capacity factor
-          
-          if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
-            // Rate in cubic meters per hour
-            const volumeDiffBarrels = levelDiff * c;
-            const rateBarrels = volumeDiffBarrels / timeDiffHours;
-            // Convert from barrels to m³ (1 barrel = 0.159 m³ approximately)
-            actualRate = rateBarrels * 0.159;
-            console.log('🧊 Calculated rate (m³/hr):', actualRate);
-          } else {
-            // Default: bbl/hr (barrels per hour)
-            const volumeDiff = levelDiff * c;
-            actualRate = volumeDiff / timeDiffHours;
-            console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
-          }
+          // Rate in cubic meters per hour
+          const volumeDiffBarrels = levelDiff * c;
+          const rateBarrels = volumeDiffBarrels / timeDiffHours;
+          // Convert from barrels to m³ (1 barrel = 0.159 m³ approximately)
+          actualRate = rateBarrels * 0.159;
+          console.log('🧊 Calculated rate (m³/hr):', actualRate);
+        }
+      } else {
+        // For barrel units (typically from PBCR) - bbl/hr
+        const tankNumber = document.getElementById('editTankNumber').value;
+        const tankData = tanks[tankNumber];
+        
+        if (tankData) {
+          const c = tankData.comment; // capacity factor
+          const volumeDiff = levelDiff * c;
+          actualRate = volumeDiff / timeDiffHours;
+          console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
         }
       }
       
