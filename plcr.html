@@ -1112,18 +1112,30 @@
           return;
         }
         
+        // حساب Conversion Factor
+        function calculateConversionFactor() {
+          const levelDiff = (calcData.currentLevel - calcData.finalLevel) / 1000; // Convert to actual meters
+          const timeHours = calcData.timeNeeded;
+          const rateValue = calcData.withdrawalRate;
+          
+          const meterPerHour = levelDiff / timeHours;
+          const conversionFactor = rateValue / meterPerHour;
+          return conversionFactor;
+        }
+        
+        const conversionFactor = calculateConversionFactor();
+        console.log('Conversion Factor calculated:', conversionFactor);
+        
         const tankData = {
           department: 'PLCR',
           tankNumber: calcData.tankNumber,
           product: finalProduct,
-          // ✅ FIXED: Send Final Level as Target Value
           targetValue: calcData.finalLevel / 1000, // Convert to actual meters (6.318)
           targetType: 'Level', // Changed from 'Quantity MT' to 'Level'
           currentLevel: calcData.currentLevel / 1000, // Convert to actual meters (10.000)
-          rate: parseFloat(document.getElementById('ltRate').value) || null,
+          rate: calcData.withdrawalRate,
           rateUnit: 'MT/hr',
-          // ✅ FIXED: Calculate and send Conversion Factor
-          conversionFactor: calculateConversionFactor(),
+          conversionFactor: conversionFactor, // Add conversion factor
           addedBy: currentUser.username,
           userName: currentUser.fullName || currentUser.username,
           finishTime: timeStr,
@@ -1134,35 +1146,14 @@
           status: 'active',
           notes: document.getElementById('ltNotes').value,
           source: 'PLCR_Calculator',
-          // ✅ FIXED: Add calculation metadata
           calculationData: {
-            requestQuantity: calcData.requestQuantity,
+            requestQuantity: calcData.amountToWithdraw,
             timeNeeded: calcData.timeNeeded,
             finalLevel: calcData.finalLevel / 1000,
-            currentLevel: calcData.currentLevel / 1000
+            currentLevel: calcData.currentLevel / 1000,
+            currentWeight: calcData.currentWeight
           }
         };
-        
-        // ✅ FIXED: Add Conversion Factor calculation function
-        function calculateConversionFactor() {
-          const levelDiff = (calcData.currentLevel - calcData.finalLevel) / 1000; // Convert to meters
-          const timeHours = calcData.timeNeeded; // Time in hours
-          const rateValue = parseFloat(document.getElementById('ltRate').value);
-          
-          if (levelDiff > 0 && timeHours > 0 && rateValue > 0) {
-            const meterPerHour = levelDiff / timeHours;
-            const conversionFactor = rateValue / meterPerHour;
-            console.log('🧮 Conversion Factor calculated:', {
-              levelDiff: levelDiff,
-              timeHours: timeHours,
-              rateValue: rateValue,
-              meterPerHour: meterPerHour,
-              conversionFactor: conversionFactor
-            });
-            return conversionFactor;
-          }
-          return 1357; // Default fallback
-        }
         
         // إظهار رسالة تحميل
         const submitBtn = document.querySelector('button[type="submit"]');
