@@ -1576,18 +1576,28 @@
           console.log('⚠️ No current level found in tank data');
         }
         
-        document.getElementById('editPreviousLevel').value = tank.currentLevel || '';
-        document.getElementById('editRate').value = tank.rate || '';
-        
-        // Set rate unit based on department
-        let defaultRateUnit = 'bbl/hr';
+        // ✅ FIXED: Proper Previous Level handling for all departments
         if (tank.department === 'PLCR') {
-          defaultRateUnit = 'MT/hr';
-        } else if (tank.rateUnit) {
-          defaultRateUnit = tank.rateUnit;
+          // For PLCR, use saved previousLevel or currentLevel as fallback
+          const previousLevel = tank.previousLevel || tank.currentLevel || '';
+          document.getElementById('editPreviousLevel').value = previousLevel;
+          console.log('✅ PLCR Previous Level set to:', previousLevel);
+        } else {
+          // For PBCR/WASHERY, use currentLevel as previous
+          document.getElementById('editPreviousLevel').value = tank.currentLevel || '';
         }
         
-        document.getElementById('editRateUnit').value = defaultRateUnit;
+        document.getElementById('editRate').value = tank.rate || '';
+        
+        // ✅ FIXED: Preserve original Rate Unit
+        let rateUnit = tank.rateUnit || 'bbl/hr';
+        if (tank.department === 'PLCR' && !tank.rateUnit) {
+          rateUnit = 'MT/hr'; // Default for PLCR only if no saved unit
+        }
+        
+        document.getElementById('editRateUnit').value = rateUnit;
+        console.log('✅ Rate Unit preserved:', rateUnit);
+        
         document.getElementById('editFinishDate').value = tank.finishDate;
         document.getElementById('editFinishTime').value = tank.finishTime;
         document.getElementById('editNotes').value = tank.notes || '';
@@ -1604,6 +1614,12 @@
             option.selected = product === tank.product;
             editProductSelect.appendChild(option);
           });
+        }
+        
+        // Check if OTHER product is selected and show field
+        if (tank.product === 'OTHER' && tank.otherProduct) {
+          document.getElementById('editOtherProductGroup').style.display = 'block';
+          document.getElementById('editOtherProduct').value = tank.otherProduct;
         }
         
         // Trigger calculation after form is filled
