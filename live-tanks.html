@@ -571,7 +571,8 @@
         "ARDR",
         "IC5",
         "ISOM",
-        "SLOP"
+        "SLOP",
+        "OTHER"
       ],
       "WASHERY": [
         "MOGAS 98",
@@ -580,15 +581,21 @@
         "GO",
         "KERO",
         "ATK",
-        "Slop"
+        "Slop",
+        "OTHER"
       ],
       "PLCR": [
-        "Heavy Oil",
-        "Light Product",
-        "Mixed Product", 
-        "Refined Oil",
-        "Final Product",
-        "Blended Oil"
+        "NAPHA",
+        "PCNA",
+        "HSD-EGO",
+        "EGO",
+        "F.OIL",
+        "MOGAS",
+        "VGO",
+        "KKERO",
+        "ARDR",
+        "METHANOL",
+        "OTHER"
       ]
     };
 
@@ -1172,7 +1179,7 @@
     }
 
 
-    // Calculate actual rate based on level difference and time - IMPROVED VERSION
+    // Calculate actual rate based on level difference and time - FIXED VERSION
     function calculateActualRate() {
       const currentLevel = parseFloat(document.getElementById('editCurrentLevel').value);
       const previousLevel = parseFloat(document.getElementById('editPreviousLevel').value);
@@ -1198,18 +1205,21 @@
       
       if (timeDiffHours <= 0) return;
       
-      // Calculate level difference (previous - current for consumption)
-      const levelDiff = Math.abs(previousLevel - currentLevel);
+      // Calculate level difference
+      const levelDiff = Math.abs(currentLevel - previousLevel);
       
       console.log('📏 Level difference:', levelDiff, 'meters');
       console.log('⏰ Time difference:', timeDiffHours, 'hours');
       
       let actualRate = 0;
       
-      // PLCR Department: Always use MT/hr
-      if (department === 'PLCR') {
-        // For PLCR, calculate MT/hr based on level difference
-        // Assuming a conversion factor for PLCR tanks (this may need adjustment based on actual tank specifications)
+      // ✅ FIXED: Proper calculation for meter/h
+      if (rateUnit === 'meter/hr' || rateUnit === 'mtr/hr') {
+        // Direct calculation in meters per hour
+        actualRate = levelDiff / timeDiffHours;
+        console.log('📏 Calculated rate (meter/hr):', actualRate);
+      } else if (rateUnit === 'MT/hr' && department === 'PLCR') {
+        // ✅ FIXED: Proper calculation for MT/hr (PLCR)
         const tankNumber = document.getElementById('editTankNumber').value;
         const tankData = tanks[tankNumber];
         
@@ -1221,57 +1231,39 @@
           const volumeM3 = volumeDiffBarrels * 0.159;
           const massMT = volumeM3 * 0.85; // Average density for petroleum products
           actualRate = massMT / timeDiffHours;
-          console.log('⚙️ PLCR Rate calculation:', {
-            volumeDiffBarrels,
-            volumeM3,
-            massMT,
-            actualRate: actualRate + ' MT/hr'
-          });
+          console.log('⚖️ Calculated rate (MT/hr):', actualRate);
         } else {
           // Fallback calculation for PLCR
           actualRate = levelDiff / timeDiffHours * 10; // Rough estimate
         }
-        
-        // Update rate unit to MT/hr for PLCR
-        document.getElementById('editRateUnit').value = 'MT/hr';
-      } 
-      // PBCR & WASHERY: Use original logic with FIXED meter/hr calculation
-      else {
+      } else {
+        // For other units, use tank capacity factor
         const tankNumber = document.getElementById('editTankNumber').value;
         const tankData = tanks[tankNumber];
         
-        if (!tankData) return;
-        
-        const c = tankData.comment; // capacity factor
-        
-        // Calculate rate based on the selected unit
-        if (rateUnit === "mtr/hr" || rateUnit === "meter/hr") {
-          // ✅ FIXED: Rate in meters per hour (direct level difference)
-          actualRate = levelDiff / timeDiffHours;
-          console.log('📐 Calculated rate (meter/hr):', actualRate);
-        } else if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
-          // Rate in cubic meters per hour
-          // First calculate volume in barrels
-          const volumeDiffBarrels = levelDiff * c;
-          const rateBarrels = volumeDiffBarrels / timeDiffHours;
-          // Convert from barrels to m³ (1 barrel = 0.159 m³ approximately)
-          actualRate = rateBarrels * 0.159;
-          console.log('🧊 Volume in barrels:', volumeDiffBarrels);
-          console.log('🧊 Rate in barrels:', rateBarrels);
-          console.log('🧊 Rate Unit detected:', rateUnit);
-          console.log('🧊 Calculated rate (m³/hr):', actualRate);
-        } else {
-          // Default: bbl/hr (barrels per hour)
-          const volumeDiff = levelDiff * c;
-          actualRate = volumeDiff / timeDiffHours;
-          console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
+        if (tankData) {
+          const c = tankData.comment; // capacity factor
+          
+          if (rateUnit === "m3/hr" || rateUnit === "m3" || rateUnit === "m³/hr" || rateUnit === "m³") {
+            // Rate in cubic meters per hour
+            const volumeDiffBarrels = levelDiff * c;
+            const rateBarrels = volumeDiffBarrels / timeDiffHours;
+            // Convert from barrels to m³ (1 barrel = 0.159 m³ approximately)
+            actualRate = rateBarrels * 0.159;
+            console.log('🧊 Calculated rate (m³/hr):', actualRate);
+          } else {
+            // Default: bbl/hr (barrels per hour)
+            const volumeDiff = levelDiff * c;
+            actualRate = volumeDiff / timeDiffHours;
+            console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
+          }
         }
       }
       
       // Update rate field
       document.getElementById('editRate').value = Math.round(actualRate);
       
-      console.log('✅ Rate updated to:', Math.round(actualRate), document.getElementById('editRateUnit').value);
+      console.log('✅ Rate updated to:', Math.round(actualRate), rateUnit);
       
       // Recalculate finish time
       calculateEditTime();
