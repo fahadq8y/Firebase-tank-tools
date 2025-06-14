@@ -325,16 +325,10 @@
           </div>
           <div class="form-group" style="flex:1">
             <label class="form-label">🛢️ Product Type:</label>
-            <select class="form-select" id="addProduct" onchange="checkOtherProduct()" required>
+            <select class="form-select" id="addProduct" required>
               <option value="">Select Product</option>
             </select>
           </div>
-        </div>
-        
-        <!-- حقل OTHER Product -->
-        <div class="form-group" id="addOtherProductGroup" style="display:none">
-          <label class="form-label">🔧 Other Product (specify):</label>
-          <input type="text" class="form-input" id="addOtherProduct" placeholder="Enter product name">
         </div>
         
         <!-- السطر الثالث: Current Level + meter -->
@@ -715,25 +709,19 @@
       try {
         console.log('🔐 Setting up Live Tanks permissions...');
         
-        // Check if user is logged in via localStorage
-        const storedUser = localStorage.getItem('currentUser');
-        const storedPermissions = localStorage.getItem('userPermissions');
-        
-        if (!storedUser || !storedPermissions) {
+        // الحصول على بيانات المستخدم الحالي
+        const user = await getCurrentUser();
+        if (!user) {
           console.error('setupPermissions: No current user found');
-          window.location.href = 'login.html';
           return;
         }
         
-        const user = JSON.parse(storedUser);
-        const permissions = JSON.parse(storedPermissions);
-        
         console.log('setupPermissions: Current user:', user);
         
-        // Use stored permissions
-        const canAddToLiveTanks = permissions.canAdd || false;
-        const canEditLiveTanks = permissions.canEdit || false;
-        const canDeleteFromLiveTanks = permissions.canDelete || false;
+        // استخدام دالة hasPermission من permissions.js
+        const canAddToLiveTanks = await hasPermission('canAddToLiveTanks');
+        const canEditLiveTanks = await hasPermission('canEditLiveTanks');
+        const canDeleteFromLiveTanks = await hasPermission('canDeleteFromLiveTanks');
         
         console.log('🔐 Live Tanks permissions:', {
           canAddToLiveTanks,
@@ -1227,23 +1215,10 @@
       
       // ✅ FIXED: Proper calculation for meter/h in PBCR/WASHERY
       if ((department === 'PBCR' || department === 'WASHERY') && (rateUnit === 'meter/hr' || rateUnit === 'mtr/hr' || rateUnit === 'mtr')) {
-        // Direct calculation in meters per hour
+        // Direct calculation in meters per hour - NO barrel conversion
         actualRate = levelDiff / timeDiffHours;
         console.log('📏 Calculated rate (meter/hr):', actualRate);
-      } else if ((department === 'PBCR' || department === 'WASHERY') && rateUnit === 'bbl/hr') {
-        // For bbl/hr, convert meters to barrels using tank capacity
-        const tankNumber = document.getElementById('editTankNumber').value;
-        const tankData = tanks[tankNumber];
-        
-        if (tankData) {
-          const c = tankData.comment; // capacity factor (bbl/meter)
-          actualRate = (levelDiff * c) / timeDiffHours;
-          console.log('🛢️ Calculated rate (bbl/hr):', actualRate);
-        } else {
-          // Fallback calculation
-          actualRate = levelDiff / timeDiffHours * 1000; // Rough estimate
-        }
-      } else if (department === 'PLCR' && rateUnit === 'MT/hr') {
+      } else if (rateUnit === 'MT/hr' && department === 'PLCR') {
         // ✅ FIXED: Proper calculation for MT/hr (PLCR)
         const tankNumber = document.getElementById('editTankNumber').value;
         const tankData = tanks[tankNumber];
@@ -1939,19 +1914,6 @@
       }
     }
 
-    function checkOtherProduct() {
-      const productSelect = document.getElementById('addProduct');
-      const otherGroup = document.getElementById('addOtherProductGroup');
-      
-      if (productSelect.value === 'OTHER') {
-        otherGroup.style.display = 'block';
-        document.getElementById('addOtherProduct').required = true;
-      } else {
-        otherGroup.style.display = 'none';
-        document.getElementById('addOtherProduct').required = false;
-      }
-    }
-
 
     // Rest of the functions (same as original)
     async function deleteTank(tankId) {
@@ -2365,7 +2327,6 @@
     window.openAddModal = openAddModal;
     window.closeAddModal = closeAddModal;
     window.updateProductOptions = updateProductOptions;
-    window.checkOtherProduct = checkOtherProduct;
     window.updateAddRateUnit = updateAddRateUnit;
     window.calculateAddTime = calculateAddTime;
     window.editTank = editTank;
