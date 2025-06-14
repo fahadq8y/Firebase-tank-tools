@@ -908,9 +908,30 @@
         const urgencyLevel = getUrgencyLevel(finishDateTime);
         const rowClass = getRowClass(urgencyLevel);
         
-        // Format date to DD-MM
-        const dateObj = new Date(tank.finishDate);
-        const formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+        // Format date to DD-MM properly
+        let formattedDate = 'Invalid Date';
+        try {
+          let dateObj;
+          if (tank.finishDate) {
+            // Try to parse finishDate string (DD/MM/YYYY format)
+            if (typeof tank.finishDate === 'string' && tank.finishDate.includes('/')) {
+              const dateParts = tank.finishDate.split('/');
+              if (dateParts.length === 3) {
+                // Convert DD/MM/YYYY to YYYY-MM-DD for proper Date parsing
+                dateObj = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`);
+              }
+            } else {
+              dateObj = new Date(tank.finishDate);
+            }
+            
+            if (dateObj && !isNaN(dateObj.getTime())) {
+              formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+            }
+          }
+        } catch (error) {
+          console.error('Error formatting date in table:', error);
+          formattedDate = 'Invalid Date';
+        }
         
         // Calculate remaining time
         const now = new Date();
@@ -1012,8 +1033,30 @@
           console.log('⚠️ Fallback to finishDate+finishTime for PLCR Details:', finishDateTime);
         }
       }
-      const dateObj = new Date(tank.finishDate);
-      const formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+      // Format date properly
+      let formattedDate = 'Invalid Date';
+      try {
+        let dateObj;
+        if (tank.finishDate) {
+          // Try to parse finishDate string (DD/MM/YYYY format)
+          if (typeof tank.finishDate === 'string' && tank.finishDate.includes('/')) {
+            const dateParts = tank.finishDate.split('/');
+            if (dateParts.length === 3) {
+              // Convert DD/MM/YYYY to YYYY-MM-DD for proper Date parsing
+              dateObj = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`);
+            }
+          } else {
+            dateObj = new Date(tank.finishDate);
+          }
+          
+          if (dateObj && !isNaN(dateObj.getTime())) {
+            formattedDate = String(dateObj.getDate()).padStart(2, '0') + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
+          }
+        }
+      } catch (error) {
+        console.error('Error formatting date:', error);
+        formattedDate = 'Invalid Date';
+      }
       
       // Calculate remaining time
       const now = new Date();
