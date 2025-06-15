@@ -90,17 +90,6 @@
     .modal-btn-danger{background:#f44336;color:white}
     .modal-btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.3)}
     
-    /* CSS للأزرار الموحدة */
-    .buttons-section{margin:20px 0;padding:15px;background:rgba(255,255,255,0.1);border-radius:15px;backdrop-filter:blur(10px)}
-    .button-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
-    .action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;width:100%;height:45px;justify-content:center;margin:5px 0}
-    .live-tanks-btn{background:linear-gradient(45deg,#f44336,#d32f2f);color:white;box-shadow:0 2px 8px rgba(244,67,54,0.3)}
-    .reminder-btn{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;box-shadow:0 2px 8px rgba(33,150,243,0.3)}
-    .table-btn{background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;box-shadow:0 2px 8px rgba(76,175,80,0.3)}
-    .action-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
-    .help-btn{background:linear-gradient(45deg,#FF9800,#F57C00);color:white;border:none;padding:10px;border-radius:50%;cursor:pointer;font-size:14px;transition:all 0.3s ease;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;box-shadow:0 2px 6px rgba(255,152,0,0.3)}
-    .help-btn:hover{transform:translateY(-2px) scale(1.1);box-shadow:0 4px 10px rgba(255,152,0,0.4)}
-    
     /* إضافة CSS للنافذة المنبثقة مثل PBCR */
     .lt-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px)}
     .lt-modal.show{display:flex;justify-content:center;align-items:center}
@@ -109,6 +98,67 @@
     .form-group{margin-bottom:15px}
     .form-row{margin-bottom:15px}
     .form-label{display:block;margin-bottom:6px;font-weight:600;color:#003366;font-size:13px}
+    
+    /* تحسين تنسيق الجدول مثل PBCR */
+    #tankTable{
+      margin: 20px auto;
+      background: rgba(255,255,255,0.95);
+      color: #003366;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 15px;
+      overflow: hidden;
+      min-width: 90%;
+      max-width: 600px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+    }
+    #tankTable th{
+      padding: 15px 10px;
+      background: linear-gradient(45deg, #2196F3, #1976D2);
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      border-bottom: none;
+      font-size: 14px;
+    }
+    #tankTable td{
+      padding: 12px 10px;
+      text-align: center;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      font-weight: 500;
+    }
+    #tankTable tr:last-child td{
+      border-bottom: none;
+    }
+    #tankTable tr:nth-child(even){
+      background: rgba(0,0,0,0.05);
+    }
+    /* ألوان الصفوف حسب الشفت */
+    #tankTable tr.same-shift{
+      background: rgba(255,0,0,0.1) !important;
+      color: #d32f2f;
+    }
+    #tankTable tr.next-shift{
+      background: rgba(76,175,80,0.1) !important;
+      color: #388e3c;
+    }
+    /* تنسيق زر Delete */
+    #tankTable .delete-btn{
+      background: linear-gradient(45deg, #f44336, #d32f2f);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all 0.3s ease;
+    }
+    #tankTable .delete-btn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(244,67,54,0.3);
+    }
     .form-input,.form-select{width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:13px}
     .form-textarea{width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:13px;min-height:60px}
     .btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px}
@@ -219,26 +269,25 @@
       
       <!-- الأزرار الجديدة -->
       <div id="buttonsSection" style="display:none;margin-top:20px;">
-        <div class="buttons-section">
-          <div class="button-row">
-            <button id="addToLiveTanksBtn" onclick="showAddToLiveTanksModal()" class="action-btn live-tanks-btn">🔴 Add to Live Tanks</button>
-            <button onclick="showLiveTanksHelp()" class="help-btn" title="About Live Tanks">ℹ️</button>
-          </div>
-          <div class="button-row">
-            <button id="addReminderBtn" onclick="addReminder()" class="action-btn reminder-btn">📅 Add Reminder</button>
-            <button onclick="showCalendarHelp()" class="help-btn" title="How to use Calendar Reminder">ℹ️</button>
-          </div>
-          <div class="button-row">
-            <button id="addToTableBtn" onclick="addToPersonalTable()" class="action-btn table-btn">📊 Add to Table</button>
-            <button onclick="showTableHelp()" class="help-btn" title="About Personal Table">ℹ️</button>
-          </div>
-        </div>
+        <button id="addToLiveTanksBtn" onclick="showAddToLiveTanksModal()" style="background:linear-gradient(45deg,#f44336,#d32f2f);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">🔴 Add to Live Tanks</button>
+        <button id="addReminderBtn" onclick="addReminder()" style="background:linear-gradient(45deg,#2196F3,#1976D2);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📅 Add Reminder</button>
+        <button id="addToTableBtn" onclick="addToPersonalTable()" style="background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📊 Add to Table</button>
       </div>
       
       <!-- الجدول الشخصي -->
       <div id="personalTable" style="display:none;margin-top:20px;">
         <h3 style="color:#00ffff;text-align:center;margin-bottom:15px;">Your tanks finishing in current shift</h3>
-        <div id="personalTableContent" style="background:rgba(0,0,0,0.3);border-radius:8px;padding:15px;max-height:300px;overflow-y:auto;"></div>
+        <table id="tankTable">
+          <thead>
+            <tr>
+              <th>Tank Number</th>
+              <th>Finish Date</th>
+              <th>Finish Time</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
     
@@ -786,105 +835,39 @@
     // دالة تحديث الجدول الشخصي
     function updatePersonalTable() {
       const personalData = JSON.parse(localStorage.getItem('plcr_personal_table') || '[]');
-      const tableContent = document.getElementById('personalTableContent');
+      const table = document.getElementById('tankTable').getElementsByTagName('tbody')[0];
+      
+      // مسح الجدول
+      table.innerHTML = '';
       
       if (personalData.length === 0) {
-        tableContent.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">No entries yet</p>';
+        document.getElementById('personalTable').style.display = 'none';
         return;
       }
       
-      let html = '';
+      // إظهار الجدول
+      document.getElementById('personalTable').style.display = 'block';
+      
       personalData.forEach((entry, index) => {
-        const isCurrentShift = isSameShift(new Date(entry.timestamp));
-        const color = isCurrentShift ? '#ff4444' : '#44ff44';
-        const bgColor = isCurrentShift ? 'rgba(255,68,68,0.1)' : 'rgba(68,255,68,0.1)';
+        const row = table.insertRow();
+        const finishDateTime = new Date(entry.timestamp);
+        const now = new Date();
+        const sameShift = isSameShift(finishDateTime);
         
-        html += `
-          <div style="
-            background: ${bgColor};
-            border: 1px solid ${color}40;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            position: relative;
-            transition: all 0.3s ease;
-          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            
-            <!-- زر المسح -->
-            <button onclick="removeFromPersonalTable(${index})" style="
-              position: absolute;
-              top: 10px;
-              right: 10px;
-              background: rgba(255,0,0,0.8);
-              color: white;
-              border: none;
-              border-radius: 50%;
-              width: 25px;
-              height: 25px;
-              cursor: pointer;
-              font-size: 14px;
-              font-weight: bold;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              transition: all 0.3s ease;
-            " onmouseover="this.style.background='rgba(255,0,0,1)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(255,0,0,0.8)'; this.style.transform='scale(1)'">×</button>
-            
-            <!-- معلومات الخزان -->
-            <div style="margin-right: 35px;">
-              <div style="
-                color: ${color};
-                font-weight: bold;
-                font-size: 16px;
-                margin-bottom: 8px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-              ">
-                <span style="
-                  background: ${color};
-                  color: white;
-                  padding: 2px 8px;
-                  border-radius: 12px;
-                  font-size: 12px;
-                  font-weight: bold;
-                ">🛢️</span>
-                Tank ${entry.tankNumber}
-              </div>
-              
-              <div style="
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                font-size: 12px;
-                color: #ccc;
-                margin-bottom: 8px;
-              ">
-                <div>
-                  <span style="color: #00ffff;">📊 Level:</span><br>
-                  <span style="font-weight: bold;">${entry.currentLevel}m → ${entry.finalLevel.toFixed(2)}m</span>
-                </div>
-                <div>
-                  <span style="color: #00ffff;">⚖️ Withdrawal:</span><br>
-                  <span style="font-weight: bold;">${entry.amountToWithdraw} MT</span>
-                </div>
-              </div>
-              
-              <div style="
-                background: rgba(0,0,0,0.3);
-                padding: 8px;
-                border-radius: 5px;
-                border-left: 3px solid ${color};
-              ">
-                <span style="color: #00ffff;">⏰ Finish:</span>
-                <span style="font-weight: bold; color: ${color};">${entry.finishTime}</span>
-              </div>
-            </div>
-          </div>
+        // تطبيق نظام الألوان
+        row.className = sameShift ? 'same-shift' : 'next-shift';
+        
+        // تنسيق التاريخ والوقت
+        const finishDate = finishDateTime.toLocaleDateString('en-GB');
+        const finishTime = entry.finishTimeString || finishDateTime.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false});
+        
+        row.innerHTML = `
+          <td>${entry.tankNumber}</td>
+          <td>${finishDate}</td>
+          <td>${finishTime}</td>
+          <td><button class="delete-btn" onclick="removeFromPersonalTable(${index})">Delete</button></td>
         `;
       });
-      
-      tableContent.innerHTML = html;
     }
 
     // دالة مسح خزان من الجدول الشخصي
@@ -1233,51 +1216,6 @@
 
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
-
-    // دوال المساعدة للأيقونات
-    function showLiveTanksHelp() {
-      alert('🔴 Add to Live Tanks:\n\nAdds your tank to the live monitoring system.\nAll users can see when your tank will finish.\nUseful for coordination between shifts and departments.\n\nNote: Requires panel operator or admin access.');
-    }
-
-    function showCalendarHelp() {
-      const userAgent = navigator.userAgent.toLowerCase();
-      let platform = '';
-      let storeIcon = '';
-      let storeUrl = '';
-      let storeName = '';
-      
-      if (/android/.test(userAgent)) {
-        platform = 'Android';
-        storeIcon = '📱';
-        storeUrl = 'https://play.google.com/store/apps/details?id=com.google.android.calendar';
-        storeName = 'Google Play Store';
-      } else if (/iphone|ipad|ipod/.test(userAgent)) {
-        platform = 'iOS';
-        storeIcon = '📱';
-        storeUrl = 'https://apps.apple.com/app/google-calendar/id909319292';
-        storeName = 'App Store';
-      } else {
-        platform = 'Desktop';
-        storeIcon = '💻';
-        storeUrl = 'https://calendar.google.com';
-        storeName = 'Google Calendar Web';
-      }
-      
-      const message = `📅 How to use Calendar Reminder:\n\n1. Calculate your tank finish time\n2. Click "📅 Add Reminder" button\n3. This will open Google Calendar\n\n${storeIcon} For ${platform} users:\nIf you don't have Google Calendar installed, click below to download:\n\n${storeName}`;
-      
-      if (confirm(message + '\n\nClick OK to download Google Calendar now, or Cancel to continue.')) {
-        window.open(storeUrl, '_blank');
-      }
-    }
-
-    function showTableHelp() {
-      alert('📊 Add to Table:\n\nAdds tank to your personal table below.\nOnly you can see this table - it\'s private to your account.\nUseful for tracking your own tanks during the shift.\n\nYour personal reminder system.');
-    }
-
-    // تصدير الدوال للاستخدام العام
-    window.showLiveTanksHelp = showLiveTanksHelp;
-    window.showCalendarHelp = showCalendarHelp;
-    window.showTableHelp = showTableHelp;
   </script>
 </body>
 </html>
