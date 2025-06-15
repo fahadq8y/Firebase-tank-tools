@@ -120,7 +120,7 @@
     </div>
 
     <div id="messageContainer"></div>
-    <div class="footer"><strong>🔥 Firebase Powered</strong><br>By <strong>Fahad - 17877</strong> | Version v4.2 Fixed<br><small>Real-time cloud database</small></div>
+    <div class="footer"><strong>🔥 Firebase Powered</strong><br>By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> | Version v5 Fixed<br><small>Real-time cloud database</small></div>
   </div>
 
   <!-- Firebase SDK -->
@@ -1007,7 +1007,25 @@ Thank you.`;
     console.log('%c✅ Username lowercase conversion activated', 'color:green;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877', 'color:green;font-size:16px');
     console.log('%cUsers require admin approval after registration', 'color:blue;font-size:14px');
+
+    // WhatsApp functionality
+    const WHATSAPP_NUMBER="96555222550";
+    window.openWhatsApp=()=>{
+      const message="مرحبا، أتواصل معك من خلال تطبيق Tank Tools";
+      const whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      try{
+        const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');
+        if(!newWindow)window.location.href=whatsappURL
+      }catch{
+        navigator.clipboard.writeText(whatsappURL).then(()=>alert(`تم نسخ رابط الواتساب:\n${whatsappURL}`)).catch(()=>alert(`رابط الواتساب:\n${whatsappURL}`))
+      }
+    };
   </script>
+
+  <style>
+    .whatsapp-link{color:#25D366;text-decoration:none;font-weight:bold;transition:all 0.3s ease;cursor:pointer}
+    .whatsapp-link:hover{color:#128C7E;text-shadow:0 0 5px rgba(37,211,102,0.5);transform:scale(1.05)}
+  </style>
 </body>
 </html>
 

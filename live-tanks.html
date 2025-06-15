@@ -2460,7 +2460,30 @@
     console.log('%c✅ Added PLCR MT/hr support', 'color:blue;font-size:14px');
     console.log('%c✅ Added Reminder button', 'color:blue;font-size:14px');
     console.log('%c✅ Enhanced data saving', 'color:blue;font-size:14px');
+
+    // WhatsApp functionality
+    const WHATSAPP_NUMBER="96555222550";
+    window.openWhatsApp=()=>{
+      const message="مرحبا، أتواصل معك من خلال تطبيق Live Tanks";
+      const whatsappURL=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      try{
+        const newWindow=window.open(whatsappURL,'_blank','noopener,noreferrer');
+        if(!newWindow)window.location.href=whatsappURL
+      }catch{
+        navigator.clipboard.writeText(whatsappURL).then(()=>alert(`تم نسخ رابط الواتساب:\n${whatsappURL}`)).catch(()=>alert(`رابط الواتساب:\n${whatsappURL}`))
+      }
+    };
   </script>
+
+  <footer style="text-align:center;padding:20px;background:rgba(0,0,0,0.3);color:white;margin-top:30px">
+    By <a href="#" class="whatsapp-link" onclick="openWhatsApp(); return false;">Fahad - 17877</a> – Version v5
+    <br><small style="color:#999;font-size:10px;margin-top:5px;display:block">📱 WhatsApp: +965 55222550</small>
+  </footer>
+
+  <style>
+    .whatsapp-link{color:#25D366;text-decoration:none;font-weight:bold;transition:all 0.3s ease;cursor:pointer}
+    .whatsapp-link:hover{color:#128C7E;text-shadow:0 0 5px rgba(37,211,102,0.5);transform:scale(1.05)}
+  </style>
 </body>
 </html>
 
