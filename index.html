@@ -25,8 +25,66 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 .row{display:flex;justify-content:center;align-items:center;gap:8px;margin:10px 0;max-width:400px;margin-left:auto;margin-right:auto}
 .row input,.row select{margin:0;flex:1;width:50%}
 .result{margin-top:10px;font-weight:bold;color:#00ffff;text-align:center}
-#tankTable{margin:auto;background:rgba(255,255,255,0.85);color:#003366;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;min-width:300px}
-#tankTable th{padding:10px;border-bottom:1px solid #003366}
+/* تحسين تنسيق الجدول */
+#tankTable{
+  margin: 20px auto;
+  background: rgba(255,255,255,0.95);
+  color: #003366;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 15px;
+  overflow: hidden;
+  min-width: 90%;
+  max-width: 600px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px);
+}
+#tankTable th{
+  padding: 15px 10px;
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+  color: white;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: none;
+  font-size: 14px;
+}
+#tankTable td{
+  padding: 12px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  font-weight: 500;
+}
+#tankTable tr:last-child td{
+  border-bottom: none;
+}
+#tankTable tr:nth-child(even){
+  background: rgba(0,0,0,0.05);
+}
+/* ألوان الصفوف حسب الشفت */
+#tankTable tr.same-shift{
+  background: rgba(255,0,0,0.1) !important;
+  color: #d32f2f;
+}
+#tankTable tr.next-shift{
+  background: rgba(76,175,80,0.1) !important;
+  color: #388e3c;
+}
+/* تنسيق زر Delete */
+#tankTable .delete-btn{
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+#tankTable .delete-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(244,67,54,0.3);
+}
 .reminder-btn,.add-btn,.live-tanks-btn{padding:12px 20px;font-size:14px;border-radius:12px;background:white;color:#003366;border:none;cursor:pointer;margin:5px;transition:all 0.3s ease;font-weight:600}
 .live-tanks-btn{background:linear-gradient(45deg,#ff4444,#ff6666);color:white;display:inline-flex;align-items:center;gap:8px}
 /* كونتينر موحد للحقول والأزرار مثل PLCR */
@@ -277,9 +335,23 @@ window.calculate=()=>{const level=parseFloat(document.getElementById("level").va
   }
 }}saveData()};
 function isSameShift(now,finish){const getShift=h=>{const m=h.getHours()*60+h.getMinutes();return m>=360&&m<840?"morning":m>=840&&m<1320?"evening":"night"};const currentShift=getShift(now),finishShift=getShift(finish);if(currentShift!==finishShift)return false;if(currentShift==="night"){const nowHour=now.getHours(),finishHour=finish.getHours();if(nowHour>=0&&nowHour<6){if(finishHour>=0&&finishHour<6)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))<=1;else if(finishHour>=22)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))===0}else if(nowHour>=22){if(finishHour>=22)return now.toDateString()===finish.toDateString();else if(finishHour>=0&&finishHour<6)return Math.floor((finish.getTime()-now.getTime())/(24*60*60*1000))===1}return false}return now.toDateString()===finish.toDateString()}
-window.addToTable=()=>{if(!calcData||!calcData.tankNumber){alert("Please calculate a tank first!");return}const table=document.getElementById("tankTable").getElementsByTagName("tbody")[0],row=table.insertRow();row.innerHTML=`<td>${calcData.tankNumber}</td><td>${calcData.finishDate}</td><td>${calcData.finishTime}</td><td><button onclick="this.parentNode.parentNode.remove()" style="background:red;color:white;border:none;padding:5px;border-radius:3px;cursor:pointer">Delete</button></td>`;saveData()};
+window.addToTable=()=>{if(!calcData||!calcData.tankNumber){alert("Please calculate a tank first!");return}const table=document.getElementById("tankTable").getElementsByTagName("tbody")[0],row=table.insertRow();
+  // تحديد لون الصف حسب الشفت
+  const now = new Date();
+  const finishDateTime = new Date(`${calcData.finishDate} ${calcData.finishTime}`);
+  const sameShift = isSameShift(now, finishDateTime);
+  
+  row.className = sameShift ? 'same-shift' : 'next-shift';
+  row.innerHTML=`<td>${calcData.tankNumber}</td><td>${calcData.finishDate}</td><td>${calcData.finishTime}</td><td><button class="delete-btn" onclick="this.parentNode.parentNode.remove();saveData()">Delete</button></td>`;saveData()};
 function saveData(){const table=document.getElementById("tankTable").getElementsByTagName("tbody")[0],data=[];for(let i=0;i<table.rows.length;i++){const row=table.rows[i];data.push({tank:row.cells[0].innerText,date:row.cells[1].innerText,time:row.cells[2].innerText})}localStorage.setItem("tankData",JSON.stringify(data))}
-function loadData(){const data=JSON.parse(localStorage.getItem("tankData")||"[]"),table=document.getElementById("tankTable").getElementsByTagName("tbody")[0];data.forEach(item=>{const row=table.insertRow();row.innerHTML=`<td>${item.tank}</td><td>${item.date}</td><td>${item.time}</td><td><button onclick="this.parentNode.parentNode.remove();saveData()" style="background:red;color:white;border:none;padding:5px;border-radius:3px;cursor:pointer">Delete</button></td>`})}
+function loadData(){const data=JSON.parse(localStorage.getItem("tankData")||"[]"),table=document.getElementById("tankTable").getElementsByTagName("tbody")[0];data.forEach(item=>{const row=table.insertRow();
+  // تحديد لون الصف حسب الشفت للبيانات المحفوظة
+  const now = new Date();
+  const finishDateTime = new Date(`${item.date} ${item.time}`);
+  const sameShift = isSameShift(now, finishDateTime);
+  
+  row.className = sameShift ? 'same-shift' : 'next-shift';
+  row.innerHTML=`<td>${item.tank}</td><td>${item.date}</td><td>${item.time}</td><td><button class="delete-btn" onclick="this.parentNode.parentNode.remove();saveData()">Delete</button></td>`})}
 function setupDark(){const btn=document.getElementById("darkModeButton");btn.addEventListener("click",()=>{document.body.style.filter=document.body.style.filter?"":"invert(1) hue-rotate(180deg)";btn.textContent=document.body.style.filter?"☀️":"🌙"})}
 
 // Live Tanks Modal Functions
