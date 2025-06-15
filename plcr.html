@@ -883,7 +883,28 @@
       
       personalData.forEach((entry, index) => {
         const row = table.insertRow();
-        const finishDateTime = new Date(entry.finishTime);
+        
+        // تحويل التاريخ من صيغة DD/MM/YYYY HH:MM إلى صيغة صحيحة
+        let finishDateTime;
+        console.log('Original entry.finishTime:', entry.finishTime);
+        try {
+          if (entry.finishTime && entry.finishTime.includes('/')) {
+            // تحويل من "15/06/2025 17:51" إلى "2025-06-15T17:51:00"
+            const [datePart, timePart] = entry.finishTime.split(' ');
+            const [day, month, year] = datePart.split('/');
+            const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00`;
+            console.log('Converted to ISO:', isoString);
+            finishDateTime = new Date(isoString);
+            console.log('Final Date object:', finishDateTime);
+          } else {
+            finishDateTime = new Date(entry.finishTime);
+            console.log('Direct conversion:', finishDateTime);
+          }
+        } catch (error) {
+          console.log('Error parsing date:', entry.finishTime, error);
+          finishDateTime = new Date(); // fallback to current time
+        }
+        
         const now = new Date();
         const sameShift = isSameShift(now, finishDateTime);
         
