@@ -30,11 +30,11 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 .reminder-btn,.add-btn,.live-tanks-btn{padding:12px 20px;font-size:14px;border-radius:12px;background:white;color:#003366;border:none;cursor:pointer;margin:5px;transition:all 0.3s ease;font-weight:600}
 .live-tanks-btn{background:linear-gradient(45deg,#ff4444,#ff6666);color:white;display:inline-flex;align-items:center;gap:8px}
 .buttons-section{margin:20px 0;padding:15px;background:rgba(255,255,255,0.1);border-radius:15px;backdrop-filter:blur(10px)}
-.button-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;max-width:400px;margin-left:auto;margin-right:auto}
-.action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;flex:1;height:45px;justify-content:center;margin:0}
-.live-tanks-btn{background:linear-gradient(45deg,#f44336,#d32f2f);color:white;box-shadow:0 2px 8px rgba(244,67,54,0.3)}
-.reminder-btn{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;box-shadow:0 2px 8px rgba(33,150,243,0.3)}
-.table-btn{background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;box-shadow:0 2px 8px rgba(76,175,80,0.3)}
+.button-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
+.action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;width:180px;height:45px;justify-content:center}
+.live-tanks-btn{background:linear-gradient(45deg,#ff4444,#ff6666);color:white;box-shadow:0 2px 8px rgba(255,68,68,0.3)}
+.reminder-btn{background:linear-gradient(45deg,#4CAF50,#45a049);color:white;box-shadow:0 2px 8px rgba(76,175,80,0.3)}
+.table-btn{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;box-shadow:0 2px 8px rgba(33,150,243,0.3)}
 .action-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
 .help-btn{background:linear-gradient(45deg,#FF9800,#F57C00);color:white;border:none;padding:10px;border-radius:50%;cursor:pointer;font-size:14px;transition:all 0.3s ease;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;box-shadow:0 2px 6px rgba(255,152,0,0.3)}
 .help-btn:hover{transform:translateY(-2px) scale(1.1);box-shadow:0 4px 10px rgba(255,152,0,0.4)}
@@ -125,7 +125,9 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <button onclick="showLiveTanksHelp()" class="help-btn" id="add-to-live-tanks-help" title="About Live Tanks" style="display:none">ℹ️</button>
 </div>
 <div class="button-row">
-<button class="action-btn reminder-btn" onclick="openCalendar()" id="calendarLink">📅 Add Reminder</button>
+<a href="#" id="calendarLink" target="_blank">
+<button class="action-btn reminder-btn">📅 Add Reminder</button>
+</a>
 <button onclick="showCalendarHelp()" class="help-btn" title="How to use Calendar Reminder">ℹ️</button>
 </div>
 <div class="button-row">
@@ -239,73 +241,11 @@ const products={
 };
 
 window.addEventListener('load',()=>setTimeout(checkLogin,100));
-function checkLogin(){
-  const s = sessionStorage.getItem('tanktools_session');
-  const u = localStorage.getItem('tanktools_current_user');
-  
-  console.log('🔐 Checking login status...');
-  console.log('Session:', s);
-  console.log('User data:', u);
-  
-  if(s !== 'active' || !u) {
-    console.log('❌ No valid session or user data');
-    showAccess();
-    return;
-  }
-  
-  try {
-    currentUser = JSON.parse(u);
-    console.log('📋 Parsed user data:', currentUser);
-    
-    if(!currentUser || !currentUser.username) {
-      console.log('❌ Invalid user data structure');
-      showAccess();
-      return;
-    }
-    
-    console.log('✅ Login check passed, initializing app...');
-    initApp();
-  } catch(error) {
-    console.log('❌ Error parsing user data:', error);
-    showAccess();
-  }
-}
+function checkLogin(){const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');if(s!=='active'||!u){showAccess();return}try{currentUser=JSON.parse(u);if(!currentUser||!currentUser.username){showAccess();return}initApp()}catch{showAccess()}}
 function showAccess(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
 window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','index.html');window.location.href='login.html'};
 function initApp(){document.getElementById('mainContent').style.display='block';document.getElementById('accessDenied').style.display='none';loadUser();loadData();setupDark()}
-function loadUser(){
-  console.log('🔍 Loading user data...', currentUser);
-  
-  if(!currentUser) {
-    console.log('❌ No currentUser found');
-    document.getElementById('userName').textContent = 'User';
-    return;
-  }
-  
-  // تحديد الاسم المراد عرضه
-  let displayName = 'User';
-  if (currentUser.fullName && currentUser.fullName.trim() !== '') {
-    displayName = currentUser.fullName;
-  } else if (currentUser.username && currentUser.username.trim() !== '') {
-    displayName = currentUser.username;
-  } else if (currentUser.email && currentUser.email.trim() !== '') {
-    displayName = currentUser.email.split('@')[0];
-  }
-  
-  console.log('✅ Display name set to:', displayName);
-  
-  // عرض الاسم
-  document.getElementById('userName').textContent = displayName;
-  
-  // عرض الحرف الأول للأفاتار
-  const avatarText = (currentUser.fullName || currentUser.username || 'U').charAt(0).toUpperCase();
-  document.getElementById('userAvatar').textContent = avatarText;
-  
-  // إظهار رابط الإدارة للمشرفين
-  if(currentUser.username === 'fam030' || currentUser.role === 'admin') {
-    document.getElementById('adminLink').style.display = 'inline-block';
-  }
-  
+function loadUser(){if(!currentUser)return;document.getElementById('userName').textContent=currentUser.username;document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();if(currentUser.username==='fam030'||currentUser.role==='admin')document.getElementById('adminLink').style.display='inline-block';
   // استخدام نظام الصلاحيات الجديد لإظهار زر Live Tanks
   checkLiveTanksAccess();
 }
@@ -544,19 +484,8 @@ function showCalendarHelp() {
     window.open(storeUrl, '_blank');
   }
 }
-}
-window.showCalendarHelp = showCalendarHelp;
 
-// دالة فتح التقويم
-function openCalendar() {
-  const calendar = document.getElementById("calendarLink");
-  if (calendar && calendar.href) {
-    window.open(calendar.href, '_blank');
-  } else {
-    alert('Please calculate a tank first to set up the calendar reminder!');
-  }
-}
-window.openCalendar = openCalendar;
+window.showCalendarHelp = showCalendarHelp;
 
 // PBCR Calculation Activity Logging
 async function logPBCRCalculation(tankNumber, hours, minutes, finishTime, finishDate) {
