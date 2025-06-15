@@ -750,7 +750,6 @@
       const time = finishTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' });
       
       // تحديد لون النتيجة بناءً على الشفت
-      const now = new Date();
       const isCurrentShift = isSameShift(now, finishTime);
       const color = isCurrentShift ? '#ff4444' : '#44ff44';
       
