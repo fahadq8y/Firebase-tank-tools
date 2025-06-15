@@ -269,7 +269,7 @@
       
       <!-- الأزرار الجديدة -->
       <div id="buttonsSection" style="display:none;margin-top:20px;">
-        <button id="addToLiveTanksBtn" onclick="showAddToLiveTanksModal()" style="background:linear-gradient(45deg,#f44336,#d32f2f);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">🔴 Add to Live Tanks</button>
+        <button id="addToLiveTanksBtn" onclick="showAddToLiveTanksModal()" style="background:linear-gradient(45deg,#f44336,#d32f2f);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;display:none;">🔴 Add to Live Tanks</button>
         <button id="addReminderBtn" onclick="addReminder()" style="background:linear-gradient(45deg,#2196F3,#1976D2);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📅 Add Reminder</button>
         <button id="addToTableBtn" onclick="addToPersonalTable()" style="background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📊 Add to Table</button>
       </div>
@@ -775,6 +775,9 @@
         finishTime: finishTime,
         finishTimeString: ft
       };
+      
+      // التحقق من صلاحيات Add to Live Tanks
+      checkAddToLiveTanksPermission();
     };
 
     // دالة تحديد الشفت - نفس PBCR
@@ -940,6 +943,48 @@
         setTimeout(() => msgDiv.remove(), 3000);
       }
     };
+
+    // دالة للتحقق من صلاحية إضافة إلى Live Tanks
+    async function checkAddToLiveTanksPermission() {
+      try {
+        console.log('🔐 Checking Add to Live Tanks permission...');
+        
+        // التحقق من وجود بيانات الحساب
+        if (!calcData || !calcData.tankNumber) {
+          console.log('checkAddToLiveTanksPermission: No calculation data available');
+          return;
+        }
+        
+        // استخدام دالة hasPermission من permissions.js
+        const canAddToLiveTanks = await hasPermission('canAddToLiveTanks');
+        
+        console.log('checkAddToLiveTanksPermission: Can add to Live Tanks:', canAddToLiveTanks);
+        
+        const addButton = document.getElementById('addToLiveTanksBtn');
+        
+        if (canAddToLiveTanks) {
+          if (addButton) {
+            addButton.style.display = 'block';
+            addButton.disabled = false;
+          }
+          console.log('✅ Add to Live Tanks button enabled');
+        } else {
+          if (addButton) {
+            addButton.style.display = 'none';
+            addButton.disabled = true;
+          }
+          console.log('❌ Add to Live Tanks button disabled - no permission');
+        }
+      } catch (error) {
+        console.error('❌ Error checking Add to Live Tanks permission:', error);
+        // في حالة الخطأ، إخفاء الزر للأمان
+        const addButton = document.getElementById('addToLiveTanksBtn');
+        if (addButton) {
+          addButton.style.display = 'none';
+          addButton.disabled = true;
+        }
+      }
+    }
 
     // دالة إظهار نافذة Add to Live Tanks
     window.showAddToLiveTanksModal = async () => {
