@@ -544,25 +544,36 @@ async function checkLiveTanksAccess() {
     
     console.log('checkLiveTanksAccess: Can view Live Tanks:', canViewLiveTanks);
     
-    const liveTanksButton = document.getElementById('live-tanks-btn');
+    const liveTanksButton = document.getElementById('add-to-live-tanks-btn');
+    const liveTanksHelp = document.getElementById('add-to-live-tanks-help');
     
     if (canViewLiveTanks) {
       if (liveTanksButton) {
         liveTanksButton.style.display = 'inline-block';
+      }
+      if (liveTanksHelp) {
+        liveTanksHelp.style.display = 'inline-block';
       }
       console.log('✅ Live Tanks button enabled');
     } else {
       if (liveTanksButton) {
         liveTanksButton.style.display = 'none';
       }
+      if (liveTanksHelp) {
+        liveTanksHelp.style.display = 'none';
+      }
       console.log('❌ Live Tanks button disabled - no permission');
     }
   } catch (error) {
     console.error('❌ Error checking Live Tanks access permission:', error);
     // في حالة الخطأ، إخفاء الزر للأمان
-    const liveTanksButton = document.getElementById('live-tanks-btn');
+    const liveTanksButton = document.getElementById('add-to-live-tanks-btn');
+    const liveTanksHelp = document.getElementById('add-to-live-tanks-help');
     if (liveTanksButton) {
       liveTanksButton.style.display = 'none';
+    }
+    if (liveTanksHelp) {
+      liveTanksHelp.style.display = 'none';
     }
   }
 }
