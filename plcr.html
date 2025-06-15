@@ -779,6 +779,10 @@
 
     // دالة تحديد الشفت - نفس PBCR
     function isSameShift(now, finish) {
+      console.log('isSameShift called:');
+      console.log('Now:', now.toLocaleString());
+      console.log('Finish:', finish.toLocaleString());
+      
       const getShift = h => {
         const m = h.getHours() * 60 + h.getMinutes();
         return m >= 360 && m < 840 ? "morning" : m >= 840 && m < 1320 ? "evening" : "night";
@@ -787,7 +791,13 @@
       const currentShift = getShift(now);
       const finishShift = getShift(finish);
       
-      if (currentShift !== finishShift) return false;
+      console.log('Current shift:', currentShift);
+      console.log('Finish shift:', finishShift);
+      
+      if (currentShift !== finishShift) {
+        console.log('Different shifts, returning false');
+        return false;
+      }
       
       if (currentShift === "night") {
         const nowHour = now.getHours();
@@ -807,7 +817,9 @@
         return false;
       }
       
-      return now.toDateString() === finish.toDateString();
+      const sameDate = now.toDateString() === finish.toDateString();
+      console.log('Same date:', sameDate);
+      return sameDate;
     }
 
     // دالة إضافة تذكير
