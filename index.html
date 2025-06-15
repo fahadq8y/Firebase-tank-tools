@@ -29,7 +29,19 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 #tankTable th{padding:10px;border-bottom:1px solid #003366}
 .reminder-btn,.add-btn,.live-tanks-btn{padding:12px 20px;font-size:14px;border-radius:12px;background:white;color:#003366;border:none;cursor:pointer;margin:5px;transition:all 0.3s ease;font-weight:600}
 .live-tanks-btn{background:linear-gradient(45deg,#ff4444,#ff6666);color:white;display:inline-flex;align-items:center;gap:8px}
-.buttons-section{margin:20px 0;padding:15px;background:rgba(255,255,255,0.1);border-radius:15px;backdrop-filter:blur(10px)}
+/* كونتينر موحد للحقول والأزرار مثل PLCR */
+.main-container{
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 30px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.buttons-section{margin:20px 0;padding:0;background:transparent;border-radius:0;backdrop-filter:none}
 .button-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;max-width:400px;margin-left:auto;margin-right:auto}
 .action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;flex:1;height:45px;justify-content:center;margin:0}
 .live-tanks-btn{background:linear-gradient(45deg,#f44336,#d32f2f);color:white;box-shadow:0 2px 8px rgba(244,67,54,0.3)}
@@ -95,7 +107,7 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 </div>
 </div>
 <h2 style="text-align:center">PBCR & WASHERY</h2>
-<div style="text-align:center;padding:20px">
+<div class="main-container">
 <input id="tankInput" oninput="loadTank()" placeholder="Enter Tank Number" type="number"/>
 <input id="level" oninput="calculate()" placeholder="Current Level (m)" type="number"/>
 <div class="result" id="availablePumpable"></div>
@@ -133,6 +145,7 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <div class="button-row">
 <button onclick="addToTable()" class="action-btn table-btn">📊 Add to Table</button>
 <button onclick="showTableHelp()" class="help-btn" title="About Personal Table">ℹ️</button>
+</div>
 </div>
 </div>
 <h3 style="margin-top:40px">Your tanks finishing in current shift:</h3>
