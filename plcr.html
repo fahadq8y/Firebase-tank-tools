@@ -1227,9 +1227,20 @@
         }
       }
     };
-
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
+    
+    // بدء التطبيق عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+      // التحقق من تسجيل الدخول وبدء التطبيق
+      if (typeof checkPageAccess === 'function') {
+        checkPageAccess('plcr.html');
+      } else {
+        console.log('checkPageAccess function not found, loading page normally');
+        // تحميل البيانات المحفوظة
+        updatePersonalTable();
+      }
+    });
   </script>
 </body>
-</html>
+</html>>
