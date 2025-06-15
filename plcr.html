@@ -883,7 +883,7 @@
       
       personalData.forEach((entry, index) => {
         const row = table.insertRow();
-        const finishDateTime = new Date(entry.timestamp);
+        const finishDateTime = new Date(entry.finishTime);
         const now = new Date();
         const sameShift = isSameShift(now, finishDateTime);
         
