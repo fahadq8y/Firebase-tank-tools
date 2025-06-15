@@ -448,6 +448,7 @@
     }
     
     function loadUserInfo(){
+      console.log('loadUserInfo called, currentUser:', currentUser);
       if(!currentUser)return;
       
       const userNameElement = document.getElementById('userName');
@@ -455,12 +456,18 @@
       const adminLinkElement = document.getElementById('adminLink');
       const liveTanksLinkElement = document.getElementById('live-tanks-btn');
       
+      console.log('userNameElement:', userNameElement);
+      console.log('userAvatarElement:', userAvatarElement);
+      
       if(userNameElement) {
-        userNameElement.textContent = currentUser.username;
+        console.log('Updating username to:', currentUser.fullName || currentUser.username);
+        userNameElement.textContent = currentUser.fullName || currentUser.username;
       }
       
       if(userAvatarElement) {
-        userAvatarElement.textContent = (currentUser.fullName||currentUser.username).charAt(0).toUpperCase();
+        const displayName = currentUser.fullName || currentUser.username;
+        console.log('Updating avatar to:', displayName.charAt(0).toUpperCase());
+        userAvatarElement.textContent = displayName.charAt(0).toUpperCase();
       }
       
       if(adminLinkElement && (currentUser.username==='fam030'||currentUser.role==='admin')) {
