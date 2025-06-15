@@ -30,8 +30,8 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 .reminder-btn,.add-btn,.live-tanks-btn{padding:12px 20px;font-size:14px;border-radius:12px;background:white;color:#003366;border:none;cursor:pointer;margin:5px;transition:all 0.3s ease;font-weight:600}
 .live-tanks-btn{background:linear-gradient(45deg,#ff4444,#ff6666);color:white;display:inline-flex;align-items:center;gap:8px}
 .buttons-section{margin:20px 0;padding:15px;background:rgba(255,255,255,0.1);border-radius:15px;backdrop-filter:blur(10px)}
-.button-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
-.action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;width:100%;height:45px;justify-content:center;margin:5px 0}
+.button-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;max-width:400px;margin-left:auto;margin-right:auto}
+.action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;flex:1;height:45px;justify-content:center;margin:0}
 .live-tanks-btn{background:linear-gradient(45deg,#f44336,#d32f2f);color:white;box-shadow:0 2px 8px rgba(244,67,54,0.3)}
 .reminder-btn{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;box-shadow:0 2px 8px rgba(33,150,243,0.3)}
 .table-btn{background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;box-shadow:0 2px 8px rgba(76,175,80,0.3)}
@@ -125,9 +125,7 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <button onclick="showLiveTanksHelp()" class="help-btn" id="add-to-live-tanks-help" title="About Live Tanks" style="display:none">ℹ️</button>
 </div>
 <div class="button-row">
-<a href="#" id="calendarLink" target="_blank">
-<button class="action-btn reminder-btn">📅 Add Reminder</button>
-</a>
+<button class="action-btn reminder-btn" onclick="openCalendar()" id="calendarLink">📅 Add Reminder</button>
 <button onclick="showCalendarHelp()" class="help-btn" title="How to use Calendar Reminder">ℹ️</button>
 </div>
 <div class="button-row">
@@ -484,8 +482,19 @@ function showCalendarHelp() {
     window.open(storeUrl, '_blank');
   }
 }
-
+}
 window.showCalendarHelp = showCalendarHelp;
+
+// دالة فتح التقويم
+function openCalendar() {
+  const calendar = document.getElementById("calendarLink");
+  if (calendar && calendar.href) {
+    window.open(calendar.href, '_blank');
+  } else {
+    alert('Please calculate a tank first to set up the calendar reminder!');
+  }
+}
+window.openCalendar = openCalendar;
 
 // PBCR Calculation Activity Logging
 async function logPBCRCalculation(tankNumber, hours, minutes, finishTime, finishDate) {
