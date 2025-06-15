@@ -90,6 +90,17 @@
     .modal-btn-danger{background:#f44336;color:white}
     .modal-btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.3)}
     
+    /* CSS للأزرار الموحدة */
+    .buttons-section{margin:20px 0;padding:15px;background:rgba(255,255,255,0.1);border-radius:15px;backdrop-filter:blur(10px)}
+    .button-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
+    .action-btn{padding:12px 24px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;width:100%;height:45px;justify-content:center;margin:5px 0}
+    .live-tanks-btn{background:linear-gradient(45deg,#f44336,#d32f2f);color:white;box-shadow:0 2px 8px rgba(244,67,54,0.3)}
+    .reminder-btn{background:linear-gradient(45deg,#2196F3,#1976D2);color:white;box-shadow:0 2px 8px rgba(33,150,243,0.3)}
+    .table-btn{background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;box-shadow:0 2px 8px rgba(76,175,80,0.3)}
+    .action-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+    .help-btn{background:linear-gradient(45deg,#FF9800,#F57C00);color:white;border:none;padding:10px;border-radius:50%;cursor:pointer;font-size:14px;transition:all 0.3s ease;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;box-shadow:0 2px 6px rgba(255,152,0,0.3)}
+    .help-btn:hover{transform:translateY(-2px) scale(1.1);box-shadow:0 4px 10px rgba(255,152,0,0.4)}
+    
     /* إضافة CSS للنافذة المنبثقة مثل PBCR */
     .lt-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px)}
     .lt-modal.show{display:flex;justify-content:center;align-items:center}
@@ -208,9 +219,20 @@
       
       <!-- الأزرار الجديدة -->
       <div id="buttonsSection" style="display:none;margin-top:20px;">
-        <button id="addToLiveTanksBtn" onclick="showAddToLiveTanksModal()" style="background:linear-gradient(45deg,#f44336,#d32f2f);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">🔴 Add to Live Tanks</button>
-        <button id="addReminderBtn" onclick="addReminder()" style="background:linear-gradient(45deg,#2196F3,#1976D2);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📅 Add Reminder</button>
-        <button id="addToTableBtn" onclick="addToPersonalTable()" style="background:linear-gradient(45deg,#4CAF50,#388E3C);color:white;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;transition:all 0.3s ease;width:100%;">📊 Add to Table</button>
+        <div class="buttons-section">
+          <div class="button-row">
+            <button id="addToLiveTanksBtn" onclick="showAddToLiveTanksModal()" class="action-btn live-tanks-btn">🔴 Add to Live Tanks</button>
+            <button onclick="showLiveTanksHelp()" class="help-btn" title="About Live Tanks">ℹ️</button>
+          </div>
+          <div class="button-row">
+            <button id="addReminderBtn" onclick="addReminder()" class="action-btn reminder-btn">📅 Add Reminder</button>
+            <button onclick="showCalendarHelp()" class="help-btn" title="How to use Calendar Reminder">ℹ️</button>
+          </div>
+          <div class="button-row">
+            <button id="addToTableBtn" onclick="addToPersonalTable()" class="action-btn table-btn">📊 Add to Table</button>
+            <button onclick="showTableHelp()" class="help-btn" title="About Personal Table">ℹ️</button>
+          </div>
+        </div>
       </div>
       
       <!-- الجدول الشخصي -->
@@ -1211,6 +1233,51 @@
 
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
+
+    // دوال المساعدة للأيقونات
+    function showLiveTanksHelp() {
+      alert('🔴 Add to Live Tanks:\n\nAdds your tank to the live monitoring system.\nAll users can see when your tank will finish.\nUseful for coordination between shifts and departments.\n\nNote: Requires panel operator or admin access.');
+    }
+
+    function showCalendarHelp() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      let platform = '';
+      let storeIcon = '';
+      let storeUrl = '';
+      let storeName = '';
+      
+      if (/android/.test(userAgent)) {
+        platform = 'Android';
+        storeIcon = '📱';
+        storeUrl = 'https://play.google.com/store/apps/details?id=com.google.android.calendar';
+        storeName = 'Google Play Store';
+      } else if (/iphone|ipad|ipod/.test(userAgent)) {
+        platform = 'iOS';
+        storeIcon = '📱';
+        storeUrl = 'https://apps.apple.com/app/google-calendar/id909319292';
+        storeName = 'App Store';
+      } else {
+        platform = 'Desktop';
+        storeIcon = '💻';
+        storeUrl = 'https://calendar.google.com';
+        storeName = 'Google Calendar Web';
+      }
+      
+      const message = `📅 How to use Calendar Reminder:\n\n1. Calculate your tank finish time\n2. Click "📅 Add Reminder" button\n3. This will open Google Calendar\n\n${storeIcon} For ${platform} users:\nIf you don't have Google Calendar installed, click below to download:\n\n${storeName}`;
+      
+      if (confirm(message + '\n\nClick OK to download Google Calendar now, or Cancel to continue.')) {
+        window.open(storeUrl, '_blank');
+      }
+    }
+
+    function showTableHelp() {
+      alert('📊 Add to Table:\n\nAdds tank to your personal table below.\nOnly you can see this table - it\'s private to your account.\nUseful for tracking your own tanks during the shift.\n\nYour personal reminder system.');
+    }
+
+    // تصدير الدوال للاستخدام العام
+    window.showLiveTanksHelp = showLiveTanksHelp;
+    window.showCalendarHelp = showCalendarHelp;
+    window.showTableHelp = showTableHelp;
   </script>
 </body>
 </html>
