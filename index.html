@@ -108,8 +108,10 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 </div>
 <h2 style="text-align:center">PBCR & WASHERY</h2>
 <div class="main-container">
+<div class="row">
 <input id="tankInput" oninput="loadTank()" placeholder="Enter Tank Number" type="number"/>
 <input id="level" oninput="calculate()" placeholder="Current Level (m)" type="number"/>
+</div>
 <div class="result" id="availablePumpable"></div>
 <div class="result" id="currentUllage"></div>
 <div class="row">
@@ -137,9 +139,7 @@ input,select{background:rgba(255,255,255,0.9);border-radius:12px;border:none;col
 <button onclick="showLiveTanksHelp()" class="help-btn" id="add-to-live-tanks-help" title="About Live Tanks" style="display:none">ℹ️</button>
 </div>
 <div class="button-row">
-<a href="#" id="calendarLink" target="_blank">
-<button class="action-btn reminder-btn">📅 Add Reminder</button>
-</a>
+<button onclick="openCalendar()" class="action-btn reminder-btn">📅 Add Reminder</button>
 <button onclick="showCalendarHelp()" class="help-btn" title="How to use Calendar Reminder">ℹ️</button>
 </div>
 <div class="button-row">
