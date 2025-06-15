@@ -1231,38 +1231,6 @@
 
     console.log('%c🔒 PLCR CALCULATOR - SMART SECURITY','color:red;font-size:16px;font-weight:bold');
     console.log('%cDeveloper: Fahad - 17877','color:green;font-size:14px');
-    
-    // بدء التطبيق عند تحميل الصفحة
-    document.addEventListener('DOMContentLoaded', function() {
-      // التحقق من تسجيل الدخول وبدء التطبيق
-      if (typeof checkPageAccess === 'function') {
-        checkPageAccess('plcr.html');
-      } else {
-        console.log('checkPageAccess function not found, loading page normally');
-      }
-      
-      // تحميل بيانات المستخدم
-      if (typeof getCurrentUser === 'function') {
-        const user = getCurrentUser();
-        if (user) {
-          // تحديث اسم المستخدم
-          const userNameElement = document.querySelector('.user-info span');
-          if (userNameElement) {
-            userNameElement.textContent = user.fullName || user.username || 'User';
-          }
-          
-          // تحديث أيقونة المستخدم
-          const userAvatarElement = document.querySelector('.user-avatar');
-          if (userAvatarElement) {
-            const displayName = user.fullName || user.username || 'User';
-            userAvatarElement.textContent = displayName.charAt(0).toUpperCase();
-          }
-        }
-      }
-      
-      // تحميل البيانات المحفوظة
-      updatePersonalTable();
-    });
   </script>
 </body>
 </html>
