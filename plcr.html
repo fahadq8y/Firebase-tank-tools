@@ -770,23 +770,37 @@
       };
     };
 
-    // دالة تحديد الشفت
-    function isSameShift(targetTime) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const targetHour = targetTime.getHours();
+    // دالة تحديد الشفت - نفس PBCR
+    function isSameShift(now, finish) {
+      const getShift = h => {
+        const m = h.getHours() * 60 + h.getMinutes();
+        return m >= 360 && m < 840 ? "morning" : m >= 840 && m < 1320 ? "evening" : "night";
+      };
       
-      let currentShift, targetShift;
+      const currentShift = getShift(now);
+      const finishShift = getShift(finish);
       
-      if (currentHour >= 6 && currentHour < 14) currentShift = 'morning';
-      else if (currentHour >= 14 && currentHour < 22) currentShift = 'afternoon';
-      else currentShift = 'night';
+      if (currentShift !== finishShift) return false;
       
-      if (targetHour >= 6 && targetHour < 14) targetShift = 'morning';
-      else if (targetHour >= 14 && targetHour < 22) targetShift = 'afternoon';
-      else targetShift = 'night';
+      if (currentShift === "night") {
+        const nowHour = now.getHours();
+        const finishHour = finish.getHours();
+        
+        if (nowHour >= 0 && nowHour < 6) {
+          if (finishHour >= 0 && finishHour < 6) 
+            return Math.floor((finish.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) <= 1;
+          else if (finishHour >= 22) 
+            return Math.floor((finish.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) === 0;
+        } else if (nowHour >= 22) {
+          if (finishHour >= 22) 
+            return now.toDateString() === finish.toDateString();
+          else if (finishHour >= 0 && finishHour < 6) 
+            return Math.floor((finish.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) === 1;
+        }
+        return false;
+      }
       
-      return currentShift === targetShift && now.toDateString() === targetTime.toDateString();
+      return now.toDateString() === finish.toDateString();
     }
 
     // دالة إضافة تذكير
@@ -852,7 +866,7 @@
         const row = table.insertRow();
         const finishDateTime = new Date(entry.timestamp);
         const now = new Date();
-        const sameShift = isSameShift(finishDateTime);
+        const sameShift = isSameShift(now, finishDateTime);
         
         // تطبيق نظام الألوان
         row.className = sameShift ? 'same-shift' : 'next-shift';
