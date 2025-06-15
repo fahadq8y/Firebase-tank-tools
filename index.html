@@ -239,11 +239,73 @@ const products={
 };
 
 window.addEventListener('load',()=>setTimeout(checkLogin,100));
-function checkLogin(){const s=sessionStorage.getItem('tanktools_session'),u=localStorage.getItem('tanktools_current_user');if(s!=='active'||!u){showAccess();return}try{currentUser=JSON.parse(u);if(!currentUser||!currentUser.username){showAccess();return}initApp()}catch{showAccess()}}
+function checkLogin(){
+  const s = sessionStorage.getItem('tanktools_session');
+  const u = localStorage.getItem('tanktools_current_user');
+  
+  console.log('🔐 Checking login status...');
+  console.log('Session:', s);
+  console.log('User data:', u);
+  
+  if(s !== 'active' || !u) {
+    console.log('❌ No valid session or user data');
+    showAccess();
+    return;
+  }
+  
+  try {
+    currentUser = JSON.parse(u);
+    console.log('📋 Parsed user data:', currentUser);
+    
+    if(!currentUser || !currentUser.username) {
+      console.log('❌ Invalid user data structure');
+      showAccess();
+      return;
+    }
+    
+    console.log('✅ Login check passed, initializing app...');
+    initApp();
+  } catch(error) {
+    console.log('❌ Error parsing user data:', error);
+    showAccess();
+  }
+}
 function showAccess(){document.getElementById('mainContent').style.display='none';document.getElementById('accessDenied').style.display='flex'}
 window.goToLogin=()=>{sessionStorage.setItem('tanktools_redirect','index.html');window.location.href='login.html'};
 function initApp(){document.getElementById('mainContent').style.display='block';document.getElementById('accessDenied').style.display='none';loadUser();loadData();setupDark()}
-function loadUser(){if(!currentUser)return;document.getElementById('userName').textContent=currentUser.username;document.getElementById('userAvatar').textContent=(currentUser.fullName||currentUser.username).charAt(0).toUpperCase();if(currentUser.username==='fam030'||currentUser.role==='admin')document.getElementById('adminLink').style.display='inline-block';
+function loadUser(){
+  console.log('🔍 Loading user data...', currentUser);
+  
+  if(!currentUser) {
+    console.log('❌ No currentUser found');
+    document.getElementById('userName').textContent = 'User';
+    return;
+  }
+  
+  // تحديد الاسم المراد عرضه
+  let displayName = 'User';
+  if (currentUser.fullName && currentUser.fullName.trim() !== '') {
+    displayName = currentUser.fullName;
+  } else if (currentUser.username && currentUser.username.trim() !== '') {
+    displayName = currentUser.username;
+  } else if (currentUser.email && currentUser.email.trim() !== '') {
+    displayName = currentUser.email.split('@')[0];
+  }
+  
+  console.log('✅ Display name set to:', displayName);
+  
+  // عرض الاسم
+  document.getElementById('userName').textContent = displayName;
+  
+  // عرض الحرف الأول للأفاتار
+  const avatarText = (currentUser.fullName || currentUser.username || 'U').charAt(0).toUpperCase();
+  document.getElementById('userAvatar').textContent = avatarText;
+  
+  // إظهار رابط الإدارة للمشرفين
+  if(currentUser.username === 'fam030' || currentUser.role === 'admin') {
+    document.getElementById('adminLink').style.display = 'inline-block';
+  }
+  
   // استخدام نظام الصلاحيات الجديد لإظهار زر Live Tanks
   checkLiveTanksAccess();
 }
